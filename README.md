@@ -48,6 +48,10 @@ Provide an accelerator that:
     - RelevanceOptionalContextEvaluator
 - Document Index Maintenance (Azure AI Search) Example
 
+## Azure Resource Requirements
+
+[See list of required Azure Resources](docs/solution_overview/azure_resources.md)
+
 ## Quick Links
 
 - [Run Application Locally](docs/developer_experience/quick_run_local.md)
