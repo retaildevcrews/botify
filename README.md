@@ -39,13 +39,13 @@ Provide an accelerator that:
 - OpenTelemetry integraton for observability
 - Configuration Management/Identification for bot endpoint
 - Evaluation Framework (PromptFlow Evauate Module, Custom Performance Evaluation)
-- Collection of Evaluators
-  - CalledToolEvaluator
-  - CoherenceEvaluator
-  - FluencyEvaluator
-  - JsonSchemaValidationEvaluator
-  - RAGGroundednessEvaluator
-  - RelevanceOptionalContextEvaluator
+  - Collection of Evaluators
+    - CalledToolEvaluator
+    - CoherenceEvaluator
+    - FluencyEvaluator
+    - JsonSchemaValidationEvaluator
+    - RAGGroundednessEvaluator
+    - RelevanceOptionalContextEvaluator
 - Document Index Maintenance (Azure AI Search) Example
 
 ## Quick Links
