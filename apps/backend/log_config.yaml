@@ -1,0 +1,28 @@
+version: 1
+disable_existing_loggers: False
+
+formatters:
+    console:
+        datefmt: "%Y-%m-%dT%H:%M:%S"
+        format: '{"timestamp": "%(asctime)s.%(msecs)05dZ", "logLevel": "%(levelname)s", "loggerName": "%(name)s", "message": "%(message)s"}'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: console
+        stream: ext://sys.stdout
+    # Uncomment the following the enable logging to az app insights
+    # Requires pip install opencensus-ext-azure
+    # Must also add azure handler to root logger
+    # azure:
+    #     class: "opencensus.ext.azure.log_exporter.AzureLogHandler"
+    #     connection_string: <get APPLICATIONINSIGHTS_CONNECTION_STRING from azure portal>
+
+
+loggers:
+    azure:
+        # To enable headers from cognos queries switch this level to INFO
+        level: WARNING
+root:
+    # Level of root logger is being set at run time by environment variable in server.py
+    handlers: [console]

@@ -1,0 +1,3 @@
+{"user_id":"user","session_id":"session0","question":"How do I get stains out of clothing with bleach?","chat_history":[],"expected_saq":["how to get stains out of clothing with bleach"],"expected_called_tools":["Doc-Search-Tool"]}
+{"user_id":"user","session_id":"session1","question":"What is your name!","chat_history":[],"expected_saq":[],"expected_called_tools":[]}
+{"user_id":"user","session_id":"session2","question":"What's the best for me to wash a car?","chat_history":[],"expected_saq":["best way to wash a car"],"expected_called_tools":["Doc-Search-Tool"]}

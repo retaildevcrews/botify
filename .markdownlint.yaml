@@ -1,0 +1,11 @@
+# Example markdownlint configuration at: https://github.com/DavidAnson/markdownlint/blob/main/schema/.markdownlint.yaml
+# This will be read by both Markdown lint action as well as  the markdownlint extension
+# creating same linting experience for both Actions and dev
+
+# Default state for all rules
+default: true
+
+no-hard-tabs: true
+
+# MD013/line-length : Line length : https://github.com/DavidAnson/markdownlint/blob/main/doc/md013.md
+MD013: false

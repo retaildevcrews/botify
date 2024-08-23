@@ -1,0 +1,61 @@
+services:
+  # OpenTelemetry Collector
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.100.0
+    container_name: otel-col
+    deploy:
+      resources:
+        limits:
+          memory: 125M
+    restart: unless-stopped
+    env_file: "credentials.env"
+    networks:
+      - langchain-net
+    command: [ "--config=/etc/otelcol-config.yml" ]
+    volumes:
+      - ./collector/otel_config.yaml:/etc/otelcol-config.yml
+    ports:
+      - 4318:4318
+  backend:
+    depends_on:
+      - otelcol
+    build: ./backend
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./backend
+          target: /code
+          ignore:
+            - Dockerfile
+        - action: rebuild
+          path: ./backend/Dockerfile
+    container_name: backend
+    env_file: credentials.env
+    networks:
+      - langchain-net
+    ports:
+      - 8080:8080
+  frontend:
+    depends_on:
+      - backend
+    build: ./frontend
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./frontend
+          target: /code
+          ignore:
+            - Dockerfile
+        - action: rebuild
+          path: ./frontend/Dockerfile
+    container_name: frontend
+    env_file: credentials.env
+    environment:
+      - FAST_API_SERVER=http://backend:8080
+    networks:
+      - langchain-net
+    ports:
+      - 8000:8000
+networks:
+  langchain-net:
+    driver: bridge

@@ -1,0 +1,36 @@
+[tool.poetry]
+name = "evaluations"
+version = "0.1.0"
+description = ""
+authors = ["gen-ai-chatbot-team"]
+readme = "README.md"
+packages = [
+    { include = "evaluators" },
+    { include = "run_evaluations" },
+    { include = "evaluation_utils" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+promptflow="^1.13.0"
+promptflow-azure="^1.13.0"
+"azure.ai.ml"="^1.18.0"
+promptflow-evals="^0.3.1"
+python-dotenv="^1.0.1"
+bs4="^0.0.2"
+checksumdir="^1.2.0"
+mlflow="^2.14.2"
+"azure.ai.resources"="^1.0.0b8"
+pyyaml="^6.0.1"
+"keyrings.alt"="^5.0.1"
+openai="^1.40.2"
+pandas="^2.2.2"
+xlsxwriter="^3.2.0"
+azureml-core="^1.57.0"
+azureml-mlflow="^1.57.0"
+devtools="^0.12.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

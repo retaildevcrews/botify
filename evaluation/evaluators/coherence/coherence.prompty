@@ -1,0 +1,75 @@
+---
+name: Coherence
+description: Evaluates coherence score for QA scenario
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: ${env:AZURE_DEPLOYMENT}
+    api_key: ${env:AZURE_OPENAI_API_KEY}
+    azure_endpoint: ${env:AZURE_OPENAI_ENDPOINT}
+  parameters:
+    temperature: 0.0
+    max_tokens: 500
+    top_p: 1.0
+    presence_penalty: 0
+    frequency_penalty: 0
+    response_format:
+      type: json_object
+
+inputs:
+  question:
+    type: string
+  answer:
+    type: string
+
+outputs:
+  score:
+    type: int
+  reason:
+    type: string
+
+---
+system:
+You are an AI assistant. You will be given the definition of an evaluation metric for assessing the quality of an answer in a question-answering task. Your job is to compute an accurate evaluation score using the provided evaluation metric.
+
+user:
+Coherence of an answer is measured by how well all the sentences fit together and sound naturally as a whole. Consider the overall quality of the answer when evaluating coherence. Given the question and answer, score the coherence of answer between one to five using the following rating scale:
+1: the answer completely lacks coherence
+2: the answer mostly lacks coherence
+3: the answer is partially coherent
+4: the answer is mostly coherent
+5: the answer has perfect coherency
+
+Score is a rating value and should always be an integer between 1 and 5. So the rating produced should be 1 or 2 or 3 or 4 or 5.
+The evaluator should respond with a score and a reason for the score. The reason should explain why the answer received the score it did with a detailed reason for the score, the score should be an integer between 1 and 5.
+
+Here are some examples of questions and answers as well as what the response should look like:
+question: What is your favorite indoor activity and why do you enjoy it?
+answer: I like pizza. The sun is shining.
+response: {"score": 1, "reason": "The answer completely lacks coherence, it does not address the question at all and the response is not related to the topic."}
+
+question: Can you describe your favorite movie without giving away any spoilers?
+answer: It is a science fiction movie. There are dinosaurs. The actors eat cake. People must stop the villain.
+response: {"score": 2, "reason": "The answer mostly lacks coherence, does not address question, and the sentences are not related to each other."}
+
+question: What are some benefits of regular exercise?
+answer: Regular exercise improves your mood. A good workout also helps you sleep better. Trees are green.
+response: {"score": 3, "reason": "The answer is partially coherent, but has a statemetn that is not related to the topic."}
+
+question: How do you cope with stress in your daily life?
+answer: I usually go for a walk to clear my head. Listening to music helps me relax as well. Stress is a part of life, but we can manage it through some activities.
+response: {"score": 4, "reason": "The answer is mostly coherent. It addresses the question and provides relevant information, the statements are mostly related but the last sentence seems a little disconnected."}
+
+question: What can you tell me about climate change and its effects on the environment?
+answer: Climate change has far-reaching effects on the environment. Rising temperatures result in the melting of polar ice caps, contributing to sea-level rise. Additionally, more frequent and severe weather events, such as hurricanes and heatwaves, can cause disruption to ecosystems and human societies alike.
+response: {"score": 5, "reason": "The answer answers question and all statements flow well and are related to the question."}
+
+THE RESPONSE SHOULD ALWAYS BE IN JSON FORMAT LIKE THIS:
+{
+    "score": 1,
+    "reason": "The answer completely lacks coherence, it does not address the question at all and the response is not related to the topic."
+}
+
+question: {{question}}
+answer: {{answer}}

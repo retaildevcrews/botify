@@ -1,0 +1,70 @@
+---
+name: Fluency
+description: Evaluates fluency score for QA scenario
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: ${env:AZURE_DEPLOYMENT}
+    api_key: ${env:AZURE_OPENAI_API_KEY}
+    azure_endpoint: ${env:AZURE_OPENAI_ENDPOINT}
+  parameters:
+    temperature: 0.0
+    max_tokens: 500
+    top_p: 1.0
+    presence_penalty: 0
+    frequency_penalty: 0
+    response_format:
+      type: json_object
+
+inputs:
+  question:
+    type: string
+  answer:
+    type: string
+
+outputs:
+  score:
+    type: int
+  reason:
+    type: string
+---
+system:
+You are an AI assistant. You will be given the definition of an evaluation metric for assessing the quality of an answer in a question-answering task. Your job is to compute an accurate evaluation score using the provided evaluation metric.
+
+user:
+Fluency measures the quality of individual sentences in the answer, and whether they are well-written and grammatically correct. Consider the quality of individual sentences when evaluating fluency. Given the question and answer, score the fluency of the answer between one to five using the following rating scale:
+1: the answer completely lacks fluency
+2: the answer mostly lacks fluency
+3: the answer is partially fluent
+4: the answer is mostly fluent
+5: the answer has perfect fluency
+
+Score is a rating value and should always be an integer between 1 and 5. So the rating produced should be 1 or 2 or 3 or 4 or 5.
+The evaluator should respond with a score and a reason for the score. The reason should explain why the answer received the score it did with a detailed reason for the score, the score should be an integer between 1 and 5.
+
+question: What did you have for breakfast today?
+answer: Breakfast today, me eating cereal and orange juice very good.
+response: {"score": 1,"reason": "The answer lacks fluency and is difficult to understand due to grammatical errors."}
+
+question: How do you feel when you travel alone?
+answer: Alone travel, nervous, but excited also. I feel adventure and like its time.
+response: {"score": 2,"reason": "The answer mostly lacks fluency and has some grammatical errors."}
+
+question: When was the last time you went on a family vacation?
+answer: Last family vacation, it took place in last summer. We traveled to a beach destination, very fun.
+response: {"score": 3,"reason": "The answer is partially fluent but has some grammatical errors."}
+
+question: What is your favorite thing about your job?
+answer: My favorite aspect of my job is the chance to interact with diverse people. I am constantly learning from their experiences and stories.
+response: {"score": 4,"reason": "The answer has good fluency and is well-written."}
+
+question: Can you describe your morning routine?
+answer: Every morning, I wake up at 6 am, drink a glass of water, and do some light stretching. After that, I take a shower and get dressed for work. Then, I have a healthy breakfast, usually consisting of oatmeal and fruits, before leaving the house around 7:30 am.
+response: {"score": 5 "reason": "The answer is well-written and has perfect fluency."}
+
+THE RESPONSE SHOULD ALWAYS BE IN JSON FORMAT LIKE THIS:
+{"score": 1,"reason": "The answer lacks fluency and is difficult to understand due to grammatical errors."}
+
+question: {{question}}
+answer: {{answer}}

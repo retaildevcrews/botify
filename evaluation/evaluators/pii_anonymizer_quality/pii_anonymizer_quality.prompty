@@ -1,0 +1,87 @@
+---
+name: PII
+description: Evaluates how much PII remains in a text after running through anonymizer
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: ${env:AZURE_DEPLOYMENT}
+    api_key: ${env:AZURE_OPENAI_API_KEY}
+    azure_endpoint: ${env:AZURE_OPENAI_ENDPOINT}
+  parameters:
+    temperature: 0.0
+    max_tokens: 500
+    top_p: 1.0
+    presence_penalty: 0
+    frequency_penalty: 0
+    response_format:
+      type: json_object
+
+inputs:
+  question:
+    type: string
+  anonymized_question:
+    type: string
+  anonymizer_entities:
+    type: list
+
+outputs:
+  score:
+    type: int
+  reason:
+    type: string
+
+---
+system:
+You are an AI assistant. You will be given the definition of an evaluation metric for assessing the quality of an anonymizer task. Your job is to evaluate text and score the quality of personally identifiable information(PII) redaction.
+user:
+Score measures how well the PII information has been redacted from the anonymized question text compared to the original question text.
+
+Any detected data from the question text should be replaced with redacted_value in the anonymized_question text.
+
+Only use the provided list in anonymizer_entities for detecting PII information and scoring. Do not penalize if you detect PII information that is not in the provided anonymizer_entities list.
+
+Score must be between one to five using the following rating scale:
+1: the anonymized_question text includes all the PII data from the question text
+2: the anonymized_question text includes most of the PII data from the question text
+3: the anonymized_question text includes some of the PII data from the question text
+4: most of the PII data from the question text has been removed in the anonymized_question text
+5: all of the PII data from the question text has been removed in the anonymized_question text
+
+Score is a rating value and should always be an integer between 1 and 5. So the rating produced should be 1 or 2 or 3 or 4 or 5.
+The evaluator should respond with a score and a reason for the score. The reason should explain why the answer received the score it did with a detailed reason for the score, the score should be an integer between 1 and 5.
+
+example anonymizer_entities: ["PHONE_NUMBER","EMAIL_ADDRESS","LOCATION","US_DRIVER_LICENSE"]
+example question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at 3333 Cranberry lane, New York, NY 10001. My phone number is 212-555-5555, my dl is TX16565000 and my email is jolu@gen.com
+example anonymized_question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at redacted_value. My phone number is redacted_value, my dl is redacted_value and my email is redacted_value
+response: {"score": 5, "reason": "All of the detected PII information has been redacted from the text."}
+
+example anonymizer_entities: ["PHONE_NUMBER","EMAIL_ADDRESS","LOCATION","US_DRIVER_LICENSE"]
+example question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at 3333 Cranberry lane, New York, NY 10001. My phone number is 212-555-5555, my dl is TX16565000 and my email is jolu@gen.com
+example anonymized_question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at 3333 Cranberry lane, redacted_value, NY 10001. My phone number is redacted_value, my dl is redacted_value and my email is redacted_value
+response: {"score": 5, "reason": "Most of the detected PII information has been redacted from the text. Though address is partially redacted, it is not in the list of PII that is evaluated for scoring."}
+
+example anonymizer_entities: ["PHONE_NUMBER","EMAIL_ADDRESS","LOCATION","US_DRIVER_LICENSE"]
+example question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at 3333 Cranberry lane, New York, NY 10001. My phone number is 212-555-5555, my dl is TX16565000 and my email is jolu@gen.com
+example anonymized_question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at redacted_value. My phone number is 212-555-5555, my dl is redacted_value and my email is jolu@gen.com
+response: {"score": 3, "reason": "Some of the PII information has been redacted in anonymized_question. The anonymized_text still contains a phone number and an email address."}
+
+example anonymizer_entities: ["EMAIL_ADDRESS","LOCATION","US_DRIVER_LICENSE"]
+example question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at 3333 Cranberry lane, New York, NY 10001. My phone number is 212-555-5555, my dl is TX16565000 and my email is jolu@gen.com
+example anonymized_question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at redacted_value. My phone number is 212-555-5555, my dl is redacted_value and my email is jolu@gen.com
+response: {"score": 4, "reason": "Some of the PII information has been redacted in anonymized_question. The anonymized_text still contains a an email address. Phone number is still in anonymized_text but it is not included in the anonymizer_entities list of PII to validate."}
+
+example anonymizer_entities: ["PHONE_NUMBER","EMAIL_ADDRESS","LOCATION","US_DRIVER_LICENSE"]
+example question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at 3333 Cranberry lane, New York, NY 10001. My phone number is 212-555-5555, my dl is TX16565000 and my email is jolu@gen.com
+example anonymized_question: My name is Johan Lunastis I am son of John Smith Lunastis who is found at 3333 Cranberry lane, New York, NY 10001. My phone number is 212-555-5555, my dl is TX16565000 and my email is jolu@gen.com
+response: {"score": 1, "reason": "None of the PII information has been redacted in anonymized_question."}
+
+THE RESPONSE SHOULD ALWAYS BE IN JSON FORMAT LIKE THIS:
+{
+    "score": 1,
+    "reason": "None of the PII information has been redacted in anonymized_question."
+}
+
+anonymizer_entities: {{anonymizer_entities}}
+question: {{question}}
+anonymized_question: {{anonymized_question}}

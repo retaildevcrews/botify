@@ -1,0 +1,29 @@
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "langserve-frontend"
+version = "0.1.0"
+description = "Streamlit frontend to accelerator backend!"
+authors = ["rag-example-team"]
+readme = "README.md"
+package-mode = false
+packages = [
+    { include = "app" }
+]
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pydantic = "2.8.2"
+langserve = {extras = ["server"], version = ">=0.0.30"}
+azure-cognitiveservices-speech = "^1.37.0"
+audio-recorder-streamlit = "0.0.8"
+streamlit = "^1.36.0"
+streamlit-float = "0.3.4"
+langchain = "0.2.11"
+langchain-openai = "^0.1.7"
+langchain-community = "0.2.10"
+openai = "1.37.0"
+azure-cosmos = "^4.6.0"
+python-dotenv = "^1.0.1"
