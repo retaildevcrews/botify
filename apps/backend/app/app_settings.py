@@ -54,9 +54,10 @@ class AppSettings:
     content_safety_enabled: bool = True
     banned_topics: list[str] = field(
         default_factory=lambda: [
-            "medical",
             "legal",
             "financial",
+            "politics",
+            "medical",
         ]
     )
     disclaimer_topics: list[str] = field(
