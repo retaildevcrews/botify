@@ -23,7 +23,6 @@ while also providing examples of desirable features for security, privacy, etc.
 - [Solution Overview](docs/solution_overview/README.md)
 - [Developer Experience](docs/developer_experience/README.md)
 - [Evaluation Approach](evaluation/README.md)
-- [Security Plan](docs/security-plan.md)
 
 ## Project Goals
 
