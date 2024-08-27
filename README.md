@@ -4,6 +4,11 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+## Quick Start
+
+- [Run Application Locally](docs/developer_experience/quick_run_local.md)
+- [Update System Prompt](docs/solution_overview/prompt_maintenance.md)
+
 ## Additional Documentation
 
 - [Solution Overview](docs/solution_overview/README.md)
@@ -58,11 +63,6 @@ Provide an accelerator that:
 ## Azure Resource Requirements
 
 [See list of required Azure Resources](docs/solution_overview/azure_resources.md)
-
-## Quick Links
-
-- [Run Application Locally](docs/developer_experience/quick_run_local.md)
-- [Update System Prompt](docs/solution_overview/prompt_maintenance.md)
 
 ## How to file issues and get help
 
