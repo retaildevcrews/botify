@@ -6,8 +6,8 @@ from common.schemas import ResponseSchema
 from evaluation_utils.evaluator_config import EvaluatorConfigList
 from evaluation_utils.formatting_utils import string_to_dict
 from evaluation_utils.runnable_caller import RunnableCaller
-from evaluators import (CoherenceEvaluator,
-                        FluencyEvaluator, JsonSchemaValidationEvaluator,
+from evaluators import (CoherenceEvaluator, FluencyEvaluator,
+                        JsonSchemaValidationEvaluator,
                         RAGGroundednessEvaluator,
                         RelevanceOptionalContextEvaluator)
 from promptflow.core import AzureOpenAIModelConfiguration

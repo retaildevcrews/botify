@@ -55,7 +55,7 @@ class TestEvalFullFlow(unittest.TestCase):
 
         evaluator_config = result["evaluator_config"]
 
-        expected_evaluator_config_count = 13
+        expected_evaluator_config_count = 8
         self.assertEqual(len(evaluator_config),
                          expected_evaluator_config_count)
 
@@ -102,10 +102,6 @@ class TestEvalFullFlow(unittest.TestCase):
             self, evaluator_config, "relevance", "answer", "${target.bot_response}")
         validate_evaluator_config(
             self, evaluator_config, "relevance", "context", "${target.context}")
-        validate_evaluator_config(self, evaluator_config, "called_tool_correctness",
-                                  "expected_called_tools", "${data.expected_called_tools}")
-        validate_evaluator_config(
-            self, evaluator_config, "called_tool_correctness", "called_tools", "${target.called_tools}")
 
     def tearDown(self):
         # Clean up any necessary objects or state after each test
