@@ -4,6 +4,15 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+## Overview
+
+This repository is an implementation of a Generative AI chatbot
+that leverages Microsoft technologies and Open-Source technologies to create
+a question/answer bot.
+The bot implements RAG for grounding answers the user's questions.
+The project is structured to ensure ease of development, maintenance, and deployment
+while also providing examples of desirable features for security, privacy, etc.
+
 ## Quick Start
 
 - [Run Application Locally](docs/developer_experience/quick_run_local.md)
@@ -15,15 +24,6 @@
 - [Developer Experience](docs/developer_experience/README.md)
 - [Evaluation Approach](evaluation/README.md)
 - [Security Plan](docs/security-plan.md)
-
-## Overview
-
-This repository is an implementation of a Generative AI chatbot
-that leverages Microsoft technologies and Open-Source technologies to create
-a question/answer bot.
-The bot implements RAG for grounding answers the user's questions.
-The project is structured to ensure ease of development, maintenance, and deployment
-while also providing examples of desirable features for security, privacy, etc.
 
 ## Project Goals
 
