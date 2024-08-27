@@ -4,6 +4,8 @@
 
 Running the following Docker Compose command will build the latest images and then run them with the required networking, secrets, services, and port forwarding. Open [docker-compose.yaml](../../apps/docker-compose.yaml) for more info.
 
+Ensure infrastructure has been deployed according to the following instructions: [Deploy Infrastructure](../../infra/README.md)
+
 ```bash
 cd apps
 docker compose up -w

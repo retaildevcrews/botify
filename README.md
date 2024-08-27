@@ -13,6 +13,10 @@ The bot implements RAG for grounding answers the user's questions.
 The project is structured to ensure ease of development, maintenance, and deployment
 while also providing examples of desirable features for security, privacy, etc.
 
+## Quickstart
+
+- [Run Application Locally](docs/developer_experience/quick_run_local.md)
+
 ## Project Goals
 
 Provide an accelerator that:
