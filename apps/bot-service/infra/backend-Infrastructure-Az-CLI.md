@@ -114,7 +114,7 @@ Run the following `az cli command` to deploy the infrastructure.
 az deployment group create \
   -n $BTF_DEPLOYMENT_NAME \
   -g $BTF_RESOURCE_GROUP_SEARCH \
-  -f apps/backend/langserve/infra/azuredeploy-backend.bicep \
+  -f apps/bot-service/infra/azuredeploy-backend.bicep \
   -p deploymentSuffix=${BTF_DEPLOYMENT_SUFFIX} \
      appId=${BTF_APP_ID} \
      appPassword=${BTF_APP_PASSWORD} \

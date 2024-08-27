@@ -1,4 +1,4 @@
-using '../../apps/backend/infra/azuredeploy-backend-private.bicep'
+using '../../apps/bot-service/infra/azuredeploy-backend-private.bicep'
 
 param resourceNameSuffix='btfy-dev-use2'
 param appContainerImage = 'retaildevcrews/botify-backend:beta'

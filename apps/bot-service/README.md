@@ -1,4 +1,4 @@
-# Backend Web Application - LangServe FastAPI
+# Bot Service Web Application - LangServe FastAPI
 
 This bot has been created using [LangServe](https://python.langchain.com/docs/langserve)
 
@@ -10,7 +10,7 @@ Below are the steps to run the Bot API as an Azure Wep App, connected with the A
 
 2. Deploy the Bot Web App and the Bot Service by clicking the Button below and type the App Registration ID and Secret Value that you got in Step 1 along with all the other ENV variables you used.
 
-3. [Deploy Backend Bot Service infrastructure using CLI](./infra/backend-Infrastructure-Az-CLI.md)
+3. [Deploy Bot Service infrastructure using CLI](./infra/backend-Infrastructure-Az-CLI.md)
 
 ## Deploy Bot To Azure Web App
 
@@ -21,10 +21,10 @@ for the Bot Service API. We are going to use the same App Service
 and just change the code.
 
 2. Zip the code of the bot by executing the following command in the terminal
-(**you have to be inside the apps/backend/langserve/ folder**):
+(**you have to be inside the apps/bot-service/ folder**):
 
     ```bash
-    zip -r backend.zip common && zip -j backend.zip pyproject.toml && zip -j backend.zip runserver.sh && zip -j backend.zip app/*.py
+    zip -r bot-service.zip common && zip -j bot-service.zip pyproject.toml && zip -j bot-service.zip runserver.sh && zip -j bot-service.zip app/*.py
     ```
 
 3. Using the Azure CLI deploy the bot code to the Azure App Service created on
@@ -32,7 +32,7 @@ Step 2
 
     ```bash
     az login -i
-    az webapp deployment source config-zip --resource-group "<resource-group-name>" --name "<name-of-backend-app-service>" --src "backend.zip"
+    az webapp deployment source config-zip --resource-group "<resource-group-name>" --name "<name-of-bot-service-app-service>" --src "bot-service.zip"
     ```
 
 4. **Wait around 5 minutes** and test your bot by running the next Notebook.

@@ -23,7 +23,7 @@
   // forward ports
   "forwardPorts": [
     8000, // Frontend
-    8080, // Backend
+    8080, // Bot Service
     4318, // Otel Collector
     23333 // Promptflow Traces
   ],
@@ -33,7 +33,7 @@
       "label": "Frontend"
     },
     "8080": {
-      "label": "Backend"
+      "label": "Bot Service"
     },
     "4318": {
       "label": "Otel Collector"

@@ -34,7 +34,7 @@ RUN python -m spacy download en_core_web_sm && \
 
 ENV OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
 
-# Copy backend code
+# Copy bot-service code
 COPY ./app ./app
 COPY ./common ./common
 COPY ./prompts ./prompts
@@ -42,7 +42,7 @@ COPY ./log_config.yaml ./log_config.yaml
 COPY ./pyproject.toml ./pyproject.toml
 COPY ./_additional_version_info.py ./_additional_version_info.py
 
-# Expose the backend port
+# Expose the bot-service port
 EXPOSE 8080
 ENV LOG_LEVEL=INFO
 

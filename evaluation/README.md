@@ -39,7 +39,7 @@ user is running the steps from the project root.
 
 ```bash
 # Navigate to langserve directory
-cd apps/backend/langserve # assumes you are at the root of the project
+cd apps/bot-service/langserve # assumes you are at the root of the project
 # Create virtual environment using poetry to install packages to evaluate
 poetry install
 # Activate virtual environment in terminal
@@ -69,7 +69,7 @@ root.
 
 ```bash
 # Activate virtual environment in terminal
-cd apps/backend/langserve
+cd apps/bot-service/langserve
 eval "source $(poetry env info --path)/bin/activate"
 cd ../../..
 # Set environment variables
