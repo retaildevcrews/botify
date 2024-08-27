@@ -4,6 +4,13 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+## Additional Documentation
+
+- [Solution Overview](docs/solution_overview/README.md)
+- [Developer Experience](docs/developer_experience/README.md)
+- [Evaluation Approach](evaluation/README.md)
+- [Security Plan](docs/security-plan.md)
+
 ## Overview
 
 This repository is an implementation of a Generative AI chatbot
@@ -12,10 +19,6 @@ a question/answer bot.
 The bot implements RAG for grounding answers the user's questions.
 The project is structured to ensure ease of development, maintenance, and deployment
 while also providing examples of desirable features for security, privacy, etc.
-
-## Quickstart
-
-- [Run Application Locally](docs/developer_experience/quick_run_local.md)
 
 ## Project Goals
 
@@ -60,13 +63,6 @@ Provide an accelerator that:
 
 - [Run Application Locally](docs/developer_experience/quick_run_local.md)
 - [Update System Prompt](docs/solution_overview/prompt_maintenance.md)
-
-## Additional Documentation
-
-- [Solution Overview](docs/solution_overview/README.md)
-- [Developer Experience](docs/developer_experience/README.md)
-- [Evaluation Approach](evaluation/README.md)
-- [Security Plan](docs/security-plan.md)
 
 ## How to file issues and get help
 
