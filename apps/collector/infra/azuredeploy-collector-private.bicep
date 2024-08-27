@@ -68,7 +68,7 @@ var appServiceSubnetId = filter(existingVnet.properties.subnets, s => s.name == 
 var privateEndpointSubnetId = filter(existingVnet.properties.subnets, s => s.name == privateEndpointSubnetName)[0].id
 
 // Deploys an App Service Plan and App Service Container for the backend API
-module appService '../../../../infra/modules/appservice.bicep' = {
+module appService '../../../infra/modules/appservice.bicep' = {
   name: 'appserviceDeployment-otel-${uniqueString(resourceGroup().id, resourceNameSuffix)}'
   params: {
     resourceNameSuffix: resourceNameSuffix
