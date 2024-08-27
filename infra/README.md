@@ -133,7 +133,7 @@ az deployment group create \
 Set the following environment variable to prevent name duplication when deploying resources. The recommended pattern for this value is:
 workload-environment-region
 
-- *workload* should describe the application being deployed (botify, or gnd for short)
+- *workload* should describe the application being deployed (botify, or btfy for short)
 - *environment* is generally one of 'dev','test','prod'
 - *region* represents the target Azure region
 
