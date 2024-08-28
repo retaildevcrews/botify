@@ -21,7 +21,7 @@ RUN pip install --no-cache-dir poetry==1.8 \
     && find /usr/local -type f -name '*.pyc' -delete
 
 # Copy frontend code
-COPY ./app ./app
+COPY ./streamlit_app ./streamlit_app
 COPY ./.streamlit ./.streamlit
 COPY ./_additional_version_info.py ./_additional_version_info.py
 
@@ -31,4 +31,4 @@ EXPOSE 8000
 ENV STREAMLIT_LOGGER_LEVEL=info
 
 # Set the entrypoint to run the app
-ENTRYPOINT ["python", "-m", "streamlit", "run", "app/Home.py", "--server.port", "8000", "--server.address", "0.0.0.0"]
+ENTRYPOINT ["python", "-m", "streamlit", "run", "streamlit_app/Home.py", "--server.port", "8000", "--server.address", "0.0.0.0"]
