@@ -18,6 +18,8 @@ while also providing examples of desirable features for security, privacy, etc.
 - [Run Application Locally](docs/developer_experience/quick_run_local.md)
 - [Update System Prompt](docs/solution_overview/prompt_maintenance.md)
 
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fretaildevcrews%2Fbotify%2Fmain%2Finfra%2Fmain.json)
+
 ## Additional Documentation
 
 - [Solution Overview](docs/solution_overview/README.md)
