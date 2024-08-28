@@ -1,6 +1,6 @@
 from typing import Optional, Tuple
 
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from langchain.tools import BaseTool
 from langchain_core.callbacks import (AsyncCallbackManagerForToolRun,
                                       CallbackManagerForToolRun)

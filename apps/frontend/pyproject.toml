@@ -10,7 +10,7 @@ authors = ["rag-example-team"]
 readme = "README.md"
 package-mode = false
 packages = [
-    { include = "app" }
+    { include = "streamlit_app" }
 ]
 
 [tool.poetry.dependencies]

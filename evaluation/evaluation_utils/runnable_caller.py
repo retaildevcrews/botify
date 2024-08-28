@@ -2,8 +2,8 @@ import json
 from time import perf_counter
 from typing import List
 
-from app.app_settings import AppSettings
-from common.runnable_factory import RunnableFactory
+from app.settings import AppSettings
+from botify_langchain.runnable_factory import RunnableFactory
 from evaluation_utils.formatting_utils import string_to_dict
 from langchain_community.callbacks import get_openai_callback
 from langchain_community.chat_message_histories import ChatMessageHistory

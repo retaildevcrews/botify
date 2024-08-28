@@ -5,7 +5,7 @@ from typing import Optional
 
 import aiohttp
 import requests
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun,
                                          CallbackManagerForToolRun)
 from langchain.tools import BaseTool

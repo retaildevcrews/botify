@@ -1,6 +1,6 @@
 import unittest
 
-from app.app_settings import AppSettings, EnvironmentConfig
+from app.settings import AppSettings, EnvironmentConfig
 from common.schemas import ResponseSchema
 
 

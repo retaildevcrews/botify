@@ -6,6 +6,8 @@ authors = ["botify-team"]
 readme = "README.md"
 packages = [
     { include = "app" },
+    { include = "api" },
+    { include = "botify_langchain" },
     { include = "common" },
     { include = "prompts" }
 ]

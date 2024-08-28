@@ -4,22 +4,18 @@ from io import BytesIO
 
 import azure.cognitiveservices.speech as speechsdk
 import streamlit as st
+from helpers.streamlit_helpers import extract_voice_summary_and_text
 from openai import AzureOpenAI
 from streamlit.logger import get_logger
-from app import (
-    azure_speech_key,
-    azure_speech_region,
-    azure_speech_voice_name,
-    speech_engine,
-    tts_model_name,
-    tts_voice_name,
-    whisper_model_name
-)
-from helpers.streamlit_helpers import extract_voice_summary_and_text
+from streamlit_app import (azure_speech_key, azure_speech_region,
+                           azure_speech_voice_name, speech_engine,
+                           tts_model_name, tts_voice_name, whisper_model_name)
+
 
 def get_logger(name):
     from streamlit.logger import get_logger
     return get_logger(name)
+
 
 logger = get_logger(__name__)
 
@@ -27,15 +23,18 @@ tts_temp_filename = "temp_audio_play.wav"
 stt_temp_filename = "temp_audio_listen.wav"
 openai_client = AzureOpenAI()
 
+
 def recognize_whisper_api(audio_file):
     return openai_client.audio.transcriptions.create(
         model=whisper_model_name, response_format="text", file=audio_file
     )
 
+
 def recognize_whisper_api_from_file(file_name: str):
     with open(file_name, "rb") as audio_file:
         transcript = recognize_whisper_api(audio_file)
     return transcript
+
 
 def recognize_azure_speech_to_text_from_file(file_path: str):
     speech_config = speechsdk.SpeechConfig(
@@ -50,6 +49,7 @@ def recognize_azure_speech_to_text_from_file(file_path: str):
     result = speech_recognizer.recognize_once_async().get()
     logger.debug("Recognition complete")
     return result.text
+
 
 def speech_to_text_from_file(file_path: str):
     try:
@@ -69,6 +69,7 @@ def speech_to_text_from_file(file_path: str):
             os.remove(file_path)
         return result
 
+
 def speech_to_text_from_bytes(audio_bytes: BytesIO):
     file_path = stt_temp_filename
     logger.debug(f"File path: {file_path}")
@@ -79,13 +80,15 @@ def speech_to_text_from_bytes(audio_bytes: BytesIO):
 
     return speech_to_text_from_file(file_path)
 
+
 def text_to_speech_azure(input_text: str):
     speech_config = speechsdk.SpeechConfig(
         subscription=azure_speech_key, region=azure_speech_region
     )
     speech_config.speech_synthesis_voice_name = azure_speech_voice_name
     audio_config = None
-    speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config,audio_config=audio_config)
+    speech_synthesizer = speechsdk.SpeechSynthesizer(
+        speech_config=speech_config, audio_config=audio_config)
 
     try:
         result = speech_synthesizer.speak_text_async(input_text).get()
@@ -94,6 +97,7 @@ def text_to_speech_azure(input_text: str):
     except Exception as e:
         logger.error(f"Error: {e}")
     return tts_temp_filename
+
 
 def text_to_speech_tts(input_text: str):
     try:
@@ -106,6 +110,7 @@ def text_to_speech_tts(input_text: str):
         logger.error(f"Error: {e}")
         return None
 
+
 def text_to_speech(input_text: str):
     logger.debug(f"Text-to-speech using speech engine: {speech_engine}")
 
@@ -114,6 +119,7 @@ def text_to_speech(input_text: str):
     elif speech_engine == "azure":
         return text_to_speech_azure(input_text)
     return None
+
 
 def autoplay_audio(file_path):
     with open(file_path, "rb") as audio_file:
@@ -126,6 +132,7 @@ def autoplay_audio(file_path):
     </audio>
     """
     st.markdown(audio_html, unsafe_allow_html=True)
+
 
 def handle_audio_response(voice_summary):
     try:

@@ -1,7 +1,7 @@
 import json
 import logging
 
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from fastapi import Request
 from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider

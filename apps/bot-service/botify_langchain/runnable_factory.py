@@ -1,13 +1,13 @@
 import json
 import logging
 
-import app.app_messages as messages
-from app.app_settings import AppSettings, EnvironmentConfig
-from common.custom_cosmos_db_chat_message_history import \
+import app.messages as messages
+from app.settings import AppSettings, EnvironmentConfig
+from botify_langchain.custom_cosmos_db_chat_message_history import \
     CustomCosmosDBChatMessageHistory
 from common.schemas import ResponseSchema
-from common.tools.topic_detection_tool import TopicDetectionTool
 from langchain.agents import AgentExecutor, create_tool_calling_agent
+from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from langchain_community.chat_message_histories import \
     CosmosDBChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -30,8 +30,8 @@ class RunnableFactory:
 
         self.byo_session_history_callable = byo_session_history_callable
 
-        from common.tools.azure_ai_search_tool import AzureAISearch_Tool
-        from common.tools.azure_content_safety_tool import \
+        from botify_langchain.tools.azure_ai_search_tool import AzureAISearch_Tool
+        from botify_langchain.tools.azure_content_safety_tool import \
             AzureContentSafety_Tool
 
         # Document indexes for the custom retriever
