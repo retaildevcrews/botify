@@ -7,7 +7,7 @@
 ## Overview
 
 This repository is an implementation of a Generative AI chatbot
-that leverages Microsoft and other Open-Source technologies to create
+that leverages Azure Cloud Services, Microsoft Open-Source, and other Open-Source technologies to create
 a question/answer bot.
 The bot implements RAG for grounding answers the user's questions.
 The project is structured to ensure ease of development, maintenance, and deployment
