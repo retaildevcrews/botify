@@ -8,7 +8,7 @@ import _additional_version_info
 import pydantic
 import toml
 from app.app_settings import AppSettings
-from common.runnable_factory import RunnableFactory
+from botify_langchain.runnable_factory import RunnableFactory
 from common.utils import Anonymizer
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware

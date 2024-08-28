@@ -1,21 +1,12 @@
 from __future__ import annotations
 
-import logging
 import json
-from types import TracebackType
-from typing import TYPE_CHECKING, Any, List, Optional, Type, Sequence
+import logging
+from typing import TYPE_CHECKING, Any, List, Optional
 
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
-from langchain_core.output_parsers import SimpleJsonOutputParser, JsonOutputParser
-
-from langchain_core.chat_history import BaseChatMessageHistory
-from langchain_core.messages import (
-    BaseMessage,
-    messages_from_dict,
-    messages_to_dict,
-)
-
+from langchain_community.chat_message_histories import \
+    CosmosDBChatMessageHistory
+from langchain_core.messages import BaseMessage
 
 logger = logging.getLogger(__name__)
 

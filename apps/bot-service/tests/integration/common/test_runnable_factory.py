@@ -1,7 +1,7 @@
 import unittest
 import uuid
 
-from common.runnable_factory import RunnableFactory
+from botify_langchain.runnable_factory import RunnableFactory
 
 session_id = uuid.uuid4()
 
