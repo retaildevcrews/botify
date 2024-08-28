@@ -13,8 +13,6 @@ The bot implements RAG for grounding answers the user's questions.
 The project is structured to ensure ease of development, maintenance, and deployment
 while also providing examples of desirable features for security, privacy, etc.
 
-The work leverages examples found in: [The Azure AI Search Azure OpenAI Accelerator](https://github.com/MSUSAzureAccelerators/Azure-Cognitive-Search-Azure-OpenAI-Accelerator)
-
 ## Quick Start
 
 - [Run Application Locally](docs/developer_experience/quick_run_local.md)
@@ -25,6 +23,8 @@ The work leverages examples found in: [The Azure AI Search Azure OpenAI Accelera
 - [Solution Overview](docs/solution_overview/README.md)
 - [Developer Experience](docs/developer_experience/README.md)
 - [Evaluation Approach](evaluation/README.md)
+
+The work leverages examples found in: [The Azure AI Search Azure OpenAI Accelerator](https://github.com/MSUSAzureAccelerators/Azure-Cognitive-Search-Azure-OpenAI-Accelerator)
 
 ## Project Goals
 
