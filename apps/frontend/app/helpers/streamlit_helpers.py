@@ -6,8 +6,8 @@ import toml
 import _additional_version_info
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
-from api import api_key
-from api import api_url_version
+from app import api_key
+from app import api_url_version
 
 def get_logger(name):
     from streamlit.logger import get_logger

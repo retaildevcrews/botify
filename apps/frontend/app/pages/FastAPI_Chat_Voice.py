@@ -1,7 +1,7 @@
 import os
 
 import streamlit as st
-from api import api_url, model_name
+from app import api_url, model_name
 from audio_recorder_streamlit import audio_recorder
 from helpers.json_helpers import generate_display_and_audio_response
 from helpers.speech_helpers import speech_to_text_from_bytes as speech_to_text

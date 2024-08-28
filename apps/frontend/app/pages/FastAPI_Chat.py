@@ -1,16 +1,10 @@
 import streamlit as st
-from api import api_url, model_name
-from helpers.streamlit_helpers import (
-    configure_page,
-    consume_api,
-    display_chat_history,
-    get_logger,
-    get_or_create_ids,
-    initialize_chat_history
-)
-
+from app import api_url, model_name
 from helpers.json_helpers import generate_display_and_audio_response
-
+from helpers.streamlit_helpers import (configure_page, consume_api,
+                                       display_chat_history, get_logger,
+                                       get_or_create_ids,
+                                       initialize_chat_history)
 from langchain_core.messages import AIMessage, HumanMessage
 
 # Configure the Streamlit page
@@ -31,6 +25,7 @@ logger.debug("Chat history displayed.")
 # User input for chat
 user_query = st.chat_input("Type your message here...")
 
+
 def write_payload(payload):
     result = ""
     container = st.empty()
@@ -38,7 +33,7 @@ def write_payload(payload):
     if "invoke" in api_url:
         json = next(iter(payload), None)
         if json:
-            result = generate_display_and_audio_response(json,False)
+            result = generate_display_and_audio_response(json, False)
             container.markdown(result)
             return result
     else:
@@ -46,6 +41,7 @@ def write_payload(payload):
             result += chunk
             container.markdown(result)
         return result
+
 
 if user_query:
     logger.debug(f"User query received: {user_query}")

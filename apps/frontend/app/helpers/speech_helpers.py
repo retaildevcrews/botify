@@ -6,7 +6,7 @@ import azure.cognitiveservices.speech as speechsdk
 import streamlit as st
 from openai import AzureOpenAI
 from streamlit.logger import get_logger
-from api import (
+from app import (
     azure_speech_key,
     azure_speech_region,
     azure_speech_voice_name,

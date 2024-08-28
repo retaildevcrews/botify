@@ -35,7 +35,9 @@ RUN python -m spacy download en_core_web_sm && \
 ENV OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
 
 # Copy bot-service code
+COPY ./api ./api
 COPY ./app ./app
+COPY ./botify_langchain ./botify_langchain
 COPY ./common ./common
 COPY ./prompts ./prompts
 COPY ./log_config.yaml ./log_config.yaml
