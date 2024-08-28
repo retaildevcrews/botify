@@ -1,7 +1,7 @@
 import logging
 import pathlib
 
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from evaluation_utils.evaluator_config import EvaluatorConfigList
 from promptflow.evals.evaluate import evaluate
 

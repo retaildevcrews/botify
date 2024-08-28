@@ -7,9 +7,9 @@ from typing import Any, List, TypedDict
 import _additional_version_info
 import pydantic
 import toml
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
-from app.pii_utils import Anonymizer
+from api.pii_utils import Anonymizer
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse

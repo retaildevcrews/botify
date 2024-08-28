@@ -1,8 +1,8 @@
 import os
 import unittest
 
-from app.app_settings import AppSettings
-from app.environment_config import EnvironmentConfig
+from app.settings import AppSettings
+from api.environment_config import EnvironmentConfig
 
 
 class TestStringMethods(unittest.TestCase):

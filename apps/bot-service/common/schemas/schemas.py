@@ -1,7 +1,7 @@
 import json
 import os
 
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from jsonschema import validate
 
 

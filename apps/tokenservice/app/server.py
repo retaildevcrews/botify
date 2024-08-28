@@ -4,7 +4,7 @@ import time
 
 import _additional_version_info
 import toml
-from app import (
+from api import (
     allowed_origins,
     api_scope,
     credential,

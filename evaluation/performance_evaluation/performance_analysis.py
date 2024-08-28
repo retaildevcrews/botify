@@ -6,7 +6,7 @@ from datetime import datetime
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from evaluation_utils.runnable_caller import RunnableCaller
 
 

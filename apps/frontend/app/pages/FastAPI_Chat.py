@@ -1,5 +1,5 @@
 import streamlit as st
-from app import api_url, model_name
+from api import api_url, model_name
 from helpers.streamlit_helpers import (
     configure_page,
     consume_api,

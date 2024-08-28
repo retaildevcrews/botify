@@ -6,8 +6,8 @@ import toml
 import _additional_version_info
 import streamlit as st
 from langchain_core.messages import AIMessage, HumanMessage
-from app import api_key
-from app import api_url_version
+from api import api_key
+from api import api_url_version
 
 def get_logger(name):
     from streamlit.logger import get_logger
@@ -29,12 +29,12 @@ def configure_page(title, icon):
         """,
         unsafe_allow_html=True,
     )
-    
+
 def set_page_config(title, icon):
-    
+
     frontend_version, backend_version = get_versions()
     st.set_page_config(page_title=title,
-                       page_icon=icon, 
+                       page_icon=icon,
                        layout="wide",
                        menu_items={
                             'about': f'''**Front-End Version:** {frontend_version}\n\n**Back-End Version:** {backend_version}'''
@@ -44,17 +44,17 @@ def set_page_config(title, icon):
 def get_versions():
     # Load the pyproject.toml file
     pyproject = toml.load("pyproject.toml")
-    
+
     # Extract the version, short_sha, and build_timestamp
     version = pyproject.get("tool", {}).get("poetry", {}).get("version", "Version not found")
-        
+
     if  _additional_version_info.__short_sha__ and _additional_version_info.__build_timestamp__:
         version = version + "-" + _additional_version_info.__short_sha__ + "-" + _additional_version_info.__build_timestamp__
-    
+
 
     backend_version = _private_get_api_version(api_url_version)
     return version, backend_version
- 
+
 def get_or_create_ids():
     """Generate or retrieve session and user IDs."""
     if "session_id" not in st.session_state:
@@ -142,7 +142,7 @@ def _private_get_api_version(url):
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
-    
+
     logger.info(
         "Sending API request to %s",
         url
@@ -161,8 +161,8 @@ def _private_get_api_version(url):
         except Exception as e:
             logger.error("An error occurred while retrieving API version: %s", e)
             return None
-                
-                
+
+
 def initialize_chat_history(model):
     """Initialize the chat history with a welcome message from the AI model."""
     if "chat_history" not in st.session_state:

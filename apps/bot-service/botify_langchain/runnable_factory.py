@@ -1,8 +1,8 @@
 import json
 import logging
 
-import app.app_messages as messages
-from app.app_settings import AppSettings, EnvironmentConfig
+import app.messages as messages
+from app.settings import AppSettings, EnvironmentConfig
 from botify_langchain.custom_cosmos_db_chat_message_history import \
     CustomCosmosDBChatMessageHistory
 from common.schemas import ResponseSchema

@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional, Type
 
 import requests
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun,
                                          CallbackManagerForToolRun)
 from langchain.pydantic_v1 import BaseModel, Field

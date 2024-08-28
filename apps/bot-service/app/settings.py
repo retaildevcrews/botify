@@ -3,7 +3,7 @@ from dataclasses import field
 from typing import Dict, Optional
 
 import pydantic
-from app.environment_config import EnvironmentConfig
+from api.environment_config import EnvironmentConfig
 from pydantic import RootModel
 
 
