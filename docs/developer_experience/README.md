@@ -135,4 +135,4 @@ To deploy frontend and backend of application remotely, see the following README
 
 - [Deploy Front End](../../apps/frontend/README.md)
 
-- [Deploy Back End](../../apps/backend/langserve/Dockerfile)
+- [Deploy Back End](../../apps/bot-service/Dockerfile)

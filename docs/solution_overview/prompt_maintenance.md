@@ -30,7 +30,7 @@ In order to do this, you must have cloned the GenAI Chatbot repo or opened up th
 
 GenAI Chatbot has supports two types of prompt formats.  Jinja and Text, at the moment for simplicity,
 text is being used to create the system prompt.  The file to be used to create the prompt can be
-set in the: [app.settings](../../apps/backend/langserve/common/app_settings.py)
+set in the: [app.settings](../../apps/bot-service/common/app_settings.py)
 
 1. **Open the Prompt Files**:
 
@@ -39,7 +39,7 @@ set in the: [app.settings](../../apps/backend/langserve/common/app_settings.py)
       - Open the relevant Jinja template files in your preferred text editor. These files might be organized in a directory structure like:
 
       ```text
-      apps/backend/langserve/prompts/templates/jinja
+      apps/bot-service/prompts/templates/jinja
       ├── main_prompt.jinja
       ├── section1.jinja
       ├── section2.jinja
@@ -51,7 +51,7 @@ set in the: [app.settings](../../apps/backend/langserve/common/app_settings.py)
          - Open the relevant Text template file in your preferred text editor. These files might be organized in a directory structure like:
 
          ```text
-         apps/backend/langserve/prompts/templates/text
+         apps/bot-service/prompts/templates/text
          ├── prompt.txt
 
          ```

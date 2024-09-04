@@ -38,16 +38,15 @@ The following steps need to be run only once per codespace/dev container, instru
 user is running the steps from the project root.
 
 ```bash
-# Navigate to langserve directory
-cd apps/bot-service/langserve # assumes you are at the root of the project
+# Navigate to bot-service directory
+cd apps/bot-service # assumes you are at the root of the project
 # Create virtual environment using poetry to install packages to evaluate
 poetry install
 # Activate virtual environment in terminal
 eval "source $(poetry env info --path)/bin/activate"
 # Navigate back to root of project
-cd ../../..
+cd ../../evaluation
 # Install python requirements
-cd evaluation
 poetry install
 
 # Validate promptflow versions
@@ -69,7 +68,7 @@ root.
 
 ```bash
 # Activate virtual environment in terminal
-cd apps/bot-service/langserve
+cd apps/bot-service
 eval "source $(poetry env info --path)/bin/activate"
 cd ../../..
 # Set environment variables

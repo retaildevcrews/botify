@@ -145,7 +145,7 @@ The private networking resources are managed using 4 template files in order to 
 
 1. infra/azuredeploy-private.bicep - Deploys VirtualNetwork and required PaaS services (OpenAI, AI Search, KeyVault, Cosmos, etc)
 2. apps/collector/azuredeploy-collector-private.bicep - Deploys an OpenTelemetry Collector to App Service
-3. apps/backend/langserve/infra/azuredeploy-backend-private.bicep - Deploys the backend API to App Service
+3. apps/bot-service/infra/azuredeploy-backend-private.bicep - Deploys the backend API to App Service
 4. apps/frontend/azuredeploy-frontend-private.bicep - Deploys the frontend to App Service
 
 Each template has an associated .bicepparam file with example configuration values.
@@ -153,7 +153,7 @@ Each template has an associated .bicepparam file with example configuration valu
 🛑 In the initial phase, it is imperative to designate the required values in each parameter file.
 [azuredeploy-private.bicepparam](./azuredeploy-private.bicepparam)
 [azuredeploy-collector-private.bicepparam](../apps/collector/infra/azuredeploy-collector-private.bicepparam)
-[azuredeploy-backend-private.bicepparam](../apps/backend/langserve/infra/azuredeploy-backend-private.bicepparam)
+[azuredeploy-backend-private.bicepparam](../apps/bot-service/infra/azuredeploy-backend-private.bicepparam)
 [azuredeploy-frontend-private.bicepparam](../apps/frontend/azuredeploy-frontend-private.bicepparam)
 
 - `resourceNameSuffix` Resource name pattern
@@ -230,8 +230,8 @@ az deployment group create \
 az deployment group create \
   -n $DEPLOYMENT_NAME-backend \
   -g $RESOURCE_GROUP \
-  -f apps/backend/langserve/infra/azuredeploy-backend-private.bicep \
-  -p apps/backend/langserve/infra/azuredeploy-backend-private.bicepparam -c
+  -f apps/bot-service/infra/azuredeploy-backend-private.bicep \
+  -p apps/bot-service/infra/azuredeploy-backend-private.bicepparam -c
   # Note: add the following parameters if they are different from default.
   #   location==${LOCATION}
 ```

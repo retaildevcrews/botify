@@ -51,7 +51,7 @@ az deployment group create \
 az deployment group create \
   -n $DEPLOYMENT_PREFIX-backend \
   -g $RESOURCE_GROUP \
-  -f ../../apps/backend/langserve/infra/azuredeploy-backend-private.bicep \
+  -f ../../apps/bot-service/infra/azuredeploy-backend-private.bicep \
   -p botify-backend.bicepparam -c
 
 ```
