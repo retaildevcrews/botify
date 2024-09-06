@@ -45,6 +45,7 @@ class RunnableFactory:
             fields_to_select="id, title, chunk, location",
             vector_query_fields="chunkVector",
             k=self.app_settings.search_tool_topk,
+            semantic_config="my-semantic-config",
             name="Search-Tool",
             description="Use this tool to search the knowldge base",
             add_answer_scores=True,
