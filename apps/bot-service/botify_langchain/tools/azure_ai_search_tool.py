@@ -67,6 +67,7 @@ class AzureAISearch_Tool(BaseTool):
     indexes: List[str] = []
     args_schema: Type[BaseModel] = AzureAISearchInput
     semantic_config: str
+    filter: str = ""
     reranker_th: int = 1
     vector_query_weight: int = 1
     max_results: int = 3
@@ -79,7 +80,7 @@ class AzureAISearch_Tool(BaseTool):
             fields_to_select=self.fields_to_select,
             vector_query_fields=self.vector_query_fields,
             topK=self.k,
-            filter="",
+            filter=self.filter,
             semantic_config=self.semantic_config,
             reranker_threshold=self.reranker_th,
             vector_query_weight=self.vector_query_weight,
@@ -96,7 +97,7 @@ class AzureAISearch_Tool(BaseTool):
             fields_to_select=self.fields_to_select,
             vector_query_fields=self.vector_query_fields,
             topK=self.k,
-            filter="",
+            filter=self.filter,
             semantic_config=self.semantic_config,
             reranker_threshold=self.reranker_th,
             vector_query_weight=self.vector_query_weight,
