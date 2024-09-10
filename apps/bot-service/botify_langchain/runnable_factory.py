@@ -325,8 +325,6 @@ class RunnableFactory:
             self.logger.debug(f"Output: {output}")
         except Exception as e:
             self.logger.error(f"JSON Validation Error: {e}")
-            state["output"] = json.dumps({
-                "displayresponse": messages.GENERIC_ERROR_MESSAGE,
-                "voicesummary": messages.GENERIC_ERROR_MESSAGE,
-            })  # Return the original response
+            # Return the original response
+            state["output"] = messages.GENERIC_ERROR_MESSAGE_JSON
         return state
