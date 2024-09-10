@@ -1,0 +1,57 @@
+---
+name: Bot Behavior Evaluator
+description: Evaluates the behavior of a bot based on the expected behavior.
+model:
+  api: chat
+  configuration:
+    type: azure_openai
+    azure_deployment: ${env:AZURE_DEPLOYMENT}
+    api_key: ${env:AZURE_OPENAI_API_KEY}
+    azure_endpoint: ${env:AZURE_OPENAI_ENDPOINT}
+  parameters:
+    temperature: 0.0
+    max_tokens: 500
+    top_p: 1.0
+    presence_penalty: 0
+    frequency_penalty: 0
+    response_format:
+      type: json_object
+
+inputs:
+  question:
+    type: string
+  answer:
+    type: string
+  expected_behavior:
+    type: string
+
+outputs:
+  score:
+    type: int
+  reason:
+    type: string
+
+---
+system:
+You are an AI assistant. You will be given the definition of an evaluation metric for assessing the quality of an answer in a question-answering task. Your job is to compute an accurate evaluation score using the provided evaluation metric.
+
+user:
+Bot behavior is measured by how well the answer from the bot aligns with the expected behavior. The expected behavior is a set of guidelines that the bot should follow when answering a question. The bot's response should be evaluated based on how well it adheres to the expected behavior. The score should be an integer between 1 and 5, with 1 being the lowest and 5 being the highest. The reason should provide a detailed explanation of why the bot received the score it did.
+1: The answer does not align to the expected behavior at all.
+2: The answer mostly does not align to the expected behavior.
+3: The answer partially aligns to the expected behavior.
+4: The answer mostly aligns to the expected behavior.
+5: The answer aligns to the expected behavior perfectly.
+
+Score is a rating value and should always be an integer between 1 and 5. So the rating produced should be 1 or 2 or 3 or 4 or 5.
+The evaluator should respond with a score and a reason for the score. The reason should explain why the answer received the score it did with a detailed reason for the score, the score should be an integer between 1 and 5.
+
+THE RESPONSE SHOULD ALWAYS BE IN JSON FORMAT LIKE THIS:
+{
+    "score": 1,
+    "reason": "The answer completely lacks coherence, it does not address the question at all and the response is not related to the topic."
+}
+
+question: {{question}}
+answer: {{answer}}
+expected_behavior: {{expected_behavior}}
