@@ -2,7 +2,7 @@ import json
 import logging
 
 import app.messages as messages
-from app.settings import AppSettings, EnvironmentConfig
+from app.settings import AppSettings
 from botify_langchain.custom_cosmos_db_chat_message_history import \
     CustomCosmosDBChatMessageHistory
 from common.schemas import ResponseSchema
@@ -136,15 +136,22 @@ class RunnableFactory:
         graph = StateGraph(dict)
         graph.add_node("content_safety", self.content_safety)
         graph.add_node("identify_disclaimers", self.identify_disclaimers)
-        graph.add_node("make_decision", self.make_decision)
-        graph.add_node("post_processor", self.validate_response)
+        graph.add_node("validate_response", self.validate_response)
         graph.add_node("call_model", tools_agent_with_history)
+        graph.add_node("safety_stop", self.return_safety_error_message)
         graph.add_edge(START, "content_safety")
-        graph.add_edge("content_safety", "make_decision")
-        graph.add_edge("make_decision", "identify_disclaimers")
+        graph.add_conditional_edges(
+            "content_safety",
+            self.should_stop_for_safety,
+            {
+                "continue": "identify_disclaimers",
+                "safety_stop": "safety_stop"
+            }
+        )
         graph.add_edge("identify_disclaimers", "call_model")
-        graph.add_edge("call_model", "post_processor")
-        graph.add_edge("post_processor", END)
+        graph.add_edge("call_model", "validate_response")
+        graph.add_edge("safety_stop", END)
+        graph.add_edge("validate_response", END)
         graph_runnable = graph.compile()
         return graph_runnable
 
@@ -214,58 +221,61 @@ class RunnableFactory:
         )
         return runnable
 
-    def make_decision(self, state: dict):
-        """Make a decision based on detected prompts."""
-        if state["attackDetected"] or state["harmful_prompt_detected"] or state["banned_topic_detected"]:
-            if state["banned_topic_detected"]:
-                state["question"] = f"Redacting due to it containing banned topics: {
-                    state['banned_topics']}"
-            self.logger.warning(
-                f"Overriding Prompt Due to Malicious Intent: {state}")
-            return {"question": f"Safety Violation"}
-        else:
-            return {"question": state["question"]}
-
     def content_safety(self, state: dict):
         """Evaluate content safety."""
         self.logger.debug(f"Prompt Input: {state}")
         harmful_prompt_results = None
         prompt_shield_results = None
+        attack_detected = False
+        banned_topic_detected = False
+        harmful_prompt_detected = False
         banned_topic_results = []
-        if self.app_settings.content_safety_enabled:
-            results = self.content_safety_tool.run(state["question"])
-            self.logger.debug(
-                f"GetContentSafetyValidation_Tool results: {results}")
-            harmful_prompt_results = results["analyzed_harmful_text_response"]
-            prompt_shield_results = results["prompt_shield_validation_response"]
-            captured_harmful_categories = [
-                category
-                for category in harmful_prompt_results["categoriesAnalysis"]
-                if category["severity"] > 0
-            ]
-            attack_detected = prompt_shield_results["userPromptAnalysis"]["attackDetected"]
-            harmful_prompt_detected = len(captured_harmful_categories) > 0
-        if len(self.app_settings.banned_topics) > 0:
-            tool_input = {"text_entry": state["question"],
-                          "topics": AppSettings().banned_topics}
-            banned_topic_results = TopicDetectionTool().run(tool_input)
-            banned_topic_detected = len(banned_topic_results) > 0
-            self.logger.debug(
-                f"Topic Detection Tool - banned topic detected: {banned_topic_detected} results: {banned_topic_results}")
-        current_span = get_current_span()
-        current_span.set_attribute("attackDetected", str(attack_detected))
-        current_span.set_attribute(
-            "harmful_prompt_detected", str(harmful_prompt_detected))
-        current_span.set_attribute(
-            "banned_topic_detected", str(banned_topic_detected))
-        if harmful_prompt_detected:
+        unable_to_complete_safety_check = False
+        try:
+            current_span = get_current_span()
+            if self.app_settings.content_safety_enabled:
+                results = self.content_safety_tool.run(state["question"])
+                self.logger.debug(
+                    f"GetContentSafetyValidation_Tool results: {results}")
+                harmful_prompt_results = results["analyzed_harmful_text_response"]
+                prompt_shield_results = results["prompt_shield_validation_response"]
+                captured_harmful_categories = [
+                    category
+                    for category in harmful_prompt_results["categoriesAnalysis"]
+                    if category["severity"] > 0
+                ]
+                attack_detected = prompt_shield_results["userPromptAnalysis"]["attackDetected"]
+                current_span.set_attribute(
+                    "attackDetected", str(attack_detected))
+                harmful_prompt_detected = len(captured_harmful_categories) > 0
+                current_span.set_attribute(
+                    "harmful_prompt_detected", str(harmful_prompt_detected))
+                if harmful_prompt_detected:
+                    current_span.set_attribute(
+                        "harmful_categories_detected", str(
+                            captured_harmful_categories)
+                    )
+            if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected == False:
+                tool_input = {"text_entry": state["question"],
+                              "topics": AppSettings().banned_topics}
+                banned_topic_results = TopicDetectionTool().run(tool_input)
+                banned_topic_detected = len(banned_topic_results) > 0
+                current_span.set_attribute(
+                    "banned_topic_detected", str(banned_topic_detected))
+                if banned_topic_detected:
+                    current_span.set_attribute(
+                        "banned_topics_detected", str(banned_topic_results)
+                    )
+                self.logger.debug(
+                    f"Topic Detection Tool - banned topic detected: {banned_topic_detected} results: {banned_topic_results}")
+        except Exception as e:
+            logging.error(
+                f"Error in content safety tool unable to determine result so exiting without responding: {e}")
+            unable_to_complete_safety_check = (
+                self.app_settings.banned_topics > 0 or self.app_settings.content_safety_enabled)
             current_span.set_attribute(
-                "harmful_categories_detected", str(captured_harmful_categories)
-            )
-        if banned_topic_detected:
-            current_span.set_attribute(
-                "banned_topics_detected", str(banned_topic_results)
-            )
+                "unable_to_complete_safety_check", str(unable_to_complete_safety_check))
+
         state.update(
             {
                 "attackDetected": attack_detected,
@@ -273,8 +283,23 @@ class RunnableFactory:
                 "harmful_categories": captured_harmful_categories,
                 "banned_topic_detected": banned_topic_detected,
                 "banned_topics": banned_topic_results,
+                "unable_to_complete_safety_check": unable_to_complete_safety_check
             }
         )
+        return state
+
+    def should_stop_for_safety(self, state: dict):
+        """Make a decision based on detected prompts."""
+        if state["attackDetected"] or state["harmful_prompt_detected"] or state["banned_topic_detected"] or state["unable_to_complete_safety_check"]:
+            self.logger.warning(
+                f"Detected malicious step and stopping graph execution: {state}")
+            return "stop_for_safety"
+        else:
+            return "continue"
+
+    def return_safety_error_message(self, state: dict):
+        """Return a safety error message."""
+        state["output"] = messages.SAFETY_ERROR_MESSAGE_JSON
         return state
 
     def identify_disclaimers(self, state: dict):
