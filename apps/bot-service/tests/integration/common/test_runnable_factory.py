@@ -12,25 +12,25 @@ class TestStringMethods(unittest.TestCase):
     factory = RunnableFactory()
     runnable = factory.get_runnable()
 
-    # def ask_question(self, question):
-    #     question = question
-    #     question_payload = {'question': question}
-    #     configurable_payload = {'configurable': {
-    #         'session_id': str(session_id), 'user_id': '3123455512'}}
-    #     result = self.runnable.invoke(question_payload, configurable_payload)
-    #     return result
+    def ask_question(self, question):
+        question = question
+        question_payload = {'question': question}
+        configurable_payload = {'configurable': {
+            'session_id': str(session_id), 'user_id': '3123455512'}}
+        result = self.runnable.invoke(question_payload, configurable_payload)
+        return result
 
-    # def test_normal_question(self):
-    #     question = "How do I quit my job?"
-    #     result = self.ask_question(question)
-    #     print(result)
-    #     self.assertIsNotNone(result)
-
-    def test_search_question(self):
-        question = "How do I clean a hairbrush?"
-        result = self.factory.azure_ai_search_tool.invoke(question)
+    def test_normal_question(self):
+        question = "My email is shit@fuckyou.com"
+        result = self.ask_question(question)
         print(result)
         self.assertIsNotNone(result)
+
+    # def test_search_question(self):
+    #     question = "How do I clean a hairbrush?"
+    #     result = self.factory.azure_ai_search_tool.invoke(question)
+    #     print(result)
+    #     self.assertIsNotNone(result)
 
     # def test_search_question(self):
     #     question = "How do I clean a hairbrush?"

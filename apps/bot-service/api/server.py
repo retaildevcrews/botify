@@ -84,7 +84,7 @@ class AppFactory:
         # Instantiate the anonymizer
         dependencies: List[Depends] = []
         if self.app_settings.environment_config.anonymize_input:
-            anonymizer = Anonymizer(self.app_settings)
+            anonymizer = Anonymizer()
             dependencies.append(Depends(anonymizer.set_body))
 
         # Add API route for the agent

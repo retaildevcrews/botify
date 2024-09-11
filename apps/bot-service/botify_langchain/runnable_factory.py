@@ -135,22 +135,22 @@ class RunnableFactory:
         )
         graph = StateGraph(dict)
         graph.add_node("content_safety", self.content_safety)
+        graph.add_node("stop_for_safety", self.return_safety_error_message)
         graph.add_node("identify_disclaimers", self.identify_disclaimers)
-        graph.add_node("validate_response", self.validate_response)
         graph.add_node("call_model", tools_agent_with_history)
-        graph.add_node("safety_stop", self.return_safety_error_message)
+        graph.add_node("validate_response", self.validate_response)
         graph.add_edge(START, "content_safety")
         graph.add_conditional_edges(
             "content_safety",
             self.should_stop_for_safety,
             {
                 "continue": "identify_disclaimers",
-                "safety_stop": "safety_stop"
+                "stop_for_safety": "stop_for_safety"
             }
         )
         graph.add_edge("identify_disclaimers", "call_model")
         graph.add_edge("call_model", "validate_response")
-        graph.add_edge("safety_stop", END)
+        graph.add_edge("stop_for_safety", END)
         graph.add_edge("validate_response", END)
         graph_runnable = graph.compile()
         return graph_runnable
@@ -299,6 +299,7 @@ class RunnableFactory:
 
     def return_safety_error_message(self, state: dict):
         """Return a safety error message."""
+        print("Safety Error Message")
         state["output"] = messages.SAFETY_ERROR_MESSAGE_JSON
         return state
 

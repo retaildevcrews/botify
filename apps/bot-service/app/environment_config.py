@@ -78,10 +78,6 @@ def get_config_value(var_name, default_value=None, required=True):
         return get_env_var(var_name, default_value, required)
 
 
-# Valid log levels
-VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
-
-
 class Config:
     arbitrary_types_allowed = True
 
@@ -114,6 +110,8 @@ class EnvironmentConfig():
     azure_search_api_version: Optional[str] = field(default=None)
 
     # Log level
+    # Valid log levels
+    VALID_LOG_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
     log_level: str = get_config_value(
         "LOG_LEVEL", default_value="INFO", required=False)
     if log_level:
@@ -122,8 +120,19 @@ class EnvironmentConfig():
         if log_level not in VALID_LOG_LEVELS:
             raise ValueError(f"Invalid log level: '{log_level}'. Valid log levels are: {
                              ', '.join(VALID_LOG_LEVELS)}")
+
     # Anonymize input
+    # Valid anonymizer modes
+    VALID_ANONYMIZER_MODES = {"CUSTOM", "ENCRYPT"}
     anonymize_input: Optional[bool] = field(default=None)
+    anonymizer_mode: str = get_config_value(
+        "ANONYMIZER_MODE", default_value="CUSTOM", required=False)
+    # Validating anonymizer mode
+    if anonymizer_mode not in VALID_ANONYMIZER_MODES:
+        raise ValueError(
+            f"Invalid anonymizer mode: '{anonymizer_mode}'. Valid modes are: {', '.join(VALID_ANONYMIZER_MODES)}")
+    anonymizer_crypto_key = SecretStr(get_config_value(
+        "ANONYMIZER_CRYPTO_KEY", default_value="", required=False))
 
     def __post_init__(self):
         # Set values from environment variables
