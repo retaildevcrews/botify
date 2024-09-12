@@ -13,6 +13,14 @@ The bot implements RAG for grounding answers the user's questions.
 The project is structured to ensure ease of development, maintenance, and deployment
 while also providing examples of desirable features for security, privacy, etc.
 
+## Goals
+
+- Allow users to quickly create a working bot/inference endpoint that has all necessary components that
+an enterprise would require to take a product to production with confidence.
+- Remove need to evaluate various frameworks and solutions by providing a functional
+implemetnation that is composed of pre-selected components.
+- Provide opportuinity to expand/replace components if desired/needed.
+
 ## Quick Start
 
 - [Run Application Locally](docs/developer_experience/quick_run_local.md)
