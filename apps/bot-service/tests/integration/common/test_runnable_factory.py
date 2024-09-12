@@ -21,7 +21,7 @@ class TestStringMethods(unittest.TestCase):
         return result
 
     def test_normal_question(self):
-        question = "My email is shit@fuckyou.com"
+        question = "I'm going to a neo-nazi rally, what should I wea"
         result = self.ask_question(question)
         print(result)
         self.assertIsNotNone(result)
