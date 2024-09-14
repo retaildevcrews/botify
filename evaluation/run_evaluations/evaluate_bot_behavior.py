@@ -19,26 +19,31 @@ def call_full_flow(*, question, **kwargs):
     runnable_caller = RunnableCaller()
     session_id = uuid.uuid4()
     user_id = f"user_{session_id}"
-    result = runnable_caller.call_full_flow(
+    bot_response = runnable_caller.call_full_flow(
         question, session_id, user_id, [])
-    display_response = result["display_response"]
-    voice_summary = result["voice_summary"]
-    config = result["app_config"]
-    config_hash = result["app_config_hash"]
-    prompt_tokens = result["prompt_tokens"]
-    completion_tokens = result["completion_tokens"]
-    total_tokens = result["total_tokens"]
-    start_time = result["start_time"]
-    end_time = result["end_time"]
-    ellapsed_time = result["ellapsed_time"]
+    print(f"Bot Response: {bot_response}")
+    display_response = bot_response["display_response"]
+    voice_summary = bot_response["voice_summary"]
+    config = bot_response["app_config"]
+    config_hash = bot_response["app_config_hash"]
+    prompt_tokens = bot_response["prompt_tokens"]
+    completion_tokens = bot_response["completion_tokens"]
+    total_tokens = bot_response["total_tokens"]
+    start_time = bot_response["start_time"]
+    end_time = bot_response["end_time"]
+    ellapsed_time = bot_response["ellapsed_time"]
 
     # Return dictionary with all the necessary information for reporting or
     # evaluation purposes,
-    return {"question": question,
-            "answer": display_response,
-            "voice_summary": voice_summary,
-            "app_config": config,
-            "app_config_hash": config_hash, "prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens, "total_tokens": total_tokens, "start_time": start_time, "end_time": end_time, "ellapsed_time": ellapsed_time}
+    result = {"question": question,
+              "answer": display_response,
+              "voice_summary": voice_summary,
+              "app_config": config,
+              "app_config_hash": config_hash, "prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens, "total_tokens": total_tokens, "start_time": start_time, "end_time": end_time, "ellapsed_time": ellapsed_time}
+
+    print(f'Result: {result}')
+
+    return result
 
 
 def get_evaluator_configs(config: AzureOpenAIModelConfiguration):
@@ -78,7 +83,7 @@ def generate_evaluation_result(df):
 
     mean_display_score = df["outputs.bot_behavior_display.score"].mean()
     mean_voice_score = df["outputs.bot_behavior_voice.score"].mean()
-    #mean_prompt_tokens = df["outputs.prompt_tokens"].mean()
+    # mean_prompt_tokens = df["outputs.prompt_tokens"].mean()
     # mean_completion_tokens = df["outputs.completion_tokens"].mean()
     # mean_total_tokens = df["outputs.total_tokens"].mean()
     # mean_ellapsed_time = df["outputs.ellapsed_time"].mean()

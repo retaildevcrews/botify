@@ -20,9 +20,9 @@ class AzureRAGSearchClient:
         query: str,
         indexes: list,
         fields_to_select: str,
-        vector_query_fields: str,
         max_results: int,
-        semantic_config: str,
+        vector_query_fields: str = "",
+        semantic_config: str = "",
         filter: str = "",
         k: int = 10,
         answers: str = "",
@@ -32,7 +32,7 @@ class AzureRAGSearchClient:
         vector_query_weight: int = 1,
     ) -> List[dict]:
         """Performs multi-index hybrid search and returns ordered dictionary with the combined results"""
-
+        is_semantic = False
         headers = {
             "Content-Type": "application/json",
             "api-key": self.search_key,
@@ -56,6 +56,17 @@ class AzureRAGSearchClient:
                 "count": count,
                 "top": k
             }
+            if vector_query_fields != "":
+                is_semantic = True
+                search_payload["queryType"] = "semantic"
+                search_payload["vectorQueries"] = [
+                    {"text": query, "fields": vector_query_fields,
+                        "kind": "text", "k": k, "weight": vector_query_weight}
+                ]
+                search_payload["semanticConfiguration"] = semantic_config
+                search_payload["searchMode"] = "any"
+            else:
+                search_payload["queryType"] = "full"
             if filter:
                 search_payload["filter"] = filter
             if answers:
@@ -88,8 +99,11 @@ class AzureRAGSearchClient:
                 result_id = result["id"]
 
                 # Check if the rerankerScore meets the threshold
-                if result["@search.rerankerScore"] > reranker_threshold:
+                if not is_semantic or result["@search.rerankerScore"] > reranker_threshold:
                     content[result_id] = result
+                else:
+                    logger.debug(f"Reranker Score below threshold for product number {
+                        result['id']}, Skipping")
         # Sort results by score in descending order
         sorted_results = sorted(
             content.values(), key=lambda item: item["@search.score"], reverse=True)

@@ -43,7 +43,7 @@ def parse_full_flow_response(response, factory: RunnableFactory):
                 history.append(f"{message.type}:{message.content}")
         if "output" in response:
             output = response["output"]
-            parsed_response = json.loads(response["output"])
+            parsed_response = response["output"]
         if "voiceSummary" in parsed_response:
             voice_summary = parsed_response["voiceSummary"]
         if "displayResponse" in parsed_response:
