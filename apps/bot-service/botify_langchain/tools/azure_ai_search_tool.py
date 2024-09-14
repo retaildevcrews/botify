@@ -66,7 +66,7 @@ class AzureAISearch_Tool(BaseTool):
     vector_query_fields: str
     indexes: List[str] = []
     args_schema: Type[BaseModel] = AzureAISearchInput
-    semantic_config: str
+    semantic_config: str = ""
     filter: str = ""
     reranker_th: int = 1
     vector_query_weight: int = 1
