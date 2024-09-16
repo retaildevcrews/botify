@@ -69,20 +69,29 @@ class RunnableFactory:
         )
         return cpt
 
-    def get_runnable(self, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
+    def get_runnable(self, include_history=True, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
         # Gets the main runnable with the session history callable
         # included - this is the main entry point for the chatbot
+        if include_history:
+            history_callable = self._get_cosmos_db_chat_history
+        else:
+            history_callable = None
         return self.get_runnable_byo_session_history_callable(
-            self._get_cosmos_db_chat_history,
+            history_callable,
             return_intermediate_steps=return_intermediate_steps,
             verbose=verbose,
             azure_chat_open_ai_streaming=azure_chat_open_ai_streaming
         )
 
     def get_runnable_byo_session_history_callable(self, get_session_history_callable, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
-        # Gets the main runnable with the session history callable as a
-        # parameter - this is to be used mainly for validations where we want
-        # to inject an alternative session history callable
+        """
+        Gets the main runnable with the session history callable as a
+        parameter - this is to be used mainly for validations where we want
+        to inject an alternative session history callable this also allows us to
+        create an agent without history
+        """
+
+
         CHAT_BOT_PROMPT = self.make_prompt(
             self.app_settings.prompt_template_path
         )
@@ -184,7 +193,7 @@ class RunnableFactory:
         return session_history
 
     def _create_tools_agent_runnable(
-        self, llm, tools, prompt, get_session_history_callable, return_intermediate_steps=False, verbose=False
+        self, llm, tools, prompt, get_session_history_callable=None, return_intermediate_steps=False, verbose=False
     ):
         """Create a runnable agent with tools."""
         agent = create_tool_calling_agent(llm, tools, prompt)
@@ -195,31 +204,34 @@ class RunnableFactory:
             return_intermediate_steps=return_intermediate_steps,
             verbose=verbose,
         )
-        runnable = RunnableWithMessageHistory(
-            agent_executor,
-            get_session_history_callable,
-            input_messages_key="question",
-            history_messages_key="history",
-            history_factory_config=[
-                ConfigurableFieldSpec(
-                    id="user_id",
-                    annotation=str,
-                    name="User ID",
-                    description="Unique identifier for the user.",
-                    default="",
-                    is_shared=True,
-                ),
-                ConfigurableFieldSpec(
-                    id="session_id",
-                    annotation=str,
-                    name="Session ID",
-                    description="Unique identifier for the conversation.",
-                    default="",
-                    is_shared=True,
-                ),
-            ],
-        )
-        return runnable
+        if get_session_history_callable is None:
+            return agent_executor
+        else:
+            runnable = RunnableWithMessageHistory(
+                agent_executor,
+                get_session_history_callable,
+                input_messages_key="question",
+                history_messages_key="history",
+                history_factory_config=[
+                    ConfigurableFieldSpec(
+                        id="user_id",
+                        annotation=str,
+                        name="User ID",
+                        description="Unique identifier for the user.",
+                        default="",
+                        is_shared=True,
+                    ),
+                    ConfigurableFieldSpec(
+                        id="session_id",
+                        annotation=str,
+                        name="Session ID",
+                        description="Unique identifier for the conversation.",
+                        default="",
+                        is_shared=True,
+                    ),
+                ],
+            )
+            return runnable
 
     def content_safety(self, state: dict):
         """Evaluate content safety."""
