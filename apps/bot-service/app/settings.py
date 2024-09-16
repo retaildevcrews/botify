@@ -31,7 +31,7 @@ class AppSettings:
     json_validation_schema_name = "response_schema.json"
     response_schema_name: str = "response_schema.json"
     # Format in which the LLM output will be generated
-    selected_format_config: str = "json_schema"
+    selected_format_config: str = "json"
     format_config_paths = {
         "json_schema": {
             "prompt_template_paths": ["common.md", "structured_output.md", "history_marker.md"],
