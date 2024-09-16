@@ -1,9 +1,10 @@
 # Don't mess with this unless you really know what you are doing
-AZURE_SEARCH_API_VERSION="2023-10-01-preview"
+AZURE_SEARCH_API_VERSION="2024-05-01-preview"
 AZURE_OPENAI_API_VERSION="2023-12-01-preview"
 FAST_API_SERVER="http://bot-service:8080"
 
 # Demo Data (edit with your own if you want to use your own data)
+AZURE_BLOB_STORAGE_CONNECTION_STRING="<connection string"
 BLOB_CONNECTION_STRING="<connection string"
 BLOB_SAS_TOKEN="<token"
 
