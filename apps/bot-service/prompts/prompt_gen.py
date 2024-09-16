@@ -1,9 +1,10 @@
-import logging
 from os.path import dirname
 from os.path import join as path_join
 
 from jinja2 import FileSystemLoader
 from jinja2.sandbox import SandboxedEnvironment
+
+import logging
 
 DEFAULT_TEMPLATE_DIRECTORY = f"{path_join(dirname(__file__), 'templates')}"
 
@@ -18,7 +19,7 @@ class PromptGenEnvironment(SandboxedEnvironment):
         return super().is_safe_attribute(obj, attr)
 
 
-def escape_curly_braces(input_string, open_brace="{{", close_brace="}}"):
+def escape_curly_braces(input_string, open_brace='{{', close_brace='}}'):
     """
     Replaces all single curly braces in the input string with double curly braces.
     This is used to escape curly braces in the input string for templating systems like Jinja.
@@ -33,29 +34,29 @@ def escape_curly_braces(input_string, open_brace="{{", close_brace="}}"):
         close_brace_placeholder = "_close_brace_"
         # Replace the intended curly braces with the placeholders
         input_string = input_string.replace(open_brace, open_brace_placeholder).replace(
-            close_brace, close_brace_placeholder
-        )
+            close_brace, close_brace_placeholder)
         # Replace the placeholders with the provided strings
-        escaped_string = input_string.replace(
-            open_brace_placeholder, open_brace
-        ).replace(close_brace_placeholder, close_brace)
+        escaped_string = input_string.replace(open_brace_placeholder, open_brace).replace(
+            close_brace_placeholder, close_brace)
     except Exception as e:
-        print(f"An error occurred: {e}")
+        log.error(f"An error occurred: {e}")
         return input_string
     return escaped_string
 
 
 class PromptGen:
-    def __init__(self, root_template_dir=DEFAULT_TEMPLATE_DIRECTORY):
+    def __init__(
+        self, root_template_dir=DEFAULT_TEMPLATE_DIRECTORY
+    ):
         """Constructor
 
         Args:
-            prompt_template_path (str, optional): _Path to prompt files._ Defaults to ".".
+            prompt_template_paths (dict, optional): _Path to prompt files._ Defaults to ".".
             kw_bot_attributes    (merged dict, optional): _Bot input arguments dict._
         """
         self.root_template_dir = root_template_dir
         self._env = PromptGenEnvironment(
-            loader=FileSystemLoader(self.root_template_dir + "/jinja"),
+            loader=FileSystemLoader(self.root_template_dir+"/jinja"),
             # Always autoescape to do bare minimum template santization, even if the template has
             # nothing to do with user input. It prevents injection/xss attacks
             # https://www.codiga.io/blog/python-jinja2-autoescape/
@@ -68,7 +69,7 @@ class PromptGen:
             lstrip_blocks=True,
         )
 
-    def escape_curly_braces(self, input_string, open_brace="{{", close_brace="}}"):
+    def escape_curly_braces(self, input_string, open_brace='{{', close_brace='}}'):
         """
         Replaces all single curly braces in the input string with double curly braces.
         This is used to escape curly braces in the input string for templating systems like Jinja.
@@ -82,34 +83,40 @@ class PromptGen:
             open_brace_placeholder = "_open_brace_"
             close_brace_placeholder = "_close_brace_"
             # Replace the intended curly braces with the placeholders
-            input_string = input_string.replace("{", open_brace_placeholder).replace(
-                "}", close_brace_placeholder
-            )
+            input_string = input_string.replace('{', open_brace_placeholder).replace(
+                '}', close_brace_placeholder)
             # Replace the placeholders with the provided strings
-            escaped_string = input_string.replace(
-                open_brace_placeholder, open_brace
-            ).replace(close_brace_placeholder, close_brace)
+            escaped_string = input_string.replace(open_brace_placeholder, open_brace).replace(
+                close_brace_placeholder, close_brace)
         except Exception as e:
-            print(f"An error occurred: {e}")
+            log.error(f"An error occurred: {e}")
             return input_string
         return escaped_string
 
-    def generate_prompt(self, template_name, **kwargs) -> str:
+    def generate_prompt(self, template_names, **kwargs) -> str:
         """Generates Prompt string from Jinja2 template if template name is Jinja file or from text
         file if tepmplate name is a text file
-
         Returns:
             str: the prompt as a string
         """
 
-        if template_name.endswith((".j2", ".jinja2", ".jinja")):
-            return self._generate_prompt_from_jinja(template_name, **kwargs)
-        if template_name.endswith(".txt"):
-            return self._generate_prompt_from_text_file(template_name, **kwargs)
-        else:
-            raise ValueError(f"Invalid template file extension: {template_name}")
+        prompt = ""
 
-    def _generate_prompt_from_jinja(self, template_name, **kwargs) -> str:
+        for template_name in template_names:
+            if template_name.endswith((".j2", ".jinja2", ".jinja")):
+                prompt = prompt + \
+                    self._generate_prompt_from_jinja(template_name, **kwargs)
+            elif template_name.endswith((".txt", ".md")):
+                prompt = prompt + \
+                    self._generate_prompt_from_text_file(
+                        template_name,  **kwargs)
+            else:
+                raise ValueError(
+                    f"Invalid template file extension: {template_name}")
+
+        return prompt
+
+    def _generate_prompt_from_jinja(self, template_name,  **kwargs) -> str:
         """Generates Prompt string from Jinja2 template
 
         Returns:
@@ -117,13 +124,14 @@ class PromptGen:
         """
         for arg in kwargs:
             kwargs[arg] = self.escape_curly_braces(
-                kwargs[arg], open_brace="""{{'{{'}}""", close_brace="""{{'}}'}}"""
-            )
+                kwargs[arg], open_brace="""{{'{{'}}""", close_brace="""{{'}}'}}""")
         consolidated_template = self._env.get_template(template_name)
-        rendered_template = consolidated_template.render(kwargs)
+        rendered_template = consolidated_template.render(
+            kwargs
+        )
         return rendered_template
 
-    def _generate_prompt_from_text_file(self, template_name, **kwargs) -> str:
+    def _generate_prompt_from_text_file(self, template_name,  **kwargs) -> str:
         """
         Reads the content of a text file, removes leading and trailing whitespace, and returns the content as a string.
 
@@ -131,14 +139,15 @@ class PromptGen:
         :return: A string with the content of the file, trimmed of leading and trailing whitespace.
         """
         try:
-            text_root_dir = self.root_template_dir + "/text"
+            text_root_dir = self.root_template_dir+"/text"
             text_file_path = path_join(text_root_dir, template_name)
-            with open(text_file_path, "r", encoding="utf-8") as file:
+            with open(text_file_path, 'r', encoding='utf-8') as file:
                 content = file.read()
                 trimmed_content = content.strip()
                 for arg in kwargs:
                     escaped_arg = self.escape_curly_braces(kwargs[arg])
-                    trimmed_content = trimmed_content.replace(f"{{{arg}}}", escaped_arg)
+                    trimmed_content = trimmed_content.replace(
+                        f"{{{arg}}}", escaped_arg)
                 return trimmed_content
         except FileNotFoundError:
             log.error(f"Error: The file at {text_file_path} was not found.")
