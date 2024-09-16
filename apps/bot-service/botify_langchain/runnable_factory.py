@@ -299,7 +299,6 @@ class RunnableFactory:
 
     def return_safety_error_message(self, state: dict):
         """Return a safety error message."""
-        print("Safety Error Message")
         state["output"] = messages.SAFETY_ERROR_MESSAGE_JSON
         return state
 

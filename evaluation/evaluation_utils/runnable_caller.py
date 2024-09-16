@@ -31,8 +31,6 @@ def parse_full_flow_response(response, factory: RunnableFactory):
         output = ""
         voice_summary = ""
         display_response = ""
-        recommended_products = []
-        product_list = []
         toolagentaction_list = []
         history = []
         if "question" in response:
@@ -43,7 +41,7 @@ def parse_full_flow_response(response, factory: RunnableFactory):
                 history.append(f"{message.type}:{message.content}")
         if "output" in response:
             output = response["output"]
-            parsed_response = response["output"]
+            parsed_response = json.loads(output)
         if "voiceSummary" in parsed_response:
             voice_summary = parsed_response["voiceSummary"]
         if "displayResponse" in parsed_response:
@@ -66,7 +64,6 @@ def parse_full_flow_response(response, factory: RunnableFactory):
         consolidated_tool_actions = [{"tool": toolaction["tool"],
                                       "query": toolaction["query"],
                                       "documents": toolaction["documents"]} for toolaction in toolagentaction_list]
-
         return {
             "bot_response": output,
             "question": question,
