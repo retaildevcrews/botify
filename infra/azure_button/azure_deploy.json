@@ -124,17 +124,7 @@
         "scope": "[resourceId('Microsoft.Web/serverfarms', parameters('appPlanName'))]",
         "dependsOn": ["[resourceId('Microsoft.Web/serverfarms', parameters('appPlanName'))]"],
         "properties": {
-          "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspace'))]",
-          "logs": [
-            {
-              "category": "AppServicePlanLogs",
-              "enabled": true,
-              "retentionPolicy": {
-                "days": 30,
-                "enabled": true
-              }
-            }
-          ]
+          "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspace'))]"
         }
       },
       {
