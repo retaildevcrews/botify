@@ -75,7 +75,7 @@ def get_evaluator_configs(config: AzureOpenAIModelConfiguration):
     evaluator_configs = EvaluatorConfigList()
     evaluator_configs.append_config(
         "json_schema_validation",
-        JsonSchemaValidationEvaluator(ResponseSchema().get_response_schema_as_string()),
+        JsonSchemaValidationEvaluator(ResponseSchema().get_response_schema_json_as_string()),
         {"content": "${target.bot_response}"},
     )
     evaluator_configs.append_config(
@@ -157,9 +157,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_config = AzureOpenAIModelConfiguration(
-        azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT_EVAL"),
-        api_key=os.environ.get("AZURE_OPENAI_API_KEY_EVAL"),
-        azure_deployment=os.environ.get("AZURE_OPENAI_MODEL_NAME_EVAL"),
+        azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
+        api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
+        azure_deployment=os.environ.get("AZURE_OPENAI_MODEL_NAME"),
         api_version=os.environ.get("AZURE_OPENAI_API_VERSION"),
     )
 
