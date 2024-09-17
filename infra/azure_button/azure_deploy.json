@@ -129,7 +129,7 @@
       },
       {
         "type": "Microsoft.Search/searchServices",
-        "apiVersion": "2024-05-01-preview",
+        "apiVersion": "2024-06-01-Preview",
         "name": "[parameters('azureSearchName')]",
         "location": "[parameters('location')]",
         "sku": {
@@ -298,7 +298,7 @@
       },
       "azureSearchKey": {
         "type": "string",
-        "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2024-05-01-preview').primaryKey]"
+        "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2024-06-01-Preview').primaryKey]"
       },
       "cosmosDBAccountEndpoint": {
         "type": "string",
