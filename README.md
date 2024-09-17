@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fretaildevcrews%2Fbotify%2Fjoaquinrz-azureDeployButton%2Finfra%2Fazure_button%2Fazure_deploy.jsonn)
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fretaildevcrews%2Fbotify%2Fjoaquinrz-azureDeployButton%2Finfra%2Fazure_button%2Fazure_deploy.json)
 
 ## Overview
 
