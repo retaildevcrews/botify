@@ -125,7 +125,7 @@ EOF
 To add an example index to Azure AI Search, you can run the following command:
 
 ```
-make make create-index-and-load-data
+make create-index-and-load-data
 ```
 
 This will create an index, datasource, indexer and skillset that will populate some data into an index using the ```./search_index/data.json```
