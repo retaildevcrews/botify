@@ -128,6 +128,21 @@
         }
       },
       {
+        "type": "Microsoft.Search/searchServices",
+        "apiVersion": "2021-04-01-Preview",
+        "name": "[parameters('azureSearchName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "[parameters('azureSearchSKU')]"
+        },
+        "properties": {
+          "replicaCount": "[parameters('azureSearchReplicaCount')]",
+          "partitionCount": "[parameters('azureSearchPartitionCount')]",
+          "hostingMode": "[parameters('azureSearchHostingMode')]",
+          "semanticSearch": "standard"
+        }
+      },
+      {
         "type": "Microsoft.CognitiveServices/accounts",
         "apiVersion": "2023-05-01",
         "name": "[parameters('cognitiveServiceName')]",
@@ -281,6 +296,10 @@
         "type": "string",
         "value": "[parameters('blobStorageAccountName')]"
       },
+      // "azureSearchKey": {
+      //   "type": "string",
+      //   "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2021-04-01-Preview').primaryKey]"
+      // },
       "cosmosDBAccountEndpoint": {
         "type": "string",
         "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint]"
