@@ -105,6 +105,13 @@
           "gpt-4o",
           "gpt-4o-mini"
         ]
+      },
+      "openAISKU": {
+        "type": "string",
+        "defaultValue": "S0",
+        "allowedValues": [
+          "S0"
+        ]
       }
     },
     "variables": {
@@ -300,8 +307,9 @@
           "format": "OpenAI",
           "name": "[parameters('openAIModelName')]"
         },
-        "scaleSettings": {
-          "scaleType": "Standard"
+        "sku": {
+            "name": "Standard",
+            "capacity": 70
         }
       }
     }
