@@ -281,10 +281,6 @@
         "type": "string",
         "value": "[parameters('blobStorageAccountName')]"
       },
-      "azureSearchKey": {
-        "type": "string",
-        "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2021-04-01-Preview').primaryKey]"
-      },
       "cosmosDBAccountEndpoint": {
         "type": "string",
         "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint]"
