@@ -20,9 +20,7 @@ class RAGGroundednessEvaluator:
     def __init__(self, model_config: AzureOpenAIModelConfiguration):
         prompty_model_config = {"configuration": model_config}
         (
-            prompty_model_config.update(
-                {"parameters": {"extra_headers": {"x-ms-user-agent": USER_AGENT}}}
-            )
+            prompty_model_config.update({"parameters": {"extra_headers": {"x-ms-user-agent": USER_AGENT}}})
             if USER_AGENT and isinstance(model_config, AzureOpenAIModelConfiguration)
             else None
         )

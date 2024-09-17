@@ -1,12 +1,13 @@
-from presidio_analyzer import AnalyzerEngine
-from presidio_anonymizer import AnonymizerEngine, DeanonymizeEngine
-from presidio_anonymizer.entities import OperatorConfig, OperatorResult
-from presidio_analyzer.nlp_engine import NlpEngineProvider
-from pydantic import SecretStr
-from fastapi import Request
 import json
 import logging
 import traceback
+
+from fastapi import Request
+from presidio_analyzer import AnalyzerEngine
+from presidio_analyzer.nlp_engine import NlpEngineProvider
+from presidio_anonymizer import AnonymizerEngine, DeanonymizeEngine
+from presidio_anonymizer.entities import OperatorConfig, OperatorResult
+from pydantic import SecretStr
 
 logger = logging.getLogger(__name__)
 
@@ -34,21 +35,17 @@ class Anonymizer:
     def configure_operators(self):
         config = {}
         if self.anonymizer_mode.upper() == "ENCRYPT":
-            operator_config = {
-                "key": self.anonymizer_crypto_key.get_secret_value()}
+            operator_config = {"key": self.anonymizer_crypto_key.get_secret_value()}
         else:
             operator_config = {"lambda": self.redacted_text_replacement}
         for entity in self.pii_entities:
-            config[entity] = OperatorConfig(
-                self.anonymizer_mode.lower(), operator_config)
+            config[entity] = OperatorConfig(self.anonymizer_mode.lower(), operator_config)
         logger.info(f"Configured operators: {config.keys()}")
         return config
 
     def anonymize_text(self, text):
-        analyzed_text = self.pii_analyzer.analyze(
-            text, entities=self.pii_entities, language="en")
-        anonymized_text = self.pii_anonymizer.anonymize(
-            text, analyzed_text, operators=self.operators)
+        analyzed_text = self.pii_analyzer.analyze(text, entities=self.pii_entities, language="en")
+        anonymized_text = self.pii_anonymizer.anonymize(text, analyzed_text, operators=self.operators)
         return anonymized_text
 
 
@@ -62,23 +59,17 @@ class Deanonymizer:
     def configure_operators(self):
         config = {}
         for entity in self.pii_entities:
-            config[entity] = OperatorConfig(
-                "decrypt", {"key": self.anonymizer_crypto_key.get_secret_value()})
+            config[entity] = OperatorConfig("decrypt", {"key": self.anonymizer_crypto_key.get_secret_value()})
         return config
 
     def deanonymize_result(self, input_data):
         try:
             input_json = json.loads(input_data)
-            text = input_json.get('text')
-            entities = [OperatorResult(**item)
-                        for item in input_json.get('items')]
-            input_result = self.pii_deanonymizer.deanonymize(
-                text, entities, operators=self.operators)
+            text = input_json.get("text")
+            entities = [OperatorResult(**item) for item in input_json.get("items")]
+            input_result = self.pii_deanonymizer.deanonymize(text, entities, operators=self.operators)
         except Exception:
-            logger.debug(
-                f"Input does not contain an anonymized result: {traceback.format_exc()}")
-            print(f"Input does not contain an anonymized result: {
-                  traceback.format_exc()}")
+            logger.debug(f"Input does not contain an anonymized result: {traceback.format_exc()}")
             return input_data
 
         return input_result.text

@@ -1,9 +1,13 @@
 import streamlit as st
 from helpers.json_helpers import generate_display_and_audio_response
-from helpers.streamlit_helpers import (configure_page, consume_api,
-                                       display_chat_history, get_logger,
-                                       get_or_create_ids,
-                                       initialize_chat_history)
+from helpers.streamlit_helpers import (
+    configure_page,
+    consume_api,
+    display_chat_history,
+    get_logger,
+    get_or_create_ids,
+    initialize_chat_history,
+)
 from langchain_core.messages import AIMessage, HumanMessage
 from streamlit_app import api_url, model_name
 
@@ -53,9 +57,7 @@ if user_query:
 
     with st.chat_message("AI"):
         try:
-            ai_response = write_payload(
-                payload=consume_api(api_url, user_query, session_id, user_id)
-            )
+            ai_response = write_payload(payload=consume_api(api_url, user_query, session_id, user_id))
             logger.info("AI response received and written to stream.")
         except Exception as e:
             logger.error(f"Error consuming API: {e}")

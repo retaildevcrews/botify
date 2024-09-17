@@ -36,11 +36,11 @@ def escape_curly_braces(input_string, open_brace="{{", close_brace="}}"):
             close_brace, close_brace_placeholder
         )
         # Replace the placeholders with the provided strings
-        escaped_string = input_string.replace(
-            open_brace_placeholder, open_brace
-        ).replace(close_brace_placeholder, close_brace)
+        escaped_string = input_string.replace(open_brace_placeholder, open_brace).replace(
+            close_brace_placeholder, close_brace
+        )
     except Exception as e:
-        print(f"An error occurred: {e}")
+        log.error(f"An error occurred: {e}")
         return input_string
     return escaped_string
 
@@ -50,7 +50,7 @@ class PromptGen:
         """Constructor
 
         Args:
-            prompt_template_path (str, optional): _Path to prompt files._ Defaults to ".".
+            prompt_template_paths (dict, optional): _Path to prompt files._ Defaults to ".".
             kw_bot_attributes    (merged dict, optional): _Bot input arguments dict._
         """
         self.root_template_dir = root_template_dir
@@ -86,28 +86,32 @@ class PromptGen:
                 "}", close_brace_placeholder
             )
             # Replace the placeholders with the provided strings
-            escaped_string = input_string.replace(
-                open_brace_placeholder, open_brace
-            ).replace(close_brace_placeholder, close_brace)
+            escaped_string = input_string.replace(open_brace_placeholder, open_brace).replace(
+                close_brace_placeholder, close_brace
+            )
         except Exception as e:
-            print(f"An error occurred: {e}")
+            log.error(f"An error occurred: {e}")
             return input_string
         return escaped_string
 
-    def generate_prompt(self, template_name, **kwargs) -> str:
+    def generate_prompt(self, template_names, **kwargs) -> str:
         """Generates Prompt string from Jinja2 template if template name is Jinja file or from text
         file if tepmplate name is a text file
-
         Returns:
             str: the prompt as a string
         """
 
-        if template_name.endswith((".j2", ".jinja2", ".jinja")):
-            return self._generate_prompt_from_jinja(template_name, **kwargs)
-        if template_name.endswith(".txt"):
-            return self._generate_prompt_from_text_file(template_name, **kwargs)
-        else:
-            raise ValueError(f"Invalid template file extension: {template_name}")
+        prompt = ""
+
+        for template_name in template_names:
+            if template_name.endswith((".j2", ".jinja2", ".jinja")):
+                prompt = prompt + self._generate_prompt_from_jinja(template_name, **kwargs)
+            elif template_name.endswith((".txt", ".md")):
+                prompt = prompt + self._generate_prompt_from_text_file(template_name, **kwargs)
+            else:
+                raise ValueError(f"Invalid template file extension: {template_name}")
+
+        return prompt
 
     def _generate_prompt_from_jinja(self, template_name, **kwargs) -> str:
         """Generates Prompt string from Jinja2 template
