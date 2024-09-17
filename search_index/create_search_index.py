@@ -7,6 +7,8 @@ from dotenv import load_dotenv
 import requests
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
+from utils import text_to_base64, print_response_status, get_headers_and_params
+
 
 # load the environment variables
 load_dotenv("../apps/credentials.env")
@@ -17,9 +19,6 @@ datasource_name = index_name + "datasource"
 indexer_name = index_name + "indexer"
 
 BLOB_CONTAINER_NAME = "docconvodocs"
-# Setup the Payloads header
-headers = {'Content-Type': 'application/json','api-key': os.environ['AZURE_SEARCH_KEY']}
-params = {'api-version': os.environ['AZURE_SEARCH_API_VERSION']}
 
 # Set the ENV variables that Langchain needs to connect to Azure OpenAI
 os.environ["OPENAI_API_VERSION"] = os.environ["AZURE_OPENAI_API_VERSION"]
@@ -35,18 +34,6 @@ def text_to_base64(text):
     base64_text = base64_encoded.decode('utf-8')
 
     return base64_text
-
-def print_response_status(response, item_type):
-    if (response.status_code < 300):
-            if response.status_code == 201:
-                print(f"{item_type} created successfully")
-            elif response.status_code == 204:
-                print(f"{item_type} already exists")
-            return True
-
-    print(f"ERROR - creating {item_type}")
-    print(response.text)
-    print(response.status_code)
 
 def validate_environment_vars():
     required_vars = [
@@ -72,6 +59,8 @@ def create_index():
     embedder = AzureOpenAIEmbeddings(deployment=os.environ["EMBEDDING_DEPLOYMENT_NAME"], chunk_size=1)
 
     print("Index name: ", index_name)
+
+    headers, params = get_headers_and_params()
 
     index_payload = {
         "name": index_name,
@@ -287,6 +276,8 @@ def create_skillset():
         }
     }
 
+    headers, params = get_headers_and_params()
+
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/skillsets/" + skillset_name,
                     data=json.dumps(skillset_payload), headers=headers, params=params)
 
@@ -328,6 +319,7 @@ def create_blob_container_datasource():
     print("Datasource name: ", datasource_name)
     print("Container name: ", BLOB_CONTAINER_NAME)
 
+    headers, params = get_headers_and_params()
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/datasources/" + datasource_name,
                     data=json.dumps(datasource_payload), headers=headers, params=params)
     print_response_status(r, "Datasource")
@@ -374,6 +366,7 @@ def create_indexer():
         }
     }
 
+    headers, params = get_headers_and_params()
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/indexers/" + indexer_name,
                     data=json.dumps(indexer_payload), headers=headers, params=params)
     print_response_status(r, "Indexer")
