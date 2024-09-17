@@ -44,11 +44,9 @@ param azureSearchHostingMode string = 'default'
 param appPlanName string = 'asp-${uniqueString(resourceGroup().id)}'
 param logAnalyticsWorkspace string = 'la-${uniqueString(resourceGroup().id)}'
 
-var appPlanSkuName = 'S1'
+param principalId string = ''
 
-resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2021-12-01-preview' existing = {
-  name: logAnalyticsWorkspace
-}
+var appPlanSkuName = 'S1'
 
 resource appServicePlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: appPlanName
@@ -56,24 +54,6 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   sku: {
     name: appPlanSkuName
     capacity: 1
-  }
-}
-
-resource diagnosticLogs 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
-  name: appServicePlan.name
-  scope: appServicePlan
-  properties: {
-    workspaceId: logAnalytics.id
-    logs: [
-      {
-        category: 'AllMetrics'
-        enabled: true
-        retentionPolicy: {
-          days: 30
-          enabled: true
-        }
-      }
-    ]
   }
 }
 
@@ -188,16 +168,44 @@ resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01
   name: 'default'
 }
 
-resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = [for containerName in ['books', 'cord19', 'mixed'] : {
-  parent: blobServices
-  name: containerName
-}]
+resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = [
+  for containerName in ['books', 'cord19', 'mixed']: {
+    parent: blobServices
+    name: containerName
+  }
+]
 
+resource configKeyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
+  name: 'kv-${uniqueString(resourceGroup().id)}'
+  location: location
+  properties: {
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    enableRbacAuthorization: true
+  }
+}
 
+// Role assignment for Key Vault Admin role
+resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (principalId != '') {
+  name: guid(configKeyVault.id, principalId, 'KeyVaultAdminRole')
+  scope: configKeyVault
+  properties: {
+    principalId: principalId
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '00482a5a-887f-4fb3-b363-3b7fe8e74483'
+    ) // Key Vault Administrator role ID
+    principalType: 'User' // Assume the deployment is run by a user; can be adapted for ServicePrincipal, etc.
+  }
+}
+
+output configKeyVaultName string = configKeyVault.name
 output azureSearchName string = azureSearchName
 output azureSearchEndpoint string = 'https://${azureSearchName}.search.windows.net'
 output appPlanName string = appPlanName
-output logAnalyticsWorkspaceName string = logAnalyticsWorkspace
 output cosmosDBAccountName string = cosmosDBAccountName
 output cosmosDBDatabaseName string = cosmosDBDatabaseName
 output cosmosDBContainerName string = cosmosDBContainerName
