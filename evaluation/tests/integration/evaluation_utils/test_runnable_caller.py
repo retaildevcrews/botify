@@ -12,8 +12,7 @@ class TestRunnableCallers(unittest.TestCase):
     session_id = uuid.uuid4()
 
     def test_call_doc_search_tool(self):
-        result = self.runnable_caller.call_search_tool(
-            question="How do I get a stain out of my shirt?")
+        result = self.runnable_caller.call_search_tool(question="How do I get a stain out of my shirt?")
         print(result)
         self.assertIsNotNone(result)
 

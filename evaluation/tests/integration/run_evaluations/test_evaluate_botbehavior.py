@@ -1,11 +1,10 @@
+import os
 import unittest
 import uuid
-import os
 
 import pandas as pd
-
-from run_evaluations.evaluate_bot_behavior import evaluate_bot_behavior
 from promptflow.core import AzureOpenAIModelConfiguration
+from run_evaluations.evaluate_bot_behavior import evaluate_bot_behavior
 
 
 class TestEvaluateBotBehavior(unittest.TestCase):
@@ -18,10 +17,7 @@ class TestEvaluateBotBehavior(unittest.TestCase):
             azure_deployment=os.environ.get("AZURE_OPENAI_MODEL_NAME_EVAL"),
             api_version=os.environ.get("AZURE_OPENAI_API_VERSION"),
         )
-        result = evaluate_bot_behavior(
-            dataset_path=datafilepath,
-            model_config=model_config
-        )
+        result = evaluate_bot_behavior(dataset_path=datafilepath, model_config=model_config)
         print(result)
         self.assertEqual(result["failed_record_count"], 0)
 

@@ -10,9 +10,7 @@ from app.settings import AppSettings
 from evaluation_utils.runnable_caller import RunnableCaller
 
 
-async def call_full_flow_perf_data(
-    index, results: list, row, semaphore: asyncio.Semaphore
-):
+async def call_full_flow_perf_data(index, results: list, row, semaphore: asyncio.Semaphore):
     async with semaphore:
         try:
             runnable_caller = RunnableCaller()
@@ -61,8 +59,7 @@ async def get_perf_numbers(dataset_path, head=-1, max_concurrent_tasks=3):
     tasks = []
     semaphore = asyncio.Semaphore(max_concurrent_tasks)
     for i, row in data.iterrows():
-        task = asyncio.create_task(
-            call_full_flow_perf_data(i, results, row, semaphore))
+        task = asyncio.create_task(call_full_flow_perf_data(i, results, row, semaphore))
         tasks.append(task)
     await asyncio.gather(*tasks)
     results_df = pd.DataFrame(results)
@@ -163,8 +160,7 @@ if __name__ == "__main__":
         type=int,
     )
     args = parser.parse_args()
-    df = asyncio.run(get_perf_numbers(
-        dataset_path=args.dataset_path, head=args.head))
+    df = asyncio.run(get_perf_numbers(dataset_path=args.dataset_path, head=args.head))
 
     # Create a directory with the name results + current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")

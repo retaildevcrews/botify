@@ -3,9 +3,7 @@ import os
 import uuid
 
 
-def run_evaluation(
-    name, dataset_path, model_config, evaluation_function, output_path=None
-):
+def run_evaluation(name, dataset_path, model_config, evaluation_function, output_path=None):
     run_id = f"{name}_{str(uuid.uuid4())}"
     evaluation_results = []
     output_path = output_path + "/eval_output" if output_path != "" else "eval_output"

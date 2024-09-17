@@ -4,8 +4,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Any, List, Optional
 
-from langchain_community.chat_message_histories import \
-    CosmosDBChatMessageHistory
+from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from langchain_core.messages import BaseMessage
 
 logger = logging.getLogger(__name__)
@@ -53,6 +52,5 @@ class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
                 content_object = json.loads(message.content)
                 message.content = content_object["displayResponse"]
             except Exception as e:
-                logger.info(
-                    "Failed to parse message content, so keeping original content")
+                logger.info("Failed to parse message content, so keeping original content")
         super().add_message(message)

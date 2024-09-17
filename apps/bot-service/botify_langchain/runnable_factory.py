@@ -1,16 +1,14 @@
 import json
-import yaml
 import logging
 
 import app.messages as messages
+import yaml
 from app.settings import AppSettings
-from botify_langchain.custom_cosmos_db_chat_message_history import \
-    CustomCosmosDBChatMessageHistory
+from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
+from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
-from langchain_community.chat_message_histories import \
-    CosmosDBChatMessageHistory
+from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import ConfigurableFieldSpec, Runnable
 from langchain_core.runnables.history import RunnableWithMessageHistory
@@ -22,8 +20,7 @@ from prompts.prompt_gen import PromptGen
 
 class RunnableFactory:
     def __init__(self, byo_session_history_callable=False):
-        self.app_settings = AppSettings(
-            byo_session_history_callable=byo_session_history_callable)
+        self.app_settings = AppSettings(byo_session_history_callable=byo_session_history_callable)
         log_level = self.app_settings.environment_config.log_level
         logging.getLogger().setLevel(log_level)
         self.logger = logging.getLogger(__name__)
@@ -32,8 +29,7 @@ class RunnableFactory:
         self.byo_session_history_callable = byo_session_history_callable
 
         from botify_langchain.tools.azure_ai_search_tool import AzureAISearch_Tool
-        from botify_langchain.tools.azure_content_safety_tool import \
-            AzureContentSafety_Tool
+        from botify_langchain.tools.azure_content_safety_tool import AzureContentSafety_Tool
 
         # Document indexes for the custom retriever
         indexes = [
@@ -56,21 +52,25 @@ class RunnableFactory:
 
     def make_prompt(self, file_names):
         schema = ResponseSchema().get_response_schema()
-        prompt_text = self.promptgen.generate_prompt(
-            file_names, schema=schema)
+        prompt_text = self.promptgen.generate_prompt(file_names, schema=schema)
         """Generate a prompt using the specified template file."""
         cpt = ChatPromptTemplate.from_messages(
             [
                 ("system", prompt_text),
                 MessagesPlaceholder(variable_name="history", optional=True),
                 ("human", "{question}"),
-                MessagesPlaceholder(
-                    variable_name="agent_scratchpad", optional=True)
+                MessagesPlaceholder(variable_name="agent_scratchpad", optional=True),
             ],
         )
         return cpt
 
-    def get_runnable(self, include_history=True, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
+    def get_runnable(
+        self,
+        include_history=True,
+        return_intermediate_steps=False,
+        verbose=False,
+        azure_chat_open_ai_streaming=True,
+    ) -> Runnable:
         # Gets the main runnable with the session history callable
         # included - this is the main entry point for the chatbot
         if include_history:
@@ -81,10 +81,16 @@ class RunnableFactory:
             history_callable,
             return_intermediate_steps=return_intermediate_steps,
             verbose=verbose,
-            azure_chat_open_ai_streaming=azure_chat_open_ai_streaming
+            azure_chat_open_ai_streaming=azure_chat_open_ai_streaming,
         )
 
-    def get_runnable_byo_session_history_callable(self, get_session_history_callable, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
+    def get_runnable_byo_session_history_callable(
+        self,
+        get_session_history_callable,
+        return_intermediate_steps=False,
+        verbose=False,
+        azure_chat_open_ai_streaming=True,
+    ) -> Runnable:
         """
         Gets the main runnable with the session history callable as a
         parameter - this is to be used mainly for validations where we want
@@ -92,19 +98,22 @@ class RunnableFactory:
         create an agent without history
         """
 
-        CHAT_BOT_PROMPT = self.make_prompt(
-            self.app_settings.prompt_template_paths
-        )
+        CHAT_BOT_PROMPT = self.make_prompt(self.app_settings.prompt_template_paths)
 
         aoi_top_p = self.app_settings.model_config.top_p
         aoi_logit_bias = self.app_settings.model_config.logit_bias
 
         # Configure the language model
         use_structured_output = self.app_settings.model_config.use_structured_output
-        response_format = {"type": "json_object",
-                           "name": "response",
-                           "schema": ResponseSchema().get_response_schema()
-                           } if use_structured_output else {"type": "json_object"} if self.app_settings.model_config.use_json_format else {"type": "text"}
+        response_format = (
+            {"type": "json_object", "name": "response", "schema": ResponseSchema().get_response_schema()}
+            if use_structured_output
+            else (
+                {"type": "json_object"}
+                if self.app_settings.model_config.use_json_format
+                else {"type": "text"}
+            )
+        )
         llm = AzureChatOpenAI(
             deployment_name=self.app_settings.environment_config.openai_deployment_name,
             temperature=self.app_settings.model_config.temperature,
@@ -152,10 +161,7 @@ class RunnableFactory:
         graph.add_conditional_edges(
             "content_safety",
             self.should_stop_for_safety,
-            {
-                "continue": "identify_disclaimers",
-                "stop_for_safety": "stop_for_safety"
-            }
+            {"continue": "identify_disclaimers", "stop_for_safety": "stop_for_safety"},
         )
         graph.add_edge("identify_disclaimers", "call_model")
         graph.add_edge("call_model", "post_processor")
@@ -164,9 +170,7 @@ class RunnableFactory:
         graph_runnable = graph.compile()
         return graph_runnable
 
-    def _get_cosmos_db_chat_history(
-        self, session_id: str, user_id: str
-    ) -> CosmosDBChatMessageHistory:
+    def _get_cosmos_db_chat_history(self, session_id: str, user_id: str) -> CosmosDBChatMessageHistory:
         """Get the session history from CosmosDB."""
         current_span = get_current_span()
         current_span.set_attribute("session_id", session_id)
@@ -193,7 +197,13 @@ class RunnableFactory:
         return session_history
 
     def _create_tools_agent_runnable(
-        self, llm, tools, prompt, get_session_history_callable=None, return_intermediate_steps=False, verbose=False
+        self,
+        llm,
+        tools,
+        prompt,
+        get_session_history_callable=None,
+        return_intermediate_steps=False,
+        verbose=False,
     ):
         """Create a runnable agent with tools."""
         agent = create_tool_calling_agent(llm, tools, prompt)
@@ -247,8 +257,7 @@ class RunnableFactory:
             current_span = get_current_span()
             if self.app_settings.content_safety_enabled:
                 results = self.content_safety_tool.run(state["question"])
-                self.logger.debug(
-                    f"GetContentSafetyValidation_Tool results: {results}")
+                self.logger.debug(f"GetContentSafetyValidation_Tool results: {results}")
                 harmful_prompt_results = results["analyzed_harmful_text_response"]
                 prompt_shield_results = results["prompt_shield_validation_response"]
                 captured_harmful_categories = [
@@ -257,36 +266,33 @@ class RunnableFactory:
                     if category["severity"] > 0
                 ]
                 attack_detected = prompt_shield_results["userPromptAnalysis"]["attackDetected"]
-                current_span.set_attribute(
-                    "attackDetected", str(attack_detected))
+                current_span.set_attribute("attackDetected", str(attack_detected))
                 harmful_prompt_detected = len(captured_harmful_categories) > 0
-                current_span.set_attribute(
-                    "harmful_prompt_detected", str(harmful_prompt_detected))
+                current_span.set_attribute("harmful_prompt_detected", str(harmful_prompt_detected))
                 if harmful_prompt_detected:
                     current_span.set_attribute(
-                        "harmful_categories_detected", str(
-                            captured_harmful_categories)
+                        "harmful_categories_detected", str(captured_harmful_categories)
                     )
             if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected == False:
-                tool_input = {"text_entry": state["question"],
-                              "topics": AppSettings().banned_topics}
+                tool_input = {"text_entry": state["question"], "topics": AppSettings().banned_topics}
                 banned_topic_results = TopicDetectionTool().run(tool_input)
                 banned_topic_detected = len(banned_topic_results) > 0
-                current_span.set_attribute(
-                    "banned_topic_detected", str(banned_topic_detected))
+                current_span.set_attribute("banned_topic_detected", str(banned_topic_detected))
                 if banned_topic_detected:
-                    current_span.set_attribute(
-                        "banned_topics_detected", str(banned_topic_results)
-                    )
+                    current_span.set_attribute("banned_topics_detected", str(banned_topic_results))
                 self.logger.debug(
-                    f"Topic Detection Tool - banned topic detected: {banned_topic_detected} results: {banned_topic_results}")
+                    f"Topic Detection Tool - banned topic detected: {banned_topic_detected} results: {banned_topic_results}"
+                )
         except Exception as e:
             logging.error(
-                f"Error in content safety tool unable to determine result so exiting without responding: {e}")
+                f"Error in content safety tool unable to determine result so exiting without responding: {e}"
+            )
             unable_to_complete_safety_check = (
-                self.app_settings.banned_topics > 0 or self.app_settings.content_safety_enabled)
+                self.app_settings.banned_topics > 0 or self.app_settings.content_safety_enabled
+            )
             current_span.set_attribute(
-                "unable_to_complete_safety_check", str(unable_to_complete_safety_check))
+                "unable_to_complete_safety_check", str(unable_to_complete_safety_check)
+            )
 
         state.update(
             {
@@ -295,16 +301,20 @@ class RunnableFactory:
                 "harmful_categories": captured_harmful_categories,
                 "banned_topic_detected": banned_topic_detected,
                 "banned_topics": banned_topic_results,
-                "unable_to_complete_safety_check": unable_to_complete_safety_check
+                "unable_to_complete_safety_check": unable_to_complete_safety_check,
             }
         )
         return state
 
     def should_stop_for_safety(self, state: dict):
         """Make a decision based on detected prompts."""
-        if state["attackDetected"] or state["harmful_prompt_detected"] or state["banned_topic_detected"] or state["unable_to_complete_safety_check"]:
-            self.logger.warning(
-                f"Detected malicious step and stopping graph execution: {state}")
+        if (
+            state["attackDetected"]
+            or state["harmful_prompt_detected"]
+            or state["banned_topic_detected"]
+            or state["unable_to_complete_safety_check"]
+        ):
+            self.logger.warning(f"Detected malicious step and stopping graph execution: {state}")
             return "stop_for_safety"
         else:
             return "continue"
@@ -315,16 +325,12 @@ class RunnableFactory:
         return state
 
     def identify_disclaimers(self, state: dict):
-        self.logger.debug(
-            f"Topic Detection Tool Executing")
+        self.logger.debug(f"Topic Detection Tool Executing")
         current_span = get_current_span()
-        tool_input = {"text_entry": state["question"],
-                      "topics": AppSettings().disclaimer_topics}
+        tool_input = {"text_entry": state["question"], "topics": AppSettings().disclaimer_topics}
         results = TopicDetectionTool().run(tool_input)
-        self.logger.debug(
-            f"Topic Detection Tool results: {results}")
-        current_span.set_attribute(
-            "disclaimers_added", str(results))
+        self.logger.debug(f"Topic Detection Tool results: {results}")
+        current_span.set_attribute("disclaimers_added", str(results))
         state["disclaimers"] = results
         return state
 
@@ -350,8 +356,7 @@ class RunnableFactory:
 
             output_format = self.app_settings.selected_format_config
 
-            llm_output = self.extract_content(
-                llm_output, f"```{output_format}")
+            llm_output = self.extract_content(llm_output, f"```{output_format}")
 
             if output_format == "json":
                 # Parse the cleaned JSON input
@@ -364,14 +369,11 @@ class RunnableFactory:
                 llm_output = llm_output[1:-1]
             if llm_output == data:
                 self.logger.warning(
-                    f"LLM returned incorrect format so will wrap in json object llm response was: {llm_output}")
-                data = {
-                    "displayResponse": llm_output,
-                    "voiceSummary": llm_output
-                }
+                    f"LLM returned incorrect format so will wrap in json object llm response was: {llm_output}"
+                )
+                data = {"displayResponse": llm_output, "voiceSummary": llm_output}
         except Exception as e:
-            self.logger.error(
-                f"Error parsing {output_format} output from the LLM: {e}")
+            self.logger.error(f"Error parsing {output_format} output from the LLM: {e}")
             self.logger.error(f"LLM Output: {llm_output}")
 
         # Convert the parsed data to JSON and return it
