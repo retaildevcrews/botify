@@ -296,10 +296,6 @@
         "type": "string",
         "value": "[parameters('blobStorageAccountName')]"
       },
-      "azureSearchKey": {
-        "type": "string",
-        "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2024-06-01-Preview').primaryKey]"
-      },
       "cosmosDBAccountEndpoint": {
         "type": "string",
         "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint]"
@@ -311,14 +307,6 @@
       "cognitiveServiceName": {
         "type": "string",
         "value": "[parameters('cognitiveServiceName')]"
-      },
-      "cognitiveServiceKey": {
-        "type": "string",
-        "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', parameters('cognitiveServiceName')), '2023-05-01').key1]"
-      },
-      "blobConnectionString": {
-        "type": "string",
-        "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', parameters('blobStorageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('blobStorageAccountName')), '2023-01-01').keys[0].value)]"
       }
     }
   }
