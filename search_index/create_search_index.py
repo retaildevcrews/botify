@@ -11,7 +11,14 @@ from utils import text_to_base64, print_response_status, get_headers_and_params
 
 
 # load the environment variables
-load_dotenv("../apps/credentials.env")
+
+# Get the current directory of the script
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# Construct the absolute path to the .env file
+env_path = os.path.join(current_dir, ".." , "apps", "credentials.env")
+
+load_dotenv(env_path)
 
 index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
 skillset_name = index_name + "skillset"
