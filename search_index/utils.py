@@ -34,3 +34,14 @@ def print_response_status(response, item_type):
     print(f"ERROR - creating {item_type}")
     print(response.text)
     print(response.status_code)
+
+def load_environment_variables():
+    # load the environment variables
+
+    # Get the current directory of the script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Construct the absolute path to the .env file
+    env_path = os.path.join(current_dir, ".." , "apps", "credentials.env")
+
+    load_dotenv(env_path)
