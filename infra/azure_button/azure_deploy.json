@@ -192,7 +192,7 @@
       {
         "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
         "apiVersion": "2023-04-15",
-        "name": "[parameters('cosmosDBDatabaseName')]",
+        "name": "[format('{0}/{1}', parameters('cosmosDBAccountName'), parameters('cosmosDBDatabaseName'))]",
         "location": "[parameters('location')]",
         "dependsOn": [
           "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))]"
@@ -206,10 +206,10 @@
       {
         "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
         "apiVersion": "2023-04-15",
-        "name": "[parameters('cosmosDBContainerName')]",
+        "name": "[format('{0}/{1}/{2}', parameters('cosmosDBAccountName'), parameters('cosmosDBDatabaseName'), parameters('cosmosDBContainerName'))]",
         "location": "[parameters('location')]",
         "dependsOn": [
-          "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('cosmosDBDatabaseName'))]"
+          "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('cosmosDBAccountName'), parameters('cosmosDBDatabaseName'))]"
         ],
         "properties": {
           "resource": {
