@@ -4,6 +4,8 @@
 
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
+![Deploy to Azure](https://aka.ms/deploytoazurebutton)
+
 ## Overview
 
 This repository is an implementation of a Generative AI chatbot
