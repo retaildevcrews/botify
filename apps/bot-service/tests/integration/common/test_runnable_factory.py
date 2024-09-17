@@ -14,9 +14,8 @@ class TestStringMethods(unittest.TestCase):
 
     def ask_question(self, question):
         question = question
-        question_payload = {'question': question}
-        configurable_payload = {'configurable': {
-            'session_id': str(session_id), 'user_id': '3123455512'}}
+        question_payload = {"question": question}
+        configurable_payload = {"configurable": {"session_id": str(session_id), "user_id": "3123455512"}}
         result = self.runnable.invoke(question_payload, configurable_payload)
         return result
 

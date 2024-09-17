@@ -20,8 +20,7 @@ def format_search_result(documents):
         scores.append(page_content["@search.score"])
         reranker_scores.append(page_content["@search.rerankerScore"])
         contexts.append(page_content)
-    response = {"scores": scores,
-                "reranker_scores": reranker_scores, "contexts": contexts}
+    response = {"scores": scores, "reranker_scores": reranker_scores, "contexts": contexts}
     return response
 
 
@@ -60,9 +59,10 @@ def parse_full_flow_response(response, factory: RunnableFactory):
                 )
 
         consolidated_tool_actions = []
-        consolidated_tool_actions = [{"tool": toolaction["tool"],
-                                      "query": toolaction["query"],
-                                      "documents": toolaction["documents"]} for toolaction in toolagentaction_list]
+        consolidated_tool_actions = [
+            {"tool": toolaction["tool"], "query": toolaction["query"], "documents": toolaction["documents"]}
+            for toolaction in toolagentaction_list
+        ]
         return {
             "bot_response": output,
             "question": question,
@@ -112,28 +112,27 @@ class RunnableCaller:
     def call_full_flow(self, question: str, session_id: str, user_id: str, chat_history: str):
         # Inject artificial chat history for multi turn testing
         messages_from_data = get_history_messages_from_data(chat_history)
-        messages_history_callable = MessageHistoryFromData(
-            session_id, user_id, messages_from_data)
+        messages_history_callable = MessageHistoryFromData(session_id, user_id, messages_from_data)
         # Create question payload
         question_payload = {"question": question}
-        configurable_payload = {
-            "configurable": {"session_id": session_id, "user_id": user_id}
-        }
+        configurable_payload = {"configurable": {"session_id": session_id, "user_id": user_id}}
         # call runnable - note that we get the version where we can inject the chat history
-        runnable = self.factory.get_runnable_byo_session_history_callable(messages_history_callable,
-                                                                          return_intermediate_steps=True, azure_chat_open_ai_streaming=False)
+        runnable = self.factory.get_runnable_byo_session_history_callable(
+            messages_history_callable, return_intermediate_steps=True, azure_chat_open_ai_streaming=False
+        )
         output = {"question": question}
         with get_openai_callback() as cb:
             start_time = perf_counter()
-            result = runnable.invoke(
-                question_payload, configurable_payload)
+            result = runnable.invoke(question_payload, configurable_payload)
             end_time = perf_counter()
             ellapsed_time = end_time - start_time
         try:
             output = parse_full_flow_response(result, self.factory)
         except TypeError as e:
-            output["answer"] = f"Failed to parse response - unparsed result: {
+            output["answer"] = (
+                f"Failed to parse response - unparsed result: {
                 result}"
+            )
         output["start_time"] = start_time
         output["end_time"] = end_time
         output["ellapsed_time"] = ellapsed_time

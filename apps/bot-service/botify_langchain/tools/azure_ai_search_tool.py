@@ -1,12 +1,11 @@
 import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
+from typing import List, Optional, Type
 
 from app.settings import AppSettings
 from common.search.azure_ai_search import AzureRAGSearchClient
-from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional, Type
-from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun,
-                                         CallbackManagerForToolRun)
+from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 from langchain.pydantic_v1 import BaseModel, Field
 from langchain.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
@@ -28,9 +27,11 @@ class CustomAzureSearchRetriever(BaseRetriever):
     vector_query_weight: int
     max_results: int
 
-    search_client = AzureRAGSearchClient(api_key=app_settings.environment_config.azure_search_key.get_secret_value(),
-                                         api_version=app_settings.environment_config.azure_search_api_version,
-                                         search_endpoint=app_settings.environment_config.azure_search_endpoint)
+    search_client = AzureRAGSearchClient(
+        api_key=app_settings.environment_config.azure_search_key.get_secret_value(),
+        api_version=app_settings.environment_config.azure_search_api_version,
+        search_endpoint=app_settings.environment_config.azure_search_endpoint,
+    )
 
     def _get_relevant_documents(
         self, query: str, *, run_manager: CallbackManagerForRetrieverRun
@@ -49,8 +50,7 @@ class CustomAzureSearchRetriever(BaseRetriever):
             max_results=self.max_results,
         )
 
-        top_docs = [Document(page_content=str(result))
-                    for result in ordered_results]
+        top_docs = [Document(page_content=str(result)) for result in ordered_results]
         return top_docs
 
 
@@ -72,9 +72,7 @@ class AzureAISearch_Tool(BaseTool):
     vector_query_weight: int = 1
     max_results: int = 3
 
-    def _run(
-        self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None
-    ) -> str:
+    def _run(self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         retriever = CustomAzureSearchRetriever(
             indexes=self.indexes,
             fields_to_select=self.fields_to_select,
@@ -107,18 +105,20 @@ class AzureAISearch_Tool(BaseTool):
         # Please note below that running a non-async function like run_agent in a separate thread won't make it truly asynchronous.
         # It allows the function to be called without blocking the event loop, but it may still have synchronous behavior internally.
         loop = asyncio.get_event_loop()
-        results = await loop.run_in_executor(
-            ThreadPoolExecutor(), retriever.invoke, query
-        )
+        results = await loop.run_in_executor(ThreadPoolExecutor(), retriever.invoke, query)
         return results
 
 
 class AzureAIFilterableSearchInput(BaseModel):
     query: str = Field(description="should be a search query")
     contains: list[str] = Field(
-        description="should be a list of words that must appear in the search results", default_factory=lambda: [""])
+        description="should be a list of words that must appear in the search results",
+        default_factory=lambda: [""],
+    )
     does_not_contain: list[str] = Field(
-        description="should be a list of words that do not appear in the search results", default_factory=lambda: [])
+        description="should be a list of words that do not appear in the search results",
+        default_factory=lambda: [],
+    )
 
 
 class AzureAIFilterableSearch_Tool(BaseTool):
@@ -145,16 +145,20 @@ class AzureAIFilterableSearch_Tool(BaseTool):
         filter_expressions = []
 
         # Handle contains criteria
-        if 'contains' in criteria and criteria['contains']:
-            contain_terms = ",".join(criteria['contains'])
-            filter_expressions.append(f"search.ismatch('{contain_terms}', '{
-                                      criteria.get('field', 'summary')}')")
+        if "contains" in criteria and criteria["contains"]:
+            contain_terms = ",".join(criteria["contains"])
+            filter_expressions.append(
+                f"search.ismatch('{contain_terms}', '{
+                                      criteria.get('field', 'summary')}')"
+            )
 
         # Handle does not contain criteria
-        if 'not_contains' in criteria and criteria['not_contains']:
-            not_contain_terms = ",".join(criteria['not_contains'])
-            filter_expressions.append(f"not search.ismatch('{not_contain_terms}', '{
-                                      criteria.get('field', 'summary')}')")
+        if "not_contains" in criteria and criteria["not_contains"]:
+            not_contain_terms = ",".join(criteria["not_contains"])
+            filter_expressions.append(
+                f"not search.ismatch('{not_contain_terms}', '{
+                                      criteria.get('field', 'summary')}')"
+            )
 
         # Combine all filter expressions with ' and ' if there are any
         filter_expression = " and ".join(filter_expressions)
@@ -164,14 +168,14 @@ class AzureAIFilterableSearch_Tool(BaseTool):
         return filter_expression
 
     def _run(
-        self, query: str, contains: list[str] = [], does_not_contain: list[str] = [], run_manager: Optional[CallbackManagerForToolRun] = None
+        self,
+        query: str,
+        contains: list[str] = [],
+        does_not_contain: list[str] = [],
+        run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool synchronously."""
-        criteria = {
-            'contains': contains,
-            'not_contains': does_not_contain,
-            'field': 'summary'
-        }
+        criteria = {"contains": contains, "not_contains": does_not_contain, "field": "summary"}
         filter = self.make_filter_expression(criteria)
         retriever = CustomAzureSearchRetriever(
             indexes=self.indexes,
@@ -189,13 +193,15 @@ class AzureAIFilterableSearch_Tool(BaseTool):
 
         return results
 
-    async def _arun(self, query: str, contains: list[str] = [], does_not_contain: list[str] = [], run_manager: Optional[AsyncCallbackManagerForToolRun] = None) -> str:
+    async def _arun(
+        self,
+        query: str,
+        contains: list[str] = [],
+        does_not_contain: list[str] = [],
+        run_manager: Optional[AsyncCallbackManagerForToolRun] = None,
+    ) -> str:
         """Use the tool asynchronously."""
-        criteria = {
-            'contains': contains,
-            'not_contains': does_not_contain,
-            'field': 'summary'
-        }
+        criteria = {"contains": contains, "not_contains": does_not_contain, "field": "summary"}
         filter = self.make_filter_expression(criteria)
         retriever = CustomAzureSearchRetriever(
             indexes=self.indexes,
@@ -212,7 +218,5 @@ class AzureAIFilterableSearch_Tool(BaseTool):
         # Please note below that running a non-async function like run_agent in a separate thread won't make it truly asynchronous.
         # It allows the function to be called without blocking the event loop, but it may still have synchronous behavior internally.
         loop = asyncio.get_event_loop()
-        results = await loop.run_in_executor(
-            ThreadPoolExecutor(), retriever.invoke, query
-        )
+        results = await loop.run_in_executor(ThreadPoolExecutor(), retriever.invoke, query)
         return results

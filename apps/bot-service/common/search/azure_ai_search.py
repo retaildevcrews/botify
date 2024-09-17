@@ -4,7 +4,6 @@ from typing import List
 
 import requests
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -49,19 +48,29 @@ class AzureRAGSearchClient:
                 "select": fields_to_select,
                 "queryType": "semantic",
                 "vectorQueries": [
-                    {"text": query, "fields": vector_query_fields,
-                        "kind": "text", "k": k, "weight": vector_query_weight}
+                    {
+                        "text": query,
+                        "fields": vector_query_fields,
+                        "kind": "text",
+                        "k": k,
+                        "weight": vector_query_weight,
+                    }
                 ],
                 "semanticConfiguration": semantic_config,
                 "count": count,
-                "top": k
+                "top": k,
             }
             if vector_query_fields != "":
                 is_semantic = True
                 search_payload["queryType"] = "semantic"
                 search_payload["vectorQueries"] = [
-                    {"text": query, "fields": vector_query_fields,
-                        "kind": "text", "k": k, "weight": vector_query_weight}
+                    {
+                        "text": query,
+                        "fields": vector_query_fields,
+                        "kind": "text",
+                        "k": k,
+                        "weight": vector_query_weight,
+                    }
                 ]
                 search_payload["semanticConfiguration"] = semantic_config
                 search_payload["searchMode"] = "any"
@@ -90,8 +99,7 @@ class AzureRAGSearchClient:
             return []
 
         for index, results in agg_search_results.items():
-            logger.debug(
-                f"found {len(results['value'])} results in index {index}")
+            logger.debug(f"found {len(results['value'])} results in index {index}")
             if "value" not in results:
                 continue
             for result in results["value"]:
@@ -102,11 +110,12 @@ class AzureRAGSearchClient:
                 if not is_semantic or result["@search.rerankerScore"] > reranker_threshold:
                     content[result_id] = result
                 else:
-                    logger.debug(f"Reranker Score below threshold for product number {
-                        result['id']}, Skipping")
+                    logger.debug(
+                        f"Reranker Score below threshold for product number {
+                        result['id']}, Skipping"
+                    )
         # Sort results by score in descending order
-        sorted_results = sorted(
-            content.values(), key=lambda item: item["@search.score"], reverse=True)
+        sorted_results = sorted(content.values(), key=lambda item: item["@search.score"], reverse=True)
 
         # Return up to max_results
         return sorted_results[:max_results]

@@ -11,12 +11,13 @@ class TestEvaluateFullFlow(unittest.TestCase):
         data = pd.read_json(datafilepath, lines=True)
         # read first line of data
         record = data.iloc[0]
-        user_id = record['user_id']
-        session_id = record['session_id']
-        chat_history = record['chat_history']
-        question = record['question']
+        user_id = record["user_id"]
+        session_id = record["session_id"]
+        chat_history = record["chat_history"]
+        question = record["question"]
         results = call_full_flow(
-            user_id=user_id, session_id=session_id, chat_history=chat_history, question=question)
+            user_id=user_id, session_id=session_id, chat_history=chat_history, question=question
+        )
         print("RESULTS====================")
         print(results)
         print("SEARCH RESULTS====================")
