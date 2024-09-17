@@ -130,6 +130,8 @@ make create-index-and-load-data
 
 This will create an index, datasource, indexer and skillset that will populate some data into an index using the ```./search_index/data.json```
 
+This process will also ensure that all the required environment variables are set first. If this is not the case, the process will stop with an error on the missing environment variable.
+
 This performs 2 separate steps:
 
 1. Creates the index, skillset, datasource and indexer within Azure AI Search. This can be performed separately using ```make create-index```
