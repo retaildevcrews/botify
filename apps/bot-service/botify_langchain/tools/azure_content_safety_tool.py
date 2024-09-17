@@ -6,8 +6,7 @@ from typing import Optional
 import aiohttp
 import requests
 from app.settings import AppSettings
-from langchain.callbacks.manager import (AsyncCallbackManagerForToolRun,
-                                         CallbackManagerForToolRun)
+from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 from langchain.tools import BaseTool
 from langchain_community.utilities.requests import JsonRequestsWrapper
 
@@ -46,9 +45,7 @@ class AzureContentSafety_Tool(BaseTool):
         jsonrequest = JsonRequestsWrapper(headers=self.headers)
         return self._retry_request(jsonrequest.post, url=url, data=payload)
 
-    def _run(
-        self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None
-    ):
+    def _run(self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None):
         payload_shield = {"userPrompt": query, "documents": None}
         payload_harmful = {"text": query}
 
@@ -79,26 +76,19 @@ class AzureContentSafety_Tool(BaseTool):
         jsonrequest = JsonRequestsWrapper(headers=self.headers)
         return await self._retry_async_request(jsonrequest.apost, url=url, data=payload)
 
-    async def _arun(
-        self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None
-    ):
+    async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None):
         payload_shield = {"userPrompt": query, "documents": None}
         payload_harmful = {"text": query}
 
         async with aiohttp.ClientSession() as session:
             shield_task = asyncio.create_task(
-                self._make_async_request(
-                    self.prompt_shield_endpoint, payload_shield)
+                self._make_async_request(self.prompt_shield_endpoint, payload_shield)
             )
             harmful_task = asyncio.create_task(
-                self._make_async_request(
-                    self.harmful_text_analysis_endpoint, payload_harmful
-                )
+                self._make_async_request(self.harmful_text_analysis_endpoint, payload_harmful)
             )
 
-            shield_response, harmful_response = await asyncio.gather(
-                shield_task, harmful_task
-            )
+            shield_response, harmful_response = await asyncio.gather(shield_task, harmful_task)
 
         return self._format_response(shield_response, harmful_response)
 
@@ -107,13 +97,15 @@ class AzureContentSafety_Tool(BaseTool):
         if "error" in sheld_response:
             errors.append(f"Shield Response Error: {sheld_response['error']}")
         if "error" in harmful_response:
-            errors.append(f"Harmful Response Error: {
-                          harmful_response['error']}")
+            errors.append(
+                f"Harmful Response Error: {
+                          harmful_response['error']}"
+            )
 
         if len(errors) > 0:
             raise RuntimeError(f"Errors in Content Safty Validation: {errors}")
 
         return {
             "prompt_shield_validation_response": sheld_response,
-            "analyzed_harmful_text_response": harmful_response
+            "analyzed_harmful_text_response": harmful_response,
         }

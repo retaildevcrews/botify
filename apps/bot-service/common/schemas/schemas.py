@@ -1,8 +1,9 @@
 import json
 import os
-from jsonschema import validate
-from app.settings import AppSettings
 from logging import getLogger
+
+from app.settings import AppSettings
+from jsonschema import validate
 
 logger = getLogger(__name__)
 
@@ -16,9 +17,9 @@ class ResponseSchema:
 
     def get_response_schema_json(self):
         current_path = os.path.dirname(__file__)
-        schema_path = os.path.join(current_path, 'json/'+self.app_settings.json_validation_schema_name)
+        schema_path = os.path.join(current_path, "json/" + self.app_settings.json_validation_schema_name)
         try:
-            with open(schema_path, 'r') as file:
+            with open(schema_path, "r") as file:
                 # Load the JSON schema from the file
                 schema = json.load(file)
                 return schema
@@ -28,7 +29,7 @@ class ResponseSchema:
 
     def get_response_schema_json_as_string(self):
         try:
-            return json.dumps(self.get_response_schema_json(), separators=(',', ':'))
+            return json.dumps(self.get_response_schema_json(), separators=(",", ":"))
         except (FileNotFoundError, json.JSONDecodeError) as e:
             logger.error(f"Error loading response schema: {e}")
             return ""
@@ -47,9 +48,9 @@ class ResponseSchema:
 
     def get_response_schema_md(self):
         current_path = os.path.dirname(__file__)
-        schema_path = os.path.join(current_path, 'md/' + self.schema_name)
+        schema_path = os.path.join(current_path, "md/" + self.schema_name)
         try:
-            with open(schema_path, 'r') as file:
+            with open(schema_path, "r") as file:
                 # Read the contents of the MD file and return it as a string
                 schema_content = file.read()
                 return schema_content
@@ -59,9 +60,9 @@ class ResponseSchema:
 
     def get_response_schema_yaml(self):
         current_path = os.path.dirname(__file__)
-        schema_path = os.path.join(current_path, 'yaml/' + self.schema_name)
+        schema_path = os.path.join(current_path, "yaml/" + self.schema_name)
         try:
-            with open(schema_path, 'r') as file:
+            with open(schema_path, "r") as file:
                 # Read the contents of the YAML file and return it as a string
                 schema_content = file.read()
                 return schema_content

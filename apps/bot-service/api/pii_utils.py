@@ -32,8 +32,10 @@ class Anonymizer:
                 if len(anonymized_question.items) > 0:
                     body["input"]["question"] = anonymized_question.text
                     # Optionally log the modified body
-                    logger.info(f"Replaced Question With: {
-                                anonymized_question}")
+                    logger.info(
+                        f"Replaced Question With: {
+                                anonymized_question}"
+                    )
 
                 async def receive():
                     receive_["body"] = json.dumps(body).encode("utf-8")

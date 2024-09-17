@@ -26,14 +26,9 @@ logger = logging.getLogger(__name__)
 pyproject = toml.load("pyproject.toml")
 
 # Extract the version, short_sha, and build_timestamp
-version = (
-    pyproject.get("tool", {}).get("poetry", {}).get("version", "Version not found")
-)
+version = pyproject.get("tool", {}).get("poetry", {}).get("version", "Version not found")
 
-if (
-    _additional_version_info.__short_sha__
-    and _additional_version_info.__build_timestamp__
-):
+if _additional_version_info.__short_sha__ and _additional_version_info.__build_timestamp__:
     version = (
         version
         + "-"

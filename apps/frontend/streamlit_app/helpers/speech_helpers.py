@@ -7,13 +7,20 @@ import streamlit as st
 from helpers.streamlit_helpers import extract_voice_summary_and_text
 from openai import AzureOpenAI
 from streamlit.logger import get_logger
-from streamlit_app import (azure_speech_key, azure_speech_region,
-                           azure_speech_voice_name, speech_engine,
-                           tts_model_name, tts_voice_name, whisper_model_name)
+from streamlit_app import (
+    azure_speech_key,
+    azure_speech_region,
+    azure_speech_voice_name,
+    speech_engine,
+    tts_model_name,
+    tts_voice_name,
+    whisper_model_name,
+)
 
 
 def get_logger(name):
     from streamlit.logger import get_logger
+
     return get_logger(name)
 
 
@@ -37,13 +44,9 @@ def recognize_whisper_api_from_file(file_name: str):
 
 
 def recognize_azure_speech_to_text_from_file(file_path: str):
-    speech_config = speechsdk.SpeechConfig(
-        subscription=azure_speech_key, region=azure_speech_region
-    )
+    speech_config = speechsdk.SpeechConfig(subscription=azure_speech_key, region=azure_speech_region)
     audio_config = speechsdk.AudioConfig(filename=file_path)
-    speech_recognizer = speechsdk.SpeechRecognizer(
-        speech_config=speech_config, audio_config=audio_config
-    )
+    speech_recognizer = speechsdk.SpeechRecognizer(speech_config=speech_config, audio_config=audio_config)
 
     logger.debug(f"Recognizing from file at {file_path}")
     result = speech_recognizer.recognize_once_async().get()
@@ -82,13 +85,10 @@ def speech_to_text_from_bytes(audio_bytes: BytesIO):
 
 
 def text_to_speech_azure(input_text: str):
-    speech_config = speechsdk.SpeechConfig(
-        subscription=azure_speech_key, region=azure_speech_region
-    )
+    speech_config = speechsdk.SpeechConfig(subscription=azure_speech_key, region=azure_speech_region)
     speech_config.speech_synthesis_voice_name = azure_speech_voice_name
     audio_config = None
-    speech_synthesizer = speechsdk.SpeechSynthesizer(
-        speech_config=speech_config, audio_config=audio_config)
+    speech_synthesizer = speechsdk.SpeechSynthesizer(speech_config=speech_config, audio_config=audio_config)
 
     try:
         result = speech_synthesizer.speak_text_async(input_text).get()

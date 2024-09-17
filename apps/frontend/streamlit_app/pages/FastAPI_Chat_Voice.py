@@ -5,10 +5,14 @@ from audio_recorder_streamlit import audio_recorder
 from helpers.json_helpers import generate_display_and_audio_response
 from helpers.speech_helpers import handle_audio_response
 from helpers.speech_helpers import speech_to_text_from_bytes as speech_to_text
-from helpers.streamlit_helpers import (configure_page, consume_api,
-                                       display_chat_history, get_logger,
-                                       get_or_create_ids,
-                                       initialize_chat_history)
+from helpers.streamlit_helpers import (
+    configure_page,
+    consume_api,
+    display_chat_history,
+    get_logger,
+    get_or_create_ids,
+    initialize_chat_history,
+)
 from langchain_core.messages import AIMessage, HumanMessage
 from streamlit_app import api_url, model_name
 from streamlit_float import float_init
@@ -62,8 +66,7 @@ if audio_bytes:
         transcript = speech_to_text(audio_bytes)
         logger.debug(f"Transcript: {transcript}")
         if transcript:
-            st.session_state.chat_history.append(
-                HumanMessage(content=transcript))
+            st.session_state.chat_history.append(HumanMessage(content=transcript))
             with st.chat_message("Human"):
                 st.write(transcript)
             logger.info("Transcript added to chat history.")
@@ -88,8 +91,7 @@ if not isinstance(st.session_state.chat_history[-1], AIMessage):
                 ai_response = None
 
         if ai_response:
-            st.session_state.chat_history.append(
-                AIMessage(content=ai_response))
+            st.session_state.chat_history.append(AIMessage(content=ai_response))
 
 # Ensure the footer container floats at the bottom
 footer_container.float("bottom: 0rem;")
