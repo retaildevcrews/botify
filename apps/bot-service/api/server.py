@@ -7,9 +7,9 @@ from typing import Any, List, TypedDict
 import _additional_version_info
 import pydantic
 import toml
+from api.pii_utils import Anonymizer
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
-from api.pii_utils import Anonymizer
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 class Config:
     arbitrary_types_allowed = True
+
 
 # Define Input and Output Schemas
 
@@ -41,7 +42,7 @@ class AppFactory:
         self.app = FastAPI(
             title="Botify API",
             version=self.get_version(),
-            description="An API server utilizing LangChain's Runnable interfaces to create a chatbot that uses an index as grounding material for answering questions."
+            description="An API server utilizing LangChain's Runnable interfaces to create a chatbot that uses an index as grounding material for answering questions.",
         )
         self.setup_middleware()
         self.setup_routes()
@@ -53,8 +54,7 @@ class AppFactory:
         pyproject_file_path = current_file_path.parent.parent / "pyproject.toml"
         pyproject = toml.load(pyproject_file_path)
 
-        version = pyproject.get("tool", {}).get(
-            "poetry", {}).get("version", "Version not found")
+        version = pyproject.get("tool", {}).get("poetry", {}).get("version", "Version not found")
         if _additional_version_info.__short_sha__ and _additional_version_info.__build_timestamp__:
             version += f"-{_additional_version_info.__short_sha__}-{
                 _additional_version_info.__build_timestamp__}"
@@ -89,9 +89,7 @@ class AppFactory:
 
         if self.app_settings.add_memory:
             # Add API route for the agent
-            runnable = self.runnable_factory.get_runnable().with_types(
-                input_type=Input, output_type=Output
-            )
+            runnable = self.runnable_factory.get_runnable().with_types(input_type=Input, output_type=Output)
         else:
             runnable = self.runnable_factory.get_runnable(include_history=False).with_types(
                 input_type=Input, output_type=Output

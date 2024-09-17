@@ -12,6 +12,7 @@ from streamlit_app import api_key, api_url_version
 
 def get_logger(name):
     from streamlit.logger import get_logger
+
     return get_logger(name)
 
 
@@ -37,13 +38,14 @@ def configure_page(title, icon):
 def set_page_config(title, icon):
 
     frontend_version, backend_version = get_versions()
-    st.set_page_config(page_title=title,
-                       page_icon=icon,
-                       layout="wide",
-                       menu_items={
-                           'about': f'''**Front-End Version:** {frontend_version}\n\n**Back-End Version:** {backend_version}'''
-                       }
-                       )
+    st.set_page_config(
+        page_title=title,
+        page_icon=icon,
+        layout="wide",
+        menu_items={
+            "about": f"""**Front-End Version:** {frontend_version}\n\n**Back-End Version:** {backend_version}"""
+        },
+    )
 
 
 def get_versions():
@@ -51,12 +53,16 @@ def get_versions():
     pyproject = toml.load("pyproject.toml")
 
     # Extract the version, short_sha, and build_timestamp
-    version = pyproject.get("tool", {}).get(
-        "poetry", {}).get("version", "Version not found")
+    version = pyproject.get("tool", {}).get("poetry", {}).get("version", "Version not found")
 
     if _additional_version_info.__short_sha__ and _additional_version_info.__build_timestamp__:
-        version = version + "-" + _additional_version_info.__short_sha__ + \
-            "-" + _additional_version_info.__build_timestamp__
+        version = (
+            version
+            + "-"
+            + _additional_version_info.__short_sha__
+            + "-"
+            + _additional_version_info.__build_timestamp__
+        )
 
     backend_version = _private_get_api_version(api_url_version)
     return version, backend_version
@@ -66,11 +72,9 @@ def get_or_create_ids():
     """Generate or retrieve session and user IDs."""
     if "session_id" not in st.session_state:
         st.session_state["session_id"] = str(uuid.uuid4())
-        logger.info("Created new session_id: %s",
-                    st.session_state["session_id"])
+        logger.info("Created new session_id: %s", st.session_state["session_id"])
     else:
-        logger.info("Found existing session_id: %s",
-                    st.session_state["session_id"])
+        logger.info("Found existing session_id: %s", st.session_state["session_id"])
 
     if "user_id" not in st.session_state:
         st.session_state["user_id"] = str(uuid.uuid4())
@@ -108,7 +112,7 @@ def consume_api(url, user_query, session_id, user_id):
                     logger.debug("Received line: %s", decoded_line)
                     if decoded_line.startswith("data: "):
                         # Extract JSON data following 'data: '.
-                        json_data = decoded_line[len("data: "):]
+                        json_data = decoded_line[len("data: ") :]
                         try:
                             data = json.loads(json_data)
                             if "event" in data:
@@ -132,9 +136,9 @@ def consume_api(url, user_query, session_id, user_id):
                             logger.error("JSON decoding error: %s", e)
                             yield f"JSON decoding error: {e}\n\n"
                     # Decoding if using invoke endpoint
-                    elif decoded_line.startswith("{\"output\":"):
+                    elif decoded_line.startswith('{"output":'):
                         json_data = json.loads(decoded_line)
-                        yield f"{json_data['output']['output']}\n\n"
+                        yield json.dumps(json_data['output']['output'])
                     elif decoded_line.startswith("event: "):
                         pass
                     elif ": ping" in decoded_line:
@@ -156,10 +160,7 @@ def _private_get_api_version(url):
     if api_key:
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
 
-    logger.info(
-        "Sending API request to %s",
-        url
-    )
+    logger.info("Sending API request to %s", url)
     logger.debug("url: %s", url)
     with requests.get(url, headers=headers) as response:
         try:
@@ -173,8 +174,7 @@ def _private_get_api_version(url):
             logger.error("HTTP Error while retrieving API version: %s", err)
             return None
         except Exception as e:
-            logger.error(
-                "An error occurred while retrieving API version: %s", e)
+            logger.error("An error occurred while retrieving API version: %s", e)
             return None
 
 
@@ -217,6 +217,5 @@ def extract_voice_summary_and_text(input_string):
         text = match.group(2)
         return voice_summary, text
     else:
-        logger.warning(
-            "No match found for pattern with input: %s", repr(input_string))
+        logger.warning("No match found for pattern with input: %s", repr(input_string))
         return None, None

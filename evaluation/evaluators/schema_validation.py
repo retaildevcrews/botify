@@ -5,6 +5,7 @@ import json
 
 from jsonschema import ValidationError, validate
 
+
 class JsonSchemaValidationEvaluator:
     def __init__(self, schema):
         self.name = "SchemaValidationEvaluator"
@@ -17,9 +18,9 @@ class JsonSchemaValidationEvaluator:
             validate(instance=content, schema=schema)
 
         except json.JSONDecodeError as e:
-            print('JSONDecodeError:', e)
+            print("JSONDecodeError:", e)
             return 0
         except ValidationError as e:
-            print('ValidationError:', e)
+            print("ValidationError:", e)
             return 0
         return 1

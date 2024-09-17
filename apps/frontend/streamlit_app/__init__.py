@@ -31,9 +31,7 @@ openai_api_key = get_env_var("AZURE_OPENAI_API_KEY", required=True)
 speech_engine = get_env_var("SPEECH_ENGINE", required=True).lower()
 
 if speech_engine not in ["azure", "openai"]:
-    raise EnvironmentError(
-        "Environment variable 'SPEECH_ENGINE' must be either 'azure' or 'openai'."
-    )
+    raise EnvironmentError("Environment variable 'SPEECH_ENGINE' must be either 'azure' or 'openai'.")
 
 if speech_engine == "azure":
     azure_speech_key = get_env_var("AZURE_SPEECH_KEY", required=True)
@@ -49,7 +47,5 @@ elif speech_engine == "openai":
     azure_speech_region = None
     azure_speech_voice_name = None
     whisper_model_name = get_env_var("AZURE_OPENAI_WHISPER_MODEL_NAME", required=True)
-    tts_voice_name = get_env_var(
-        "AZURE_OPENAI_TTS_VOICE_NAME", default_value="nova", required=False
-    )
+    tts_voice_name = get_env_var("AZURE_OPENAI_TTS_VOICE_NAME", default_value="nova", required=False)
     tts_model_name = get_env_var("AZURE_OPENAI_TTS_MODEL_NAME", required=True)

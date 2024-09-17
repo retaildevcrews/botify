@@ -3,6 +3,8 @@ echo_status() { local msg=$1; echo "[$(date -u +%Y-%m-%dT%H:%M:%S%Z)] $msg" | te
 
 echo_status "on-create start"
 pip install --no-cache-dir ipython ipykernel
+pip install "black[jupyter]"
+pip install isort
 
 # only run apt upgrade on pre-build
 sudo apt-get update

@@ -107,6 +107,9 @@
         ],
         "[jsonc]": {
           "editor.defaultFormatter": "vscode.json-language-features"
+        },
+        "[python]": {
+          "editor.defaultFormatter": "ms-python.black-formatter"
         }
       },
       // Install extensions
@@ -135,7 +138,8 @@
         //Promptflow
         "ms-toolsai.vscode-ai",
         "ms-toolsai.jupyter",
-        "prompt-flow.prompt-flow"
+        "prompt-flow.prompt-flow",
+        "ms-python.black-formatter"
       ]
     }
   },

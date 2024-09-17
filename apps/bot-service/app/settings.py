@@ -24,8 +24,7 @@ class ModelConfig:
 
 @pydantic.dataclasses.dataclass(config=Config)
 class AppSettings:
-    environment_config: Optional[EnvironmentConfig] = field(
-        default=None)  # Useful in unit tests
+    environment_config: Optional[EnvironmentConfig] = field(default=None)  # Useful in unit tests
 
     # The name of the schema file that will be used to validate the final JSON output that the bot generates
     json_validation_schema_name = "response_schema.json"
@@ -40,7 +39,7 @@ class AppSettings:
         "json": {
             "prompt_template_paths": ["common.md", "json_output.md", "history_marker.md"],
             "response_schema_name": "response_schema.json",
-        }
+        },
     }
     prompt_template_paths = format_config_paths[selected_format_config]["prompt_template_paths"]
     response_schema_name = format_config_paths[selected_format_config]["response_schema_name"]
@@ -108,6 +107,5 @@ class AppSettings:
         return json
 
     def get_config_hash(self):
-        hash_value = hashlib.sha224(
-            self.get_config().encode("utf-16")).hexdigest()
+        hash_value = hashlib.sha224(self.get_config().encode("utf-16")).hexdigest()
         return hash_value
