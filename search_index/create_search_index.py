@@ -24,23 +24,10 @@ index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
 skillset_name = index_name + "skillset"
 datasource_name = index_name + "datasource"
 indexer_name = index_name + "indexer"
-
-BLOB_CONTAINER_NAME = "docconvodocs"
+blob_container_name = "docconvodocs"
 
 # Set the ENV variables that Langchain needs to connect to Azure OpenAI
 os.environ["OPENAI_API_VERSION"] = os.environ["AZURE_OPENAI_API_VERSION"]
-
-def text_to_base64(text):
-    # Convert text to bytes using UTF-8 encoding
-    bytes_data = text.encode('utf-8')
-
-    # Perform Base64 encoding
-    base64_encoded = base64.b64encode(bytes_data)
-
-    # Convert the result back to a UTF-8 string representation
-    base64_text = base64_encoded.decode('utf-8')
-
-    return base64_text
 
 def validate_environment_vars():
     required_vars = [
@@ -62,9 +49,6 @@ def validate_environment_vars():
     print("All environment variables are set")
 
 def create_index():
-    # Create an instance of the Azure OpenAI Embeddings
-    embedder = AzureOpenAIEmbeddings(deployment=os.environ["EMBEDDING_DEPLOYMENT_NAME"], chunk_size=1)
-
     print("Index name: ", index_name)
 
     headers, params = get_headers_and_params()
@@ -302,7 +286,7 @@ def create_blob_container_datasource():
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
     try:
-        container_client = blob_service_client.create_container(name=BLOB_CONTAINER_NAME)
+        container_client = blob_service_client.create_container(name=blob_container_name)
     except ResourceExistsError:
         print(f"A container with name [{datasource_name}] already exists. Continuing with the existing container.")
 
@@ -319,12 +303,12 @@ def create_blob_container_datasource():
             "softDeleteMarkerValue" : "true"
         },
         "container": {
-            "name": BLOB_CONTAINER_NAME
+            "name": blob_container_name
         }
     }
 
     print("Datasource name: ", datasource_name)
-    print("Container name: ", BLOB_CONTAINER_NAME)
+    print("Container name: ", blob_container_name)
 
     headers, params = get_headers_and_params()
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/datasources/" + datasource_name,
