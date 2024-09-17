@@ -1,0 +1,10 @@
+{
+    // Define glob expressions to ignore
+    "ignores": [
+        "**/prompts/**",
+        ".github/",
+        "CHANGELOG.md",
+        "CONTRIBUTING.md",
+        "LICENSE"
+    ]
+}

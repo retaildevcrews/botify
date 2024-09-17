@@ -24,7 +24,41 @@ class ModelConfig:
 
 @pydantic.dataclasses.dataclass(config=Config)
 class AppSettings:
+    environment_config: Optional[EnvironmentConfig] = field(
+        default=None)  # Useful in unit tests
+
+    # The name of the schema file that will be used to validate the final JSON output that the bot generates
+    json_validation_schema_name = "response_schema.json"
+    response_schema_name: str = "response_schema.json"
+    # Format in which the LLM output will be generated
+    selected_format_config: str = "json"
+    format_config_paths = {
+        "json_schema": {
+            "prompt_template_paths": ["common.md", "structured_output.md", "history_marker.md"],
+            "response_schema_name": "response_schema.json",
+        },
+        "json": {
+            "prompt_template_paths": ["common.md", "json_output.md", "history_marker.md"],
+            "response_schema_name": "response_schema.json",
+        }
+    }
+    prompt_template_paths = format_config_paths[selected_format_config]["prompt_template_paths"]
+    response_schema_name = format_config_paths[selected_format_config]["response_schema_name"]
+
+    # Default model configuration can be seen in the ModelConfig class
+    model_config: ModelConfig = field(default_factory=ModelConfig)
+    # When this is set to true, the agent will attempt to store only the display message and not entire bot response
+    optimize_history: bool = True
+    search_tool_topk: int = 10
+    search_similarity_field: str = "summary"
+    search_tool_reranker_threshold: int = 1
+    item_detail_reranker_threshold: int = 1
+    # Adds memory to the agent so that it can engage in multi-turn conversations
+    add_memory: bool = True
     load_environment_config: bool = True
+    # Use this section to turn anonymization on or off
+    # there is an environment variable ANONYMIZER_MODE and ANONYMIZER_CRYPTO_KEY
+    # that can be used to control how the anonymization will be done
     anonymize_questions: bool = True
     anonymizer_entities: list[str] = field(
         default_factory=lambda: [
@@ -33,7 +67,6 @@ class AppSettings:
             "CREDIT_CARD",
             "LOCATION",
             "IP_ADDRESS",
-            "NRP",
             "US_SSN",
             "URL",
             "IBAN_CODE",
@@ -45,13 +78,10 @@ class AppSettings:
         ]
     )
 
-    environment_config: Optional[EnvironmentConfig] = field(default=None)
-
-    prompt_template_path: str = "minified_json.txt"
-    response_schema_name: str = "response_schema.json"
-    model_config: ModelConfig = field(default_factory=ModelConfig)
-    optimize_history: bool = True
+    # Used to turn on or off content safety checks - config is in environment_config
     content_safety_enabled: bool = True
+    # Use this section to turn on or off banned topic checks,
+    # this is a custom tool that uses LLM to classify the topic of the question
     banned_topics: list[str] = field(
         default_factory=lambda: [
             "legal",
@@ -60,16 +90,14 @@ class AppSettings:
             "medical",
         ]
     )
+    # Use this section to turn on or off annotation of disclaimers in responses,
+    # this is a custom tool that uses LLM to classify the topic of the question
     disclaimer_topics: list[str] = field(
         default_factory=lambda: [
             "fire",
         ]
     )
     validate_json_output: bool = True
-    search_tool_topk: int = 10
-    search_similarity_field: str = "summary"
-    search_tool_reranker_threshold: int = 1
-    item_detail_reranker_threshold: int = 1
 
     def __post_init__(self):
         if self.load_environment_config and self.environment_config is None:

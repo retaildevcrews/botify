@@ -87,12 +87,19 @@ class AppFactory:
             anonymizer = Anonymizer()
             dependencies.append(Depends(anonymizer.set_body))
 
+        if self.app_settings.add_memory:
+            # Add API route for the agent
+            runnable = self.runnable_factory.get_runnable().with_types(
+                input_type=Input, output_type=Output
+            )
+        else:
+            runnable = self.runnable_factory.get_runnable(include_history=False).with_types(
+                input_type=Input, output_type=Output
+            )
         # Add API route for the agent
         add_routes(
             self.app,
-            self.runnable_factory.get_runnable().with_types(
-                input_type=Input, output_type=Output
-            ),
+            runnable,
             path="/agent",
             dependencies=dependencies,
             enabled_endpoints=["invoke", "stream_events", "playground"],
