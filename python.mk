@@ -2,13 +2,16 @@
 
 REPO_ROOT_PATH = $(shell git rev-parse --show-toplevel 2> /dev/null)
 
-.PHONY: format lint
+.PHONY: install format lint
 
-format:
+install:
+	poetry install --no-interaction
+
+format: install
 	poetry run black --config "$(REPO_ROOT_PATH)/pyproject.toml" .
 	poetry run isort --config-root $(REPO_ROOT_PATH) --resolve-all-configs .
 
-lint:
+lint: install
 	poetry run black --config "$(REPO_ROOT_PATH)/pyproject.toml" . --check
 	poetry run flake8 --config $(REPO_ROOT_PATH)/.flake8 .
 	poetry run isort --config-root $(REPO_ROOT_PATH) --resolve-all-configs --check-only --diff .

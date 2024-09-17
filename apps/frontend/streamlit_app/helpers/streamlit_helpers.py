@@ -138,10 +138,8 @@ def consume_api(url, user_query, session_id, user_id):
                             yield f"JSON decoding error: {e}\n\n"
                     # Decoding if using invoke endpoint
                     elif decoded_line.startswith('{"output":'):
-                        logger.debug("I'm HERE #1: %s", decoded_line)
                         json_data = json.loads(decoded_line)
-                        logger.debug("I'm here #2: %s", json_data)
-                        yield f"{json_data['output']['output']}\n\n"
+                        yield json.dumps(json_data['output']['output'])
                     elif decoded_line.startswith("event: "):
                         pass
                     elif ": ping" in decoded_line:

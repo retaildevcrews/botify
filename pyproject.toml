@@ -18,7 +18,7 @@ pylint = "*"
 pytest-cov = "*"
 
 [tool.black]
-line_length = 110
+line_length = 120
 
 [tool.isort]
 # vertical hanging indent
@@ -59,7 +59,7 @@ explicit_package_bases = true
 recursive = true
 
 # [tool.pylint.'MESSAGES CONTROL']
-disable = "C0103"
+disable = ["C0103","E0401"]
 
 [tool.pylint.'BASIC']
 # Include a hint for the correct naming format with invalid-name.
@@ -75,7 +75,7 @@ argument-rgx = "^[a-z][a-z0-9]*(([_a-z0-9]+)*)?$"
 good-names = ""
 
 [tool.pylint.'FORMAT']
-max-line-length = 110
+max-line-length = 120
 
 [tool.pylint.'DESIGN']
 # Maximum number of arguments for method
