@@ -2,27 +2,332 @@
     "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
     "contentVersion": "1.0.0.0",
     "parameters": {
-      "resourceGroupName": {
-        "type": "string",
-        "metadata": {
-          "description": "Name of the Resource Group"
-        }
-      },
       "location": {
         "type": "string",
         "defaultValue": "[resourceGroup().location]",
         "metadata": {
-          "description": "Location for the Resource Group"
+          "description": "Optional, defaults to resource group location. The location of the resources."
         }
+      },
+      "azureSearchName": {
+        "type": "string",
+        "defaultValue": "[format('cog-search-{0}', uniqueString(resourceGroup().id))]",
+        "minLength": 2,
+        "maxLength": 60,
+        "metadata": {
+          "description": "Optional. Service name must only contain lowercase letters, digits or dashes, cannot use dash as the first two or last one characters, cannot contain consecutive dashes, and is limited between 2 and 60 characters in length."
+        }
+      },
+      "azureSearchSKU": {
+        "type": "string",
+        "allowedValues": [
+          "free",
+          "basic",
+          "standard",
+          "standard2",
+          "standard3",
+          "storage_optimized_l1",
+          "storage_optimized_l2"
+        ],
+        "defaultValue": "standard",
+        "metadata": {
+          "description": "Optional, defaults to standard. The pricing tier of the search service you want to create (for example, basic or standard)."
+        }
+      },
+      "azureSearchReplicaCount": {
+        "type": "int",
+        "minValue": 1,
+        "maxValue": 12,
+        "defaultValue": 1,
+        "metadata": {
+          "description": "Optional, defaults to 1. Replicas distribute search workloads across the service."
+        }
+      },
+      "azureSearchPartitionCount": {
+        "type": "int",
+        "allowedValues": [1, 2, 3, 4, 6, 12],
+        "defaultValue": 1,
+        "metadata": {
+          "description": "Optional, defaults to 1. Partitions allow for scaling of document count."
+        }
+      },
+      "azureSearchHostingMode": {
+        "type": "string",
+        "allowedValues": ["default", "highDensity"],
+        "defaultValue": "default",
+        "metadata": {
+          "description": "Optional, defaults to default. Applicable only for SKUs set to standard3."
+        }
+      },
+      "appPlanName": {
+        "type": "string",
+        "defaultValue": "[format('asp-{0}', uniqueString(resourceGroup().id))]"
+      },
+      "logAnalyticsWorkspace": {
+        "type": "string",
+        "defaultValue": "[format('la-{0}', uniqueString(resourceGroup().id))]"
+      },
+      "cognitiveServiceName": {
+        "type": "string",
+        "defaultValue": "[format('cognitive-service-{0}', uniqueString(resourceGroup().id))]",
+        "metadata": {
+          "description": "Optional. The name of our application. It has to be unique."
+        }
+      },
+      "cosmosDBAccountName": {
+        "type": "string",
+        "defaultValue": "[format('cosmosdb-account-{0}', uniqueString(resourceGroup().id))]",
+        "metadata": {
+          "description": "Optional. Cosmos DB account name, max length 44 characters, lowercase"
+        }
+      },
+      "cosmosDBDatabaseName": {
+        "type": "string",
+        "defaultValue": "[format('cosmosdb-db-{0}', uniqueString(resourceGroup().id))]"
+      },
+      "cosmosDBContainerName": {
+        "type": "string",
+        "defaultValue": "[format('cosmosdb-container-{0}', uniqueString(resourceGroup().id))]"
+      },
+      "blobStorageAccountName": {
+        "type": "string",
+        "defaultValue": "[format('blobstorage{0}', uniqueString(resourceGroup().id))]"
       }
+    },
+    "variables": {
+      "appPlanSkuName": "S1",
+      "cognitiveServiceSKU": "S0"
     },
     "resources": [
       {
-        "type": "Microsoft.Resources/resourceGroups",
-        "apiVersion": "2021-04-01",
+        "type": "Microsoft.OperationalInsights/workspaces",
+        "apiVersion": "2021-12-01-preview",
+        "name": "[parameters('logAnalyticsWorkspace')]",
         "location": "[parameters('location')]",
-        "name": "[parameters('resourceGroupName')]",
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Web/serverfarms",
+        "apiVersion": "2021-03-01",
+        "name": "[parameters('appPlanName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "[variables('appPlanSkuName')]",
+          "capacity": 1
+        },
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Insights/diagnosticSettings",
+        "apiVersion": "2021-05-01-preview",
+        "name": "[parameters('appPlanName')]",
+        "scope": "[resourceId('Microsoft.Web/serverfarms', parameters('appPlanName'))]",
+        "properties": {
+          "workspaceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('logAnalyticsWorkspace'))]",
+          "logs": [
+            {
+              "category": "AllMetrics",
+              "enabled": true,
+              "retentionPolicy": {
+                "days": 30,
+                "enabled": true
+              }
+            }
+          ]
+        }
+      },
+      {
+        "type": "Microsoft.Search/searchServices",
+        "apiVersion": "2021-04-01-Preview",
+        "name": "[parameters('azureSearchName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "[parameters('azureSearchSKU')]"
+        },
+        "properties": {
+          "replicaCount": "[parameters('azureSearchReplicaCount')]",
+          "partitionCount": "[parameters('azureSearchPartitionCount')]",
+          "hostingMode": "[parameters('azureSearchHostingMode')]",
+          "semanticSearch": "standard"
+        }
+      },
+      {
+        "type": "Microsoft.CognitiveServices/accounts",
+        "apiVersion": "2023-05-01",
+        "name": "[parameters('cognitiveServiceName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "[variables('cognitiveServiceSKU')]"
+        },
+        "kind": "CognitiveServices",
+        "properties": {
+          "apiProperties": {
+            "statisticsEnabled": false
+          }
+        }
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts",
+        "apiVersion": "2023-04-15",
+        "name": "[parameters('cosmosDBAccountName')]",
+        "location": "[parameters('location')]",
+        "kind": "GlobalDocumentDB",
+        "properties": {
+          "databaseAccountOfferType": "Standard",
+          "locations": [
+            {
+              "locationName": "[parameters('location')]"
+            }
+          ],
+          "enableFreeTier": false,
+          "isVirtualNetworkFilterEnabled": false,
+          "publicNetworkAccess": "Enabled",
+          "capabilities": [
+            {
+              "name": "EnableServerless"
+            }
+          ]
+        }
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+        "apiVersion": "2023-04-15",
+        "name": "[parameters('cosmosDBDatabaseName')]",
+        "location": "[parameters('location')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))]"
+        ],
+        "properties": {
+          "resource": {
+            "id": "[parameters('cosmosDBDatabaseName')]"
+          }
+        }
+      },
+      {
+        "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+        "apiVersion": "2023-04-15",
+        "name": "[parameters('cosmosDBContainerName')]",
+        "location": "[parameters('location')]",
+        "dependsOn": [
+          "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', parameters('cosmosDBDatabaseName'))]"
+        ],
+        "properties": {
+          "resource": {
+            "id": "[parameters('cosmosDBContainerName')]",
+            "partitionKey": {
+              "paths": [
+                "/user_id"
+              ],
+              "kind": "Hash",
+              "version": 2
+            },
+            "defaultTtl": 1000
+          }
+        }
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts",
+        "apiVersion": "2023-01-01",
+        "name": "[parameters('blobStorageAccountName')]",
+        "location": "[parameters('location')]",
+        "kind": "StorageV2",
+        "sku": {
+          "name": "Standard_LRS"
+        }
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts/blobServices",
+        "apiVersion": "2023-01-01",
+        "name": "default",
+        "dependsOn": [
+          "[resourceId('Microsoft.Storage/storageAccounts', parameters('blobStorageAccountName'))]"
+        ],
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+        "apiVersion": "2023-01-01",
+        "dependsOn": [
+          "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('blobStorageAccountName'), 'default')]"
+        ],
+        "name": "[concat(parameters('blobStorageAccountName'), 'books')]",
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+        "apiVersion": "2023-01-01",
+        "dependsOn": [
+          "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('blobStorageAccountName'), 'default')]"
+        ],
+        "name": "[concat(parameters('blobStorageAccountName'), 'cord19')]",
+        "properties": {}
+      },
+      {
+        "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+        "apiVersion": "2023-01-01",
+        "dependsOn": [
+          "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('blobStorageAccountName'), 'default')]"
+        ],
+        "name": "[concat(parameters('blobStorageAccountName'), 'mixed')]",
         "properties": {}
       }
-    ]
+    ],
+    "outputs": {
+      "azureSearchName": {
+        "type": "string",
+        "value": "[parameters('azureSearchName')]"
+      },
+      "azureSearchEndpoint": {
+        "type": "string",
+        "value": "[format('https://{0}.search.windows.net', parameters('azureSearchName'))]"
+      },
+      "appPlanName": {
+        "type": "string",
+        "value": "[parameters('appPlanName')]"
+      },
+      "logAnalyticsWorkspaceName": {
+        "type": "string",
+        "value": "[parameters('logAnalyticsWorkspace')]"
+      },
+      "cosmosDBAccountName": {
+        "type": "string",
+        "value": "[parameters('cosmosDBAccountName')]"
+      },
+      "cosmosDBDatabaseName": {
+        "type": "string",
+        "value": "[parameters('cosmosDBDatabaseName')]"
+      },
+      "cosmosDBContainerName": {
+        "type": "string",
+        "value": "[parameters('cosmosDBContainerName')]"
+      },
+      "blobStorageAccountName": {
+        "type": "string",
+        "value": "[parameters('blobStorageAccountName')]"
+      },
+      "azureSearchKey": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2021-04-01-Preview').primaryKey]"
+      },
+      "cosmosDBAccountEndpoint": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint]"
+      },
+      "cosmosDBConnectionString": {
+        "type": "string",
+        "value": "[format('AccountEndpoint={0};AccountKey={1}', reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint, listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName')), '2023-04-15').primaryMasterKey)]"
+      },
+      "cognitiveServiceName": {
+        "type": "string",
+        "value": "[parameters('cognitiveServiceName')]"
+      },
+      "cognitiveServiceKey": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.CognitiveServices/accounts', parameters('cognitiveServiceName')), '2023-05-01').key1]"
+      },
+      "blobConnectionString": {
+        "type": "string",
+        "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix=core.windows.net', parameters('blobStorageAccountName'), listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('blobStorageAccountName')), '2023-01-01').keys[0].value)]"
+      }
+    }
   }
