@@ -129,7 +129,7 @@
       },
       {
         "type": "Microsoft.Search/searchServices",
-        "apiVersion": "2021-04-01-Preview",
+        "apiVersion": "2024-05-01-preview",
         "name": "[parameters('azureSearchName')]",
         "location": "[parameters('location')]",
         "sku": {
@@ -296,10 +296,10 @@
         "type": "string",
         "value": "[parameters('blobStorageAccountName')]"
       },
-      // "azureSearchKey": {
-      //   "type": "string",
-      //   "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2021-04-01-Preview').primaryKey]"
-      // },
+      "azureSearchKey": {
+        "type": "string",
+        "value": "[listKeys(resourceId('Microsoft.Search/searchServices', parameters('azureSearchName')), '2024-05-01-preview').primaryKey]"
+      },
       "cosmosDBAccountEndpoint": {
         "type": "string",
         "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint]"
