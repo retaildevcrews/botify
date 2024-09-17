@@ -153,6 +153,8 @@ def load_json_data():
     data = pd.read_json(data_file, lines=True)
 
     embedder = AzureOpenAIEmbeddings(deployment=os.environ["EMBEDDING_DEPLOYMENT_NAME"], chunk_size=1)
+    headers, params = get_headers_and_params()
+    index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
 
     #iterarte over dataframe and access each column's value to populate index
 
@@ -196,6 +198,6 @@ def load_json_data():
 
 if __name__ == "__main__":
     validate_environment_vars()
-    if create_index_payload() == False:
-        exit(1)
+    #if create_index_payload() == False:
+    #    exit(1)
     load_json_data()
