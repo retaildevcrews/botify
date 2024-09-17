@@ -391,7 +391,6 @@ def create_indexer():
 
 
 if __name__ == "__main__":
-    load_environment_variables()
     validate_environment_vars()
     if create_index() == False:
         exit(1)
