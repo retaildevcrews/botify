@@ -21,7 +21,6 @@ def call_full_flow(*, question, **kwargs):
     user_id = f"user_{session_id}"
     bot_response = runnable_caller.call_full_flow(
         question, session_id, user_id, [])
-    print(f"Bot Response: {bot_response}")
     display_response = bot_response["display_response"]
     voice_summary = bot_response["voice_summary"]
     config = bot_response["app_config"]

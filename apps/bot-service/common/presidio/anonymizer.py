@@ -77,8 +77,6 @@ class Deanonymizer:
         except Exception:
             logger.debug(
                 f"Input does not contain an anonymized result: {traceback.format_exc()}")
-            print(f"Input does not contain an anonymized result: {
-                  traceback.format_exc()}")
             return input_data
 
         return input_result.text

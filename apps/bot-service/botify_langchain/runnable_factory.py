@@ -1,4 +1,5 @@
 import json
+import yaml
 import logging
 
 import app.messages as messages
@@ -53,10 +54,10 @@ class RunnableFactory:
 
         self.content_safety_tool = AzureContentSafety_Tool()
 
-    def make_prompt(self, file_name):
-        json_schema = ResponseSchema().get_response_schema_as_string()
+    def make_prompt(self, file_names):
+        schema = ResponseSchema().get_response_schema()
         prompt_text = self.promptgen.generate_prompt(
-            file_name, json_schema=json_schema)
+            file_names, schema=schema)
         """Generate a prompt using the specified template file."""
         cpt = ChatPromptTemplate.from_messages(
             [
@@ -69,22 +70,30 @@ class RunnableFactory:
         )
         return cpt
 
-    def get_runnable(self, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
+    def get_runnable(self, include_history=True, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
         # Gets the main runnable with the session history callable
         # included - this is the main entry point for the chatbot
+        if include_history:
+            history_callable = self._get_cosmos_db_chat_history
+        else:
+            history_callable = None
         return self.get_runnable_byo_session_history_callable(
-            self._get_cosmos_db_chat_history,
+            history_callable,
             return_intermediate_steps=return_intermediate_steps,
             verbose=verbose,
             azure_chat_open_ai_streaming=azure_chat_open_ai_streaming
         )
 
     def get_runnable_byo_session_history_callable(self, get_session_history_callable, return_intermediate_steps=False, verbose=False, azure_chat_open_ai_streaming=True) -> Runnable:
-        # Gets the main runnable with the session history callable as a
-        # parameter - this is to be used mainly for validations where we want
-        # to inject an alternative session history callable
+        """
+        Gets the main runnable with the session history callable as a
+        parameter - this is to be used mainly for validations where we want
+        to inject an alternative session history callable this also allows us to
+        create an agent without history
+        """
+
         CHAT_BOT_PROMPT = self.make_prompt(
-            self.app_settings.prompt_template_path
+            self.app_settings.prompt_template_paths
         )
 
         aoi_top_p = self.app_settings.model_config.top_p
@@ -138,7 +147,7 @@ class RunnableFactory:
         graph.add_node("stop_for_safety", self.return_safety_error_message)
         graph.add_node("identify_disclaimers", self.identify_disclaimers)
         graph.add_node("call_model", tools_agent_with_history)
-        graph.add_node("validate_response", self.validate_response)
+        graph.add_node("post_processor", self.post_processor)
         graph.add_edge(START, "content_safety")
         graph.add_conditional_edges(
             "content_safety",
@@ -149,9 +158,9 @@ class RunnableFactory:
             }
         )
         graph.add_edge("identify_disclaimers", "call_model")
-        graph.add_edge("call_model", "validate_response")
+        graph.add_edge("call_model", "post_processor")
         graph.add_edge("stop_for_safety", END)
-        graph.add_edge("validate_response", END)
+        graph.add_edge("post_processor", END)
         graph_runnable = graph.compile()
         return graph_runnable
 
@@ -184,7 +193,7 @@ class RunnableFactory:
         return session_history
 
     def _create_tools_agent_runnable(
-        self, llm, tools, prompt, get_session_history_callable, return_intermediate_steps=False, verbose=False
+        self, llm, tools, prompt, get_session_history_callable=None, return_intermediate_steps=False, verbose=False
     ):
         """Create a runnable agent with tools."""
         agent = create_tool_calling_agent(llm, tools, prompt)
@@ -195,31 +204,34 @@ class RunnableFactory:
             return_intermediate_steps=return_intermediate_steps,
             verbose=verbose,
         )
-        runnable = RunnableWithMessageHistory(
-            agent_executor,
-            get_session_history_callable,
-            input_messages_key="question",
-            history_messages_key="history",
-            history_factory_config=[
-                ConfigurableFieldSpec(
-                    id="user_id",
-                    annotation=str,
-                    name="User ID",
-                    description="Unique identifier for the user.",
-                    default="",
-                    is_shared=True,
-                ),
-                ConfigurableFieldSpec(
-                    id="session_id",
-                    annotation=str,
-                    name="Session ID",
-                    description="Unique identifier for the conversation.",
-                    default="",
-                    is_shared=True,
-                ),
-            ],
-        )
-        return runnable
+        if get_session_history_callable is None:
+            return agent_executor
+        else:
+            runnable = RunnableWithMessageHistory(
+                agent_executor,
+                get_session_history_callable,
+                input_messages_key="question",
+                history_messages_key="history",
+                history_factory_config=[
+                    ConfigurableFieldSpec(
+                        id="user_id",
+                        annotation=str,
+                        name="User ID",
+                        description="Unique identifier for the user.",
+                        default="",
+                        is_shared=True,
+                    ),
+                    ConfigurableFieldSpec(
+                        id="session_id",
+                        annotation=str,
+                        name="Session ID",
+                        description="Unique identifier for the conversation.",
+                        default="",
+                        is_shared=True,
+                    ),
+                ],
+            )
+            return runnable
 
     def content_safety(self, state: dict):
         """Evaluate content safety."""
@@ -299,7 +311,6 @@ class RunnableFactory:
 
     def return_safety_error_message(self, state: dict):
         """Return a safety error message."""
-        print("Safety Error Message")
         state["output"] = messages.SAFETY_ERROR_MESSAGE_JSON
         return state
 
@@ -317,15 +328,68 @@ class RunnableFactory:
         state["disclaimers"] = results
         return state
 
-    def validate_response(self, state: dict):
+    def extract_content(self, input_str: str, start_delimiter: str, end_delimiter: str = "```") -> str:
+        """
+        Helper function to extract content between two delimiters.
+
+        :param input_str: The input string to process.
+        :param start_delimiter: The starting delimiter to look for.
+        :param end_delimiter: The ending delimiter to look for.
+        :return: The content between the start and end delimiters.
+        """
+        if start_delimiter in input_str and end_delimiter in input_str:
+            # Remove everything before and including the first occurrence of start_delimiter
+            input_str = input_str.split(start_delimiter, 1)[1]
+            # Remove everything after and including the last occurrence of end_delimiter
+            input_str = input_str.rsplit(end_delimiter, 1)[0]
+        return input_str.strip()
+
+    def process_llm_output(self, state: dict):
         try:
-            self.logger.debug(f"Validating JSON: {state['output']}")
-            ResponseSchema().validate_response(state["output"])
-            output = json.loads(state["output"])  # Ensure the response
+            llm_output = state["output"]
+
+            output_format = self.app_settings.selected_format_config
+
+            llm_output = self.extract_content(
+                llm_output, f"```{output_format}")
+
+            if output_format == "json":
+                # Parse the cleaned JSON input
+                data = json.loads(llm_output)
+
+            if output_format == "yaml":
+                # Parse the cleaned YAML input
+                data = yaml.safe_load(llm_output)
+            if llm_output.startswith('"') and llm_output.endswith('"'):
+                llm_output = llm_output[1:-1]
+            if llm_output == data:
+                self.logger.warning(
+                    f"LLM returned incorrect format so will wrap in json object llm response was: {llm_output}")
+                data = {
+                    "displayResponse": llm_output,
+                    "voiceSummary": llm_output
+                }
+        except Exception as e:
+            self.logger.error(
+                f"Error parsing {output_format} output from the LLM: {e}")
+            self.logger.error(f"LLM Output: {llm_output}")
+
+        # Convert the parsed data to JSON and return it
+        state["output"] = json.dumps(data)
+        return state
+
+    def post_processor(self, state: dict):
+        """Post-process the response based on the output format."""
+        try:
+            if self.app_settings.selected_format_config != "json_schema":
+                state = self.process_llm_output(state)
+            output = json.loads(state["output"])
+            if self.app_settings.validate_json_output:
+                self.logger.debug(f"Validating JSON Response Output: {output}")
+                ResponseSchema().validate_json_response(output)
             output["disclaimers"] = state["disclaimers"]
-            self.logger.debug(f"Output: {output}")
         except Exception as e:
             self.logger.error(f"JSON Validation Error: {e}")
-            # Return the original response
-            state["output"] = messages.GENERIC_ERROR_MESSAGE_JSON
+            output = messages.GENERIC_ERROR_MESSAGE_JSON
+        state["output"] = output
         return state
