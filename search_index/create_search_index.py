@@ -7,18 +7,7 @@ from dotenv import load_dotenv
 import requests
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
-from utils import text_to_base64, print_response_status, get_headers_and_params
-
-
-# load the environment variables
-
-# Get the current directory of the script
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Construct the absolute path to the .env file
-env_path = os.path.join(current_dir, ".." , "apps", "credentials.env")
-
-load_dotenv(env_path)
+from utils import text_to_base64, print_response_status, get_headers_and_params, load_environment_variables
 
 index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
 skillset_name = index_name + "skillset"
@@ -402,6 +391,7 @@ def create_indexer():
 
 
 if __name__ == "__main__":
+    load_environment_variables()
     validate_environment_vars()
     if create_index() == False:
         exit(1)

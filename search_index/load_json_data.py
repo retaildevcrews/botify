@@ -4,9 +4,7 @@ import pandas as pd
 from langchain_openai import AzureOpenAIEmbeddings
 from dotenv import load_dotenv
 import requests
-from utils import print_response_status, get_headers_and_params
-
-load_dotenv("../apps/credentials.env")
+from utils import text_to_base64, print_response_status, get_headers_and_params, load_environment_variables
 
 def validate_environment_vars():
     required_vars = [
@@ -30,7 +28,12 @@ def validate_environment_vars():
 
 def load_json_data():
     #load data from jsonl file
-    data_file='data.jsonl'
+        # Get the current directory of the script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # Construct the absolute path to the .env file
+    data_file = os.path.join(current_dir, "data.jsonl")
+
     data = pd.read_json(data_file, lines=True)
 
     embedder = AzureOpenAIEmbeddings(deployment=os.environ["EMBEDDING_DEPLOYMENT_NAME"], chunk_size=1)
@@ -78,5 +81,6 @@ def load_json_data():
             continue
 
 if __name__ == "__main__":
+    load_environment_variables()
     validate_environment_vars()
     load_json_data()
