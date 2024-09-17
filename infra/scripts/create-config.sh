@@ -5,7 +5,8 @@ RESOURCE_GROUP="botify-hack-ira"
 DEPLOYMENT_NAME="botify-dev"
 
 # Specify the .env file you want to write to
-ENV_FILE="../../apps/credentials2.env"
+ENV_FILE="../../apps/credentials.env"
+TEMPLATE_ENV_FILE="../../sample_dotenv_file"
 
 # Get the signed-in user's ID
 USER_ID=$(az ad signed-in-user show --query id -o tsv)
@@ -34,20 +35,41 @@ SECRETS=(
   "COG_SERVICES_KEY" "$COG_KEY"
 )
 
-# Clear the file if it exists, or create it
-: > "$ENV_FILE"
+# Create a backup of the existing .env file
+cp "$ENV_FILE" "${ENV_FILE}.bak" || true
 
-# Iterate over the secrets and set them in the Key Vault
+# Read the existing .env file and store its content
+declare -A ENV_VARS
+while IFS='=' read -r key value; do
+    # Trim any leading and trailing whitespace
+    key=$(echo "$key" | xargs -0)
+    value=$(echo "$value" | xargs -0)
+
+    # Check if the key is non-empty and valid
+    if [[ -n "$key" && "$key" != *=* ]]; then
+        ENV_VARS["$key"]="$value"
+    fi
+done < "$TEMPLATE_ENV_FILE"
+
+# Iterate over the secrets
 for ((i=0; i<${#SECRETS[@]}; i+=2)); do
     KEY="${SECRETS[i]}"
     VALUE="${SECRETS[i+1]}"
 
-    # Write the key-value pair to the .env file in KEY=VALUE format
-    echo "$KEY=\"$VALUE\"" >> "$ENV_FILE"
+    # Update the key-value pair in the existing .env file
+    ENV_VARS["$KEY"]="\"$VALUE\""
 
     # Set the secret in the Key Vault replacing underscores with dashes in the name
     _=$(az keyvault secret set \
       --vault-name "$KEYVAULT_NAME" \
       --name "${KEY//_/-}" \
       --value "$VALUE")
+done
+
+# Clear the old file
+: > "$ENV_FILE"
+
+# Write the updated key-value pairs back to the .env file
+for KEY in "${!ENV_VARS[@]}"; do
+    echo "$KEY=${ENV_VARS[$KEY]}" >> "$ENV_FILE"
 done
