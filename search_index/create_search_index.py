@@ -56,10 +56,33 @@ def create_index():
     index_payload = {
         "name": index_name,
         "vectorSearch": {
-            "algorithms": [
+            "algorithms": [  # We are showing here 3 types of search algorithms configurations that you can do
                 {
-                    "name": "myalgo",
-                    "kind": "hnsw"
+                    "name": "my-hnsw-config-1",
+                    "kind": "hnsw",
+                    "hnswParameters": {
+                        "m": 4,
+                        "efConstruction": 400,
+                        "efSearch": 500,
+                        "metric": "cosine"
+                    }
+                },
+                {
+                    "name": "my-hnsw-config-2",
+                    "kind": "hnsw",
+                    "hnswParameters": {
+                        "m": 8,
+                        "efConstruction": 800,
+                        "efSearch": 800,
+                        "metric": "cosine"
+                    }
+                },
+                {
+                    "name": "my-eknn-config",
+                    "kind": "exhaustiveKnn",
+                    "exhaustiveKnnParameters": {
+                        "metric": "cosine"
+                    }
                 }
             ],
             "vectorizers": [
@@ -76,11 +99,21 @@ def create_index():
                     }
                 }
             ],
-            "profiles": [
+            "profiles": [  # profiles is the diferent kind of combinations of algos and vectorizers
                 {
-                    "name": "myprofile",
-                    "algorithm": "myalgo",
-                    "vectorizer":"openai"
+                "name": "my-vector-profile-1",
+                "algorithm": "my-hnsw-config-1",
+                "vectorizer":"openai"
+                },
+                {
+                "name": "my-vector-profile-2",
+                "algorithm": "my-hnsw-config-2",
+                "vectorizer":"openai"
+                },
+                {
+                "name": "my-vector-profile-3",
+                "algorithm": "my-eknn-config",
+                "vectorizer":"openai"
                 }
             ]
         },
@@ -113,7 +146,7 @@ def create_index():
                 "name": "chunkVector",
                 "type": "Collection(Edm.Single)",
                 "dimensions": 1536, # IMPORTANT: Make sure these dimmensions match your embedding model name
-                "vectorSearchProfile": "myprofile",
+                "vectorSearchProfile": "my-vector-profile-3",
                 "searchable": "true",
                 "retrievable": "true",
                 "filterable": "false",
