@@ -7,6 +7,9 @@ Before commiting changes to the code in this repo, make sure you execute the fol
 # navigate to root of repo
 cd /workspaces/botify
 
+# install all required tools (only required once)
+poetry install
+
 # format code - this is a pre-requisite for the linting step
 make -f python.mk format
 
