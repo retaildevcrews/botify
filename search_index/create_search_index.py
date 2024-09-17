@@ -131,12 +131,19 @@ def create_index():
         ]
     }
     url=f"{os.environ['AZURE_SEARCH_ENDPOINT']}/indexes/{index_name}"
-    print(url)
     r = requests.put(url,
                     data=json.dumps(index_payload), headers=headers, params=params)
-    print(r.status_code)
+    if (r.status_code < 300):
+        if r.status_code == 201:
+            print("Index created successfully")
+        elif r.status_code == 204:
+            print("Index already exists")
+        return True
+
+    print("ERROR - creating index")
     print(r.text)
-    print(r.ok)
+    print(r.status_code)
+    return False
 
 def create_skillset():
     print("Skillset name: ", skillset_name)
@@ -275,14 +282,21 @@ def create_skillset():
 
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/skillsets/" + skillset_name,
                     data=json.dumps(skillset_payload), headers=headers, params=params)
+
+    if (r.status_code < 300):
+        if r.status_code == 201:
+            print("Skillset created successfully")
+        elif r.status_code == 204:
+            print("Skillset already exists")
+        return True
+
+    print("ERROR - creating skillset")
+    print(r.text)
     print(r.status_code)
+    return False
 
-    datasource_name = index_name + "datasource"
-    print("Datasource name: ", datasource_name)
-    print("Container name: ", BLOB_CONTAINER_NAME)
-    print(r.ok)
 
-def create_blob_container():
+def create_blob_container_datasource():
 
     connect_str = os.environ["AZURE_BLOB_STORAGE_CONNECTION_STRING"]
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
@@ -290,7 +304,7 @@ def create_blob_container():
     try:
         container_client = blob_service_client.create_container(name=BLOB_CONTAINER_NAME)
     except ResourceExistsError:
-        print('A container with this name already exists. Continuing with the existing container.')
+        print(f"A container with name [{datasource_name}] already exists. Continuing with the existing container.")
 
     datasource_payload = {
         "name": datasource_name,
@@ -308,11 +322,23 @@ def create_blob_container():
             "name": BLOB_CONTAINER_NAME
         }
     }
+
+    print("Datasource name: ", datasource_name)
+    print("Container name: ", BLOB_CONTAINER_NAME)
+
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/datasources/" + datasource_name,
                     data=json.dumps(datasource_payload), headers=headers, params=params)
-    print(r.status_code)
+    if (r.status_code < 300):
+            if r.status_code == 201:
+                print("Datasource created successfully")
+            elif r.status_code == 204:
+                print("Datasource already exists")
+            return True
+
+    print("ERROR - creating Datasource")
     print(r.text)
-    print(r.ok)
+    print(r.status_code)
+    return False
 
 def create_indexer():
     print("Indexer name: ", indexer_name)
@@ -353,12 +379,25 @@ def create_indexer():
 
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/indexers/" + indexer_name,
                     data=json.dumps(indexer_payload), headers=headers, params=params)
-    print(r.status_code)
+    if (r.status_code < 300):
+        if r.status_code == 201:
+            print("Indexer created successfully")
+        elif r.status_code == 204:
+            print("Indexer already exists")
+        return True
+
+    print("ERROR - creating Indexer")
     print(r.text)
-    print(r.ok)
+    print(r.status_code)
 
 
 if __name__ == "__main__":
     validate_environment_vars()
-    create_index()
-    print("Index created successfully")
+    if create_index() == False:
+        exit(1)
+    if (create_skillset() == False):
+        exit(1)
+    if (create_blob_container_datasource() == False):
+        exit(1)
+    if (create_indexer() == False):
+        exit(1)
