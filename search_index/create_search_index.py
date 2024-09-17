@@ -1,0 +1,364 @@
+import os
+import json
+import base64
+import pandas as pd
+from langchain_openai import AzureOpenAIEmbeddings
+from dotenv import load_dotenv
+import requests
+from azure.storage.blob import BlobServiceClient
+from azure.core.exceptions import ResourceExistsError
+
+# load the environment variables
+load_dotenv("../apps/credentials.env")
+
+index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
+skillset_name = index_name + "skillset"
+datasource_name = index_name + "datasource"
+indexer_name = index_name + "indexer"
+
+BLOB_CONTAINER_NAME = "docconvodocs"
+# Setup the Payloads header
+headers = {'Content-Type': 'application/json','api-key': os.environ['AZURE_SEARCH_KEY']}
+params = {'api-version': os.environ['AZURE_SEARCH_API_VERSION']}
+
+# Set the ENV variables that Langchain needs to connect to Azure OpenAI
+os.environ["OPENAI_API_VERSION"] = os.environ["AZURE_OPENAI_API_VERSION"]
+
+def text_to_base64(text):
+    # Convert text to bytes using UTF-8 encoding
+    bytes_data = text.encode('utf-8')
+
+    # Perform Base64 encoding
+    base64_encoded = base64.b64encode(bytes_data)
+
+    # Convert the result back to a UTF-8 string representation
+    base64_text = base64_encoded.decode('utf-8')
+
+    return base64_text
+
+def validate_environment_vars():
+    required_vars = [
+        "AZURE_SEARCH_KEY",
+        "AZURE_SEARCH_API_VERSION",
+        "AZURE_SEARCH_ENDPOINT",
+        "AZURE_OPENAI_API_VERSION",
+        "AZURE_OPENAI_ENDPOINT",
+        "AZURE_OPENAI_API_KEY",
+        "EMBEDDING_DEPLOYMENT_NAME",
+        "COG_SERVICES_NAME",
+        "COG_SERVICES_KEY",
+        "AZURE_BLOB_STORAGE_CONNECTION_STRING"
+    ]
+
+    for var in required_vars:
+        if var not in os.environ:
+            raise ValueError(f"Environment variable {var} is not set")
+    print("All environment variables are set")
+
+def create_index():
+    # Create an instance of the Azure OpenAI Embeddings
+    embedder = AzureOpenAIEmbeddings(deployment=os.environ["EMBEDDING_DEPLOYMENT_NAME"], chunk_size=1)
+
+    print("Index name: ", index_name)
+
+    index_payload = {
+        "name": index_name,
+        "vectorSearch": {
+            "algorithms": [
+                {
+                    "name": "myalgo",
+                    "kind": "hnsw"
+                }
+            ],
+            "vectorizers": [
+                {
+                    "name": "openai",
+                    "kind": "azureOpenAI",
+                    "azureOpenAIParameters":
+                    {
+                        "resourceUri" : os.environ['AZURE_OPENAI_ENDPOINT'],
+                        "apiKey" : os.environ['AZURE_OPENAI_API_KEY'],
+                        "deploymentId" : os.environ['EMBEDDING_DEPLOYMENT_NAME'],
+                        "modelName" : os.environ['EMBEDDING_DEPLOYMENT_NAME'],
+
+                    }
+                }
+            ],
+            "profiles": [
+                {
+                    "name": "myprofile",
+                    "algorithm": "myalgo",
+                    "vectorizer":"openai"
+                }
+            ]
+        },
+        "semantic": {
+            "configurations": [
+                {
+                    "name": "my-semantic-config",
+                    "prioritizedFields": {
+                        "titleField": {
+                            "fieldName": "title"
+                        },
+                        "prioritizedContentFields": [
+                            {
+                                "fieldName": "chunk"
+                            }
+                        ],
+                        "prioritizedKeywordsFields": []
+                    }
+                }
+            ]
+        },
+        "fields": [
+            {"name": "id", "type": "Edm.String", "key": "true", "analyzer": "keyword", "searchable": "true", "retrievable": "true", "sortable": "false", "filterable": "false","facetable": "false"},
+            {"name": "ParentKey", "type": "Edm.String", "searchable": "true", "retrievable": "true", "facetable": "false", "filterable": "true", "sortable": "false"},
+            {"name": "title", "type": "Edm.String", "searchable": "true", "retrievable": "true", "facetable": "false", "filterable": "true", "sortable": "false"},
+            {"name": "name", "type": "Edm.String", "searchable": "true", "retrievable": "true", "sortable": "false", "filterable": "false", "facetable": "false"},
+            {"name": "location", "type": "Edm.String", "searchable": "true", "retrievable": "true", "sortable": "false", "filterable": "false", "facetable": "false"},
+            {"name": "chunk","type": "Edm.String", "searchable": "true", "retrievable": "true", "sortable": "false", "filterable": "false", "facetable": "false"},
+            {
+                "name": "chunkVector",
+                "type": "Collection(Edm.Single)",
+                "dimensions": 1536, # IMPORTANT: Make sure these dimmensions match your embedding model name
+                "vectorSearchProfile": "myprofile",
+                "searchable": "true",
+                "retrievable": "true",
+                "filterable": "false",
+                "sortable": "false",
+                "facetable": "false"
+            }
+        ]
+    }
+    url=f"{os.environ['AZURE_SEARCH_ENDPOINT']}/indexes/{index_name}"
+    print(url)
+    r = requests.put(url,
+                    data=json.dumps(index_payload), headers=headers, params=params)
+    print(r.status_code)
+    print(r.text)
+    print(r.ok)
+
+def create_skillset():
+    print("Skillset name: ", skillset_name)
+
+    # Create a skillset
+    skillset_payload = {
+        "name": skillset_name,
+        "description": "e2e Skillset for RAG - Files",
+        "skills":
+        [
+            {
+                "@odata.type": "#Microsoft.Skills.Vision.OcrSkill",
+                "description": "Extract text (plain and structured) from image.",
+                "context": "/document/normalized_images/*",
+                "defaultLanguageCode": "en",
+                "detectOrientation": True,
+                "inputs": [
+                    {
+                    "name": "image",
+                    "source": "/document/normalized_images/*"
+                    }
+                ],
+                    "outputs": [
+                    {
+                    "name": "text",
+                    "targetName" : "images_text"
+                    }
+                ]
+            },
+            {
+                "@odata.type": "#Microsoft.Skills.Text.MergeSkill",
+                "description": "Create merged_text, which includes all the textual representation of each image inserted at the right location in the content field. This is useful for PDF and other file formats that supported embedded images.",
+                "context": "/document",
+                "insertPreTag": " ",
+                "insertPostTag": " ",
+                "inputs": [
+                    {
+                    "name":"text", "source": "/document/content"
+                    },
+                    {
+                    "name": "itemsToInsert", "source": "/document/normalized_images/*/images_text"
+                    },
+                    {
+                    "name":"offsets", "source": "/document/normalized_images/*/contentOffset"
+                    }
+                ],
+                "outputs": [
+                    {
+                    "name": "mergedText",
+                    "targetName" : "merged_text"
+                    }
+                ]
+            },
+            {
+                "@odata.type": "#Microsoft.Skills.Text.SplitSkill",
+                "context": "/document",
+                "textSplitMode": "pages",  # although it says "pages" it actally means chunks, not actual pages
+                "maximumPageLength": 5000, # 5000 characters is default and a good choice
+                "pageOverlapLength": 750,  # 15% overlap among chunks
+                "defaultLanguageCode": "en",
+                "inputs": [
+                    {
+                        "name": "text",
+                        "source": "/document/merged_text"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "textItems",
+                        "targetName": "chunks"
+                    }
+                ]
+            },
+            {
+                "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
+                "description": "Azure OpenAI Embedding Skill",
+                "context": "/document/chunks/*",
+                "resourceUri": os.environ['AZURE_OPENAI_ENDPOINT'],
+                "apiKey": os.environ['AZURE_OPENAI_API_KEY'],
+                "deploymentId": os.environ['EMBEDDING_DEPLOYMENT_NAME'],
+                "modelName": os.environ['EMBEDDING_DEPLOYMENT_NAME'],
+                "inputs": [
+                    {
+                        "name": "text",
+                        "source": "/document/chunks/*"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "embedding",
+                        "targetName": "vector"
+                    }
+                ]
+            }
+        ],
+        "indexProjections": {
+            "selectors": [
+                {
+                    "targetIndexName": index_name,
+                    "parentKeyFieldName": "ParentKey",
+                    "sourceContext": "/document/chunks/*",
+                    "mappings": [
+                        {
+                            "name": "title",
+                            "source": "/document/title"
+                        },
+                        {
+                            "name": "name",
+                            "source": "/document/name"
+                        },
+                        {
+                            "name": "location",
+                            "source": "/document/location"
+                        },
+                        {
+                            "name": "chunk",
+                            "source": "/document/chunks/*"
+                        },
+                        {
+                            "name": "chunkVector",
+                            "source": "/document/chunks/*/vector"
+                        }
+                    ]
+                }
+            ],
+            "parameters": {
+                "projectionMode": "skipIndexingParentDocuments"
+            }
+        },
+        "cognitiveServices": {
+            "@odata.type": "#Microsoft.Azure.Search.CognitiveServicesByKey",
+            "description": os.environ['COG_SERVICES_NAME'],
+            "key": os.environ['COG_SERVICES_KEY']
+        }
+    }
+
+    r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/skillsets/" + skillset_name,
+                    data=json.dumps(skillset_payload), headers=headers, params=params)
+    print(r.status_code)
+
+    datasource_name = index_name + "datasource"
+    print("Datasource name: ", datasource_name)
+    print("Container name: ", BLOB_CONTAINER_NAME)
+    print(r.ok)
+
+def create_blob_container():
+
+    connect_str = os.environ["AZURE_BLOB_STORAGE_CONNECTION_STRING"]
+    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+
+    try:
+        container_client = blob_service_client.create_container(name=BLOB_CONTAINER_NAME)
+    except ResourceExistsError:
+        print('A container with this name already exists. Continuing with the existing container.')
+
+    datasource_payload = {
+        "name": datasource_name,
+        "description": "Demo files to demonstrate cognitive search capabilities.",
+        "type": "azureblob",
+        "credentials": {
+            "connectionString": os.environ['AZURE_BLOB_STORAGE_CONNECTION_STRING']
+        },
+        "dataDeletionDetectionPolicy" : {
+            "@odata.type" :"#Microsoft.Azure.Search.SoftDeleteColumnDeletionDetectionPolicy",
+            "softDeleteColumnName" : "IsDeleted",
+            "softDeleteMarkerValue" : "true"
+        },
+        "container": {
+            "name": BLOB_CONTAINER_NAME
+        }
+    }
+    r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/datasources/" + datasource_name,
+                    data=json.dumps(datasource_payload), headers=headers, params=params)
+    print(r.status_code)
+    print(r.text)
+    print(r.ok)
+
+def create_indexer():
+    print("Indexer name: ", indexer_name)
+
+    # Create an indexer
+    indexer_payload = {
+        "name": indexer_name,
+        "dataSourceName": datasource_name,
+        "targetIndexName": index_name,
+        "skillsetName": skillset_name,
+        "schedule" : { "interval" : "PT30M"}, # How often do you want to check for new content in the data source
+        "fieldMappings": [
+            {
+            "sourceFieldName" : "metadata_title",
+            "targetFieldName" : "title"
+            },
+            {
+            "sourceFieldName" : "metadata_storage_name",
+            "targetFieldName" : "name"
+            },
+            {
+            "sourceFieldName" : "metadata_storage_path",
+            "targetFieldName" : "location"
+            }
+        ],
+        "outputFieldMappings":[],
+        "parameters":
+        {
+            "maxFailedItems": -1,
+            "maxFailedItemsPerBatch": -1,
+            "configuration":
+            {
+                "dataToExtract": "contentAndMetadata",
+                "imageAction": "generateNormalizedImages"
+            }
+        }
+    }
+
+    r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/indexers/" + indexer_name,
+                    data=json.dumps(indexer_payload), headers=headers, params=params)
+    print(r.status_code)
+    print(r.text)
+    print(r.ok)
+
+
+if __name__ == "__main__":
+    validate_environment_vars()
+    create_index()
+    print("Index created successfully")
