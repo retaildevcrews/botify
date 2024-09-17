@@ -236,12 +236,21 @@
         }
       },
       {
-        "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/default', parameters('blobStorageAccountName'))]",
+              "dependsOn": [
+                "[resourceId('Microsoft.Storage/storageAccounts', parameters('blobStorageAccountName'))]"
+              ],
+              "properties": {}
+            },
+      {
+        "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
         "apiVersion": "2023-01-01",
-        "name": "default",
         "dependsOn": [
-          "[resourceId('Microsoft.Storage/storageAccounts', parameters('blobStorageAccountName'))]"
+          "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('blobStorageAccountName'), 'default')]"
         ],
+        "name": "[format('{0}/default/books', parameters('blobStorageAccountName'))]",
         "properties": {}
       },
       {
@@ -250,7 +259,7 @@
         "dependsOn": [
           "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('blobStorageAccountName'), 'default')]"
         ],
-        "name": "[concat(parameters('blobStorageAccountName'), 'books')]",
+        "name": "[format('{0}/default/cord19', parameters('blobStorageAccountName'))]",
         "properties": {}
       },
       {
@@ -259,16 +268,7 @@
         "dependsOn": [
           "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('blobStorageAccountName'), 'default')]"
         ],
-        "name": "[concat(parameters('blobStorageAccountName'), 'cord19')]",
-        "properties": {}
-      },
-      {
-        "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
-        "apiVersion": "2023-01-01",
-        "dependsOn": [
-          "[resourceId('Microsoft.Storage/storageAccounts/blobServices', parameters('blobStorageAccountName'), 'default')]"
-        ],
-        "name": "[concat(parameters('blobStorageAccountName'), 'mixed')]",
+        "name": "[format('{0}/default/mixed', parameters('blobStorageAccountName'))]",
         "properties": {}
       }
     ],
