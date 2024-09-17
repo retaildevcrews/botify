@@ -9,6 +9,7 @@
           "description": "Optional, defaults to resource group location. The location of the resources."
         }
       },
+
       "azureSearchName": {
         "type": "string",
         "defaultValue": "[format('cog-search-{0}', uniqueString(resourceGroup().id))]",
@@ -92,6 +93,18 @@
       "blobStorageAccountName": {
         "type": "string",
         "defaultValue": "[format('blobstorage{0}', uniqueString(resourceGroup().id))]"
+      },
+      "openAIServiceName": {
+        "type": "string",
+        "defaultValue": "[format('openai-service-{0}', uniqueString(resourceGroup().id))]"
+      },
+      "openAIModelName": {
+        "type": "string",
+        "defaultValue": "gpt-4o",
+        "allowedValues": [
+          "gpt-4o",
+          "gpt-4o-mini"
+        ]
       }
     },
     "variables": {
@@ -261,7 +274,37 @@
         ],
         "name": "[format('{0}/default/mixed', parameters('blobStorageAccountName'))]",
         "properties": {}
+      },
+          {
+      "type": "Microsoft.CognitiveServices/accounts",
+      "apiVersion": "2023-05-01",
+      "name": "[parameters('openAIServiceName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "S0"
+      },
+      "kind": "OpenAI",
+      "properties": {
+        "customSubDomainName": "[parameters('openAIServiceName')]"
       }
+    },
+    {
+      "type": "Microsoft.CognitiveServices/accounts/deployments",
+      "apiVersion": "2023-05-01",
+      "name": "[concat(parameters('openAIServiceName'), '/', parameters('openAIModelName'))]",
+      "dependsOn": [
+        "[resourceId('Microsoft.CognitiveServices/accounts', parameters('openAIServiceName'))]"
+      ],
+      "properties": {
+        "model": {
+          "format": "OpenAI",
+          "name": "[parameters('openAIModelName')]"
+        },
+        "scaleSettings": {
+          "scaleType": "Standard"
+        }
+      }
+    }
     ],
     "outputs": {
       "azureSearchName": {
@@ -300,13 +343,17 @@
         "type": "string",
         "value": "[reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint]"
       },
-      "cosmosDBConnectionString": {
-        "type": "string",
-        "value": "[format('AccountEndpoint={0};AccountKey={1}', reference(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName'))).documentEndpoint, listKeys(resourceId('Microsoft.DocumentDB/databaseAccounts', parameters('cosmosDBAccountName')), '2023-04-15').primaryMasterKey)]"
-      },
       "cognitiveServiceName": {
         "type": "string",
         "value": "[parameters('cognitiveServiceName')]"
-      }
+      },
+          "openAIServiceEndpoint": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('openAIServiceName'))).properties.endpoint]"
+    },
+    "openAIModelName": {
+      "type": "string",
+      "value": "[parameters('openAIModelName')]"
+    }
     }
   }
