@@ -4,7 +4,7 @@ import pandas as pd
 from langchain_openai import AzureOpenAIEmbeddings
 from dotenv import load_dotenv
 import requests
-from utils import text_to_base64, print_response_status, get_headers_and_params, load_environment_variables
+from utils import get_headers_and_params, load_environment_variables
 
 def validate_environment_vars():
     required_vars = [
@@ -81,6 +81,5 @@ def load_json_data():
             continue
 
 if __name__ == "__main__":
-    load_environment_variables()
     validate_environment_vars()
     load_json_data()

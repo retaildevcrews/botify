@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import requests
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
-from utils import text_to_base64, print_response_status, get_headers_and_params, load_environment_variables
+from utils import print_response_status, get_headers_and_params, load_environment_variables
 
 index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
 skillset_name = index_name + "skillset"

@@ -4,7 +4,7 @@ import pandas as pd
 from langchain_openai import AzureOpenAIEmbeddings
 from dotenv import load_dotenv
 
-load_dotenv("../apps/credentials.env")
+#load_dotenv("../apps/credentials.env")
 
 def get_headers_and_params():
     headers = {'Content-Type': 'application/json', 'api-key': os.environ['AZURE_SEARCH_KEY']}
@@ -45,3 +45,5 @@ def load_environment_variables():
     env_path = os.path.join(current_dir, ".." , "apps", "credentials.env")
 
     load_dotenv(env_path)
+
+load_environment_variables()
