@@ -36,6 +36,18 @@ def text_to_base64(text):
 
     return base64_text
 
+def print_response_status(response, item_type):
+    if (response.status_code < 300):
+            if response.status_code == 201:
+                print(f"{item_type} created successfully")
+            elif response.status_code == 204:
+                print(f"{item_type} already exists")
+            return True
+
+    print(f"ERROR - creating {item_type}")
+    print(response.text)
+    print(response.status_code)
+
 def validate_environment_vars():
     required_vars = [
         "AZURE_SEARCH_KEY",
@@ -133,16 +145,11 @@ def create_index():
     url=f"{os.environ['AZURE_SEARCH_ENDPOINT']}/indexes/{index_name}"
     r = requests.put(url,
                     data=json.dumps(index_payload), headers=headers, params=params)
+    print_response_status(r, "Index")
+
     if (r.status_code < 300):
-        if r.status_code == 201:
-            print("Index created successfully")
-        elif r.status_code == 204:
-            print("Index already exists")
         return True
 
-    print("ERROR - creating index")
-    print(r.text)
-    print(r.status_code)
     return False
 
 def create_skillset():
@@ -283,16 +290,11 @@ def create_skillset():
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/skillsets/" + skillset_name,
                     data=json.dumps(skillset_payload), headers=headers, params=params)
 
+    print_response_status(r, "Skillset")
+
     if (r.status_code < 300):
-        if r.status_code == 201:
-            print("Skillset created successfully")
-        elif r.status_code == 204:
-            print("Skillset already exists")
         return True
 
-    print("ERROR - creating skillset")
-    print(r.text)
-    print(r.status_code)
     return False
 
 
@@ -328,16 +330,11 @@ def create_blob_container_datasource():
 
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/datasources/" + datasource_name,
                     data=json.dumps(datasource_payload), headers=headers, params=params)
-    if (r.status_code < 300):
-            if r.status_code == 201:
-                print("Datasource created successfully")
-            elif r.status_code == 204:
-                print("Datasource already exists")
-            return True
+    print_response_status(r, "Datasource")
 
-    print("ERROR - creating Datasource")
-    print(r.text)
-    print(r.status_code)
+    if (r.status_code < 300):
+        return True
+
     return False
 
 def create_indexer():
@@ -379,16 +376,12 @@ def create_indexer():
 
     r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/indexers/" + indexer_name,
                     data=json.dumps(indexer_payload), headers=headers, params=params)
+    print_response_status(r, "Indexer")
+
     if (r.status_code < 300):
-        if r.status_code == 201:
-            print("Indexer created successfully")
-        elif r.status_code == 204:
-            print("Indexer already exists")
         return True
 
-    print("ERROR - creating Indexer")
-    print(r.text)
-    print(r.status_code)
+    return False
 
 
 if __name__ == "__main__":
