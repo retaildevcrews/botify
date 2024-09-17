@@ -129,7 +129,7 @@
       },
       {
         "type": "Microsoft.Search/searchServices",
-        "apiVersion": "2021-04-01-Preview",
+        "apiVersion": "2020-08-01",
         "name": "[parameters('azureSearchName')]",
         "location": "[parameters('location')]",
         "sku": {
@@ -138,8 +138,7 @@
         "properties": {
           "replicaCount": "[parameters('azureSearchReplicaCount')]",
           "partitionCount": "[parameters('azureSearchPartitionCount')]",
-          "hostingMode": "[parameters('azureSearchHostingMode')]",
-          "semanticSearch": "standard"
+          "hostingMode": "[parameters('azureSearchHostingMode')]"
         }
       },
       {
