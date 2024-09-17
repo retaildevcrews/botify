@@ -1,4 +1,3 @@
-import json
 from time import perf_counter
 from typing import List
 
@@ -74,7 +73,7 @@ def parse_full_flow_response(response, factory: RunnableFactory):
             "app_config_hash": factory.app_settings.get_config_hash(),
             "history": history,
         }
-    except Exception as e:
+    except Exception:
         return {"error": "Failed to parse response:" + response}
 
 
@@ -128,10 +127,9 @@ class RunnableCaller:
             ellapsed_time = end_time - start_time
         try:
             output = parse_full_flow_response(result, self.factory)
-        except TypeError as e:
+        except TypeError:
             output["answer"] = (
-                f"Failed to parse response - unparsed result: {
-                result}"
+                f"Failed to parse response - unparsed result: {result}"
             )
         output["start_time"] = start_time
         output["end_time"] = end_time

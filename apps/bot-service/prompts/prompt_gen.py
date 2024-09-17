@@ -129,7 +129,8 @@ class PromptGen:
 
     def _generate_prompt_from_text_file(self, template_name, **kwargs) -> str:
         """
-        Reads the content of a text file, removes leading and trailing whitespace, and returns the content as a string.
+        Reads the content of a text file, removes leading and trailing whitespace,
+        and returns the content as a string.
 
         :param template_name: Path to the text file.
         :return: A string with the content of the file, trimmed of leading and trailing whitespace.

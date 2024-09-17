@@ -9,7 +9,8 @@ st.markdown("---")
 
 st.markdown(
     """
-    This app uses Azure Cognitive Search and Azure OpenAI to provide answers and suggestions about your next favorite example!
+    This app uses Azure Cognitive Search and Azure OpenAI
+    to provide answers and suggestions about your next favorite example!
 
     ### Want to learn more?
     - Check out the [GitHub Repository](https://github.com/retaildevcrews/botify/)

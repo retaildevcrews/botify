@@ -80,7 +80,7 @@ class AzureContentSafety_Tool(BaseTool):
         payload_shield = {"userPrompt": query, "documents": None}
         payload_harmful = {"text": query}
 
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession():
             shield_task = asyncio.create_task(
                 self._make_async_request(self.prompt_shield_endpoint, payload_shield)
             )

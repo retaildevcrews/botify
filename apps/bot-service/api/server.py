@@ -42,7 +42,8 @@ class AppFactory:
         self.app = FastAPI(
             title="Botify API",
             version=self.get_version(),
-            description="An API server utilizing LangChain's Runnable interfaces to create a chatbot that uses an index as grounding material for answering questions.",
+            description="An API server utilizing LangChain's Runnable interfaces to create a chatbot "
+                        "that uses an index as grounding material for answering questions.",
         )
         self.setup_middleware()
         self.setup_routes()

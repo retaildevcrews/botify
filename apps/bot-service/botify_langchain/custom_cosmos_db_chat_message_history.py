@@ -2,21 +2,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import Any, Optional
 
 from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from langchain_core.messages import BaseMessage
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from azure.cosmos import ContainerProxy
-
-
-logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from azure.cosmos import ContainerProxy
 
 
 class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
@@ -52,5 +43,5 @@ class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
                 content_object = json.loads(message.content)
                 message.content = content_object["displayResponse"]
             except Exception as e:
-                logger.info("Failed to parse message content, so keeping original content")
+                logger.info(f"Failed to parse message content, so keeping original content. Error: {e}")
         super().add_message(message)

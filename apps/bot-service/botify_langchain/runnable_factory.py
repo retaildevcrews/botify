@@ -186,7 +186,8 @@ class RunnableFactory:
                 cosmos_endpoint=self.app_settings.environment_config.cosmos_endpoint,
                 cosmos_database=self.app_settings.environment_config.cosmos_database,
                 cosmos_container=self.app_settings.environment_config.cosmos_container,
-                connection_string=self.app_settings.environment_config.cosmos_connection_string.get_secret_value(),
+                connection_string=self.app_settings.environment_config.
+                cosmos_connection_string.get_secret_value(),
                 session_id=session_id,
                 user_id=user_id,
             )
@@ -273,7 +274,7 @@ class RunnableFactory:
                     current_span.set_attribute(
                         "harmful_categories_detected", str(captured_harmful_categories)
                     )
-            if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected == False:
+            if len(self.app_settings.banned_topics) > 0 and not harmful_prompt_detected:
                 tool_input = {"text_entry": state["question"], "topics": AppSettings().banned_topics}
                 banned_topic_results = TopicDetectionTool().run(tool_input)
                 banned_topic_detected = len(banned_topic_results) > 0
@@ -281,7 +282,8 @@ class RunnableFactory:
                 if banned_topic_detected:
                     current_span.set_attribute("banned_topics_detected", str(banned_topic_results))
                 self.logger.debug(
-                    f"Topic Detection Tool - banned topic detected: {banned_topic_detected} results: {banned_topic_results}"
+                    f"Topic Detection Tool - banned topic detected: {banned_topic_detected}"
+                    f"results: {banned_topic_results}"
                 )
         except Exception as e:
             logging.error(
@@ -325,7 +327,7 @@ class RunnableFactory:
         return state
 
     def identify_disclaimers(self, state: dict):
-        self.logger.debug(f"Topic Detection Tool Executing")
+        self.logger.debug("Topic Detection Tool Executing")
         current_span = get_current_span()
         tool_input = {"text_entry": state["question"], "topics": AppSettings().disclaimer_topics}
         results = TopicDetectionTool().run(tool_input)
@@ -369,7 +371,8 @@ class RunnableFactory:
                 llm_output = llm_output[1:-1]
             if llm_output == data:
                 self.logger.warning(
-                    f"LLM returned incorrect format so will wrap in json object llm response was: {llm_output}"
+                    "LLM returned incorrect format so will wrap in json object "
+                    f"llm response was: {llm_output}"
                 )
                 data = {"displayResponse": llm_output, "voiceSummary": llm_output}
         except Exception as e:

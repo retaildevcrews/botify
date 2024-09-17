@@ -20,7 +20,7 @@ def run_evaluation(
     try:
         skip_environment_validation = kwargs.get("ignore_environment_validation")
 
-        if skip_environment_validation == None or not skip_environment_validation:
+        if skip_environment_validation is None or not skip_environment_validation:
             AppSettings()
         path = str(pathlib.Path.cwd() / dataset_path)
         result = evaluate_function(

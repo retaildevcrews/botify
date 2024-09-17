@@ -132,7 +132,8 @@ class EnvironmentConfig:
     # Validating anonymizer mode
     if anonymizer_mode not in VALID_ANONYMIZER_MODES:
         raise ValueError(
-            f"Invalid anonymizer mode: '{anonymizer_mode}'. Valid modes are: {', '.join(VALID_ANONYMIZER_MODES)}"
+            f"Invalid anonymizer mode: '{anonymizer_mode}'. "
+            f"Valid modes are: {', '.join(VALID_ANONYMIZER_MODES)}"
         )
     anonymizer_crypto_key = SecretStr(
         get_config_value("ANONYMIZER_CRYPTO_KEY", default_value="", required=False)

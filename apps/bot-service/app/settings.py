@@ -46,7 +46,8 @@ class AppSettings:
 
     # Default model configuration can be seen in the ModelConfig class
     model_config: ModelConfig = field(default_factory=ModelConfig)
-    # When this is set to true, the agent will attempt to store only the display message and not entire bot response
+    # When this is set to true, the agent will attempt to store only the display message
+    # and not entire bot response
     optimize_history: bool = True
     search_tool_topk: int = 10
     search_similarity_field: str = "summary"

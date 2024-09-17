@@ -10,7 +10,8 @@ def get_env_var(var_name, default_value=None, required=True):
 
 
 # Set environment variables for LangChain
-# Using invoke instead of stream_events as it's currenly blocked by opentelemetry issue: https://github.com/traceloop/openllmetry/issues/1101
+# Using invoke instead of stream_events as it's currenly blocked
+# by opentelemetry issue: https://github.com/traceloop/openllmetry/issues/1101
 api_base_url = get_env_var("FAST_API_SERVER", required=True)
 api_url = f"{api_base_url}/agent/invoke"
 
