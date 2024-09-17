@@ -2,7 +2,7 @@ services:
   # OpenTelemetry Collector
   otelcol:
     image: otel/opentelemetry-collector-contrib:0.100.0
-    container_name: otel-col
+    container_name: otelcol
     deploy:
       resources:
         limits:

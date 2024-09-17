@@ -8,7 +8,7 @@ Ensure infrastructure has been deployed according to the following instructions:
 
 ```bash
 cd apps
-docker compose up -w
+docker compose up --build
 ```
 
 You can access the StreamLit test bot here: <http://localhost:8000>
