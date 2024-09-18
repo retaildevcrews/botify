@@ -356,13 +356,13 @@
         "type": "string",
         "value": "[parameters('cognitiveServiceName')]"
       },
-          "openAIServiceEndpoint": {
-      "type": "string",
-      "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('openAIServiceName'))).properties.endpoint]"
-    },
-    "openAIModelName": {
-      "type": "string",
-      "value": "[parameters('openAIModelName')]"
-    }
+      "openAIServiceEndpoint": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('openAIServiceName'))).endpoint]"
+      },
+     "openAIModelName": {
+        "type": "string",
+        "value": "[parameters('openAIModelName')]"
+      }
     }
   }
