@@ -287,10 +287,10 @@
       "apiVersion": "2023-05-01",
       "name": "[parameters('openAIServiceName')]",
       "location": "[parameters('location')]",
+      "kind": "OpenAI",
       "sku": {
         "name": "S0"
       },
-      "kind": "OpenAI",
       "properties": {
         "customSubDomainName": "[parameters('openAIServiceName')]"
       }
@@ -305,11 +305,11 @@
       "properties": {
         "model": {
           "format": "OpenAI",
-          "name": "[parameters('openAIModelName')]"
+          "name": "[parameters('openAIModelName')]",
+          "version": "latest"
         },
-        "sku": {
-            "name": "Standard",
-            "capacity": 70
+        "scaleSettings": {
+          "scaleType": "Standard"
         }
       }
     }
