@@ -5,6 +5,7 @@ from langchain_openai import AzureOpenAIEmbeddings
 from dotenv import load_dotenv
 import requests
 from utils import get_headers_and_params, load_environment_variables
+import argparse
 
 def validate_environment_vars():
     required_vars = [
@@ -26,13 +27,8 @@ def validate_environment_vars():
 
 
 
-def load_json_data():
-    #load data from jsonl file
-        # Get the current directory of the script
-    current_dir = os.path.dirname(os.path.abspath(__file__))
+def load_json_data(data_file: str):
 
-    # Construct the absolute path to the .env file
-    data_file = os.path.join(current_dir, "data.jsonl")
 
     data = pd.read_json(data_file, lines=True)
 
@@ -81,5 +77,22 @@ def load_json_data():
             continue
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Create Azure Search Index")
+    parser.add_argument("--datafile", required=False, help="Path to the data file. Default is 'search_index/data.jsonl'", default="")
+
+    args = parser.parse_args()
+
+    datafile = args.datafile
+    if (datafile is None) or (datafile.strip() == ""):
+        #load data from jsonl file
+        # Get the current directory of the script
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+
+        # Construct the absolute path to the .env file
+        datafile = os.path.join(current_dir, "data.jsonl")
+
+    print("Data file: ", datafile)
+    print()
+
     validate_environment_vars()
-    load_json_data()
+    load_json_data(datafile)

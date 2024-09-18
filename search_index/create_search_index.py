@@ -1,13 +1,12 @@
 import os
 import json
-import base64
 import pandas as pd
-from langchain_openai import AzureOpenAIEmbeddings
 from dotenv import load_dotenv
 import requests
 from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
 from utils import print_response_status, get_headers_and_params, load_environment_variables
+import argparse
 
 index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
 skillset_name = index_name + "skillset"
@@ -155,7 +154,7 @@ def create_index():
 
     return False
 
-def create_skillset():
+def create_skillset(chunksize: int, chunkoverlapsize: int):
     print("Skillset name: ", skillset_name)
 
     # Create a skillset
@@ -211,8 +210,8 @@ def create_skillset():
                 "@odata.type": "#Microsoft.Skills.Text.SplitSkill",
                 "context": "/document",
                 "textSplitMode": "pages",  # although it says "pages" it actally means chunks, not actual pages
-                "maximumPageLength": 5000, # 5000 characters is default and a good choice
-                "pageOverlapLength": 750,  # 15% overlap among chunks
+                "maximumPageLength": chunksize, # 5000 characters is default and a good choice
+                "pageOverlapLength": chunkoverlapsize,  # 15% overlap among chunks
                 "defaultLanguageCode": "en",
                 "inputs": [
                     {
@@ -392,10 +391,25 @@ def create_indexer():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Create Azure Search Index")
+    parser.add_argument("--chunksize", required=False, type=int, help="Size of the chunks. Default is 5000", default=5000)
+    parser.add_argument("--chunkoverlapsize", required=False, type=int, help="Size of the overlap size for chunks. Default is 750", default=750)
+
+    args = parser.parse_args()
+
+    chunksize = args.chunksize
+    chunkoverlapsize = args.chunkoverlapsize
+
+    #print("Data file: ", datafile)
+    print("Chunk size: ", chunksize)
+    print("Chunk overlap size: ", chunkoverlapsize)
+    print()
+
+
     validate_environment_vars()
     if create_index() == False:
         exit(1)
-    if (create_skillset() == False):
+    if (create_skillset(chunksize=chunksize, chunkoverlapsize=chunkoverlapsize) == False):
         exit(1)
     if (create_blob_container_datasource() == False):
         exit(1)
