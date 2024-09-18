@@ -311,9 +311,6 @@
           "format": "OpenAI",
           "name": "[parameters('openAIModelName')]",
           "version": "2024-08-06"
-        },
-        "scaleSettings": {
-          "scaleType": "Standard"
         }
       }
     }
