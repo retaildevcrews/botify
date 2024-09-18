@@ -120,6 +120,23 @@ EOF
 
 > Note: You can also provision the infrastructure by [deploying a Bicep template file](./infra/README.md) using the Command Line Interface (CLI).
 
+### Adding sample data
+
+To add an example index to Azure AI Search, you can run the following command:
+
+```
+make create-index-and-load-data
+```
+
+This will create an index, datasource, indexer and skillset that will populate some data into an index using the ```./search_index/data.json```
+
+This process will also ensure that all the required environment variables are set first. If this is not the case, the process will stop with an error on the missing environment variable.
+
+This performs 2 separate steps:
+
+1. Creates the index, skillset, datasource and indexer within Azure AI Search. This can be performed separately using ```make create-index```
+2. Loads the sample data into the index. This can be performed using  ```make load-json-data```
+
 ### Build and Run Docker Images
 
 Running the following Docker Compose command will build the latest images and then run them with the required networking, secrets, services, and port forwarding. Open [docker-compose.yaml](./apps/docker-compose.yaml) for more info.
