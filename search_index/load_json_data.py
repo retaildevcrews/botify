@@ -16,13 +16,13 @@ def validate_environment_vars():
         "AZURE_OPENAI_API_VERSION",
         "EMBEDDING_DEPLOYMENT_NAME",
         "AZURE_SEARCH_INDEX_NAME",
-        "AZURE_SEARCH_API_VERSION",
-        "AZURE_SEARCH_KEY"
+        "AZURE_SEARCH_API_VERSION"
     ]
     for var in required_vars:
-        if var not in os.environ:
-            raise ValueError(f"Missing required environment variable: {var}")
-    print("All environment variables are set")
+        if var not in os.environ or not os.environ[var].strip():
+            raise ValueError(f"Environment variable {var} is not set or is empty")
+
+    print("All environment variables are set and non-empty")
 
 
 

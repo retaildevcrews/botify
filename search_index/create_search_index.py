@@ -33,9 +33,10 @@ def validate_environment_vars():
     ]
 
     for var in required_vars:
-        if var not in os.environ:
-            raise ValueError(f"Environment variable {var} is not set")
-    print("All environment variables are set")
+        if var not in os.environ or not os.environ[var].strip():
+            raise ValueError(f"Environment variable {var} is not set or is empty")
+
+    print("All environment variables are set and non-empty")
 
 def create_index():
     print("Index name: ", index_name)
