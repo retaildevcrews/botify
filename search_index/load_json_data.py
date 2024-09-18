@@ -6,35 +6,36 @@ from dotenv import load_dotenv
 import requests
 from utils import get_headers_and_params, load_environment_variables
 import argparse
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from configs.environment_config import EnvironmentConfig
 
-def validate_environment_vars():
-    required_vars = [
-        "AZURE_SEARCH_ENDPOINT",
-        "AZURE_SEARCH_API_VERSION",
-        "AZURE_SEARCH_KEY",
-        "AZURE_OPENAI_ENDPOINT",
-        "AZURE_OPENAI_API_KEY",
-        "AZURE_OPENAI_API_VERSION",
-        "EMBEDDING_DEPLOYMENT_NAME",
-        "AZURE_SEARCH_INDEX_NAME",
-        "AZURE_SEARCH_API_VERSION"
-    ]
-    for var in required_vars:
-        if var not in os.environ or not os.environ[var].strip():
-            raise ValueError(f"Environment variable {var} is not set or is empty")
+
+def validate_environment_vars(config : EnvironmentConfig):
+    required_vars = {
+        "AZURE_SEARCH_KEY": config.azure_search_key,
+        "AZURE_SEARCH_API_VERSION": config.azure_search_api_version,
+        "AZURE_SEARCH_ENDPOINT": config.azure_search_endpoint,
+        "AZURE_OPENAI_API_VERSION": config.openai_api_version,
+        "AZURE_OPENAI_ENDPOINT": config.openai_endpoint,
+        "AZURE_OPENAI_API_KEY": config.openai_api_key,
+        "EMBEDDING_DEPLOYMENT_NAME": config.embedding_deployment_name
+    }
+
+    for var_name, var_value in required_vars.items():
+        if var_value is None:
+            raise ValueError(f"Environment variable {var_name} is not set or is empty")
 
     print("All environment variables are set and non-empty")
-
-
 
 def load_json_data(data_file: str):
 
 
     data = pd.read_json(data_file, lines=True)
 
-    embedder = AzureOpenAIEmbeddings(deployment=os.environ["EMBEDDING_DEPLOYMENT_NAME"], chunk_size=1)
+    embedder = AzureOpenAIEmbeddings(deployment= config.embedding_deployment_name, chunk_size=1)
     headers, params = get_headers_and_params()
-    index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
+    index_name= config.doc_index
 
     #iterarte over dataframe and access each column's value to populate index
 
@@ -65,7 +66,7 @@ def load_json_data(data_file: str):
             ]
         }
         try:
-            r = requests.post(os.environ['AZURE_SEARCH_ENDPOINT'] + "/indexes/" + index_name + "/docs/index",
+            r = requests.post(config.azure_search_endpoint + "/indexes/" + index_name + "/docs/index",
                         data=json.dumps(payload), headers=headers, params=params)
             print(f"added article {id} to index")
             if r.status_code != 200:
@@ -94,5 +95,7 @@ if __name__ == "__main__":
     print("Data file: ", datafile)
     print()
 
-    validate_environment_vars()
+    config = load_environment_variables()
+    validate_environment_vars(config)
+
     load_json_data(datafile)

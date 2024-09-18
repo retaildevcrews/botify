@@ -3,6 +3,10 @@ import base64
 import pandas as pd
 from langchain_openai import AzureOpenAIEmbeddings
 from dotenv import load_dotenv
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from configs.environment_config import EnvironmentConfig
 
 #load_dotenv("../apps/credentials.env")
 
@@ -35,7 +39,7 @@ def print_response_status(response, item_type):
     print(response.text)
     print(response.status_code)
 
-def load_environment_variables():
+def load_environment_variables() -> EnvironmentConfig:
     # load the environment variables
 
     # Get the current directory of the script
@@ -46,4 +50,6 @@ def load_environment_variables():
 
     load_dotenv(env_path)
 
-load_environment_variables()
+    environment_config = EnvironmentConfig()
+
+    return environment_config

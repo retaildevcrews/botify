@@ -144,6 +144,7 @@ class EnvironmentConfig:
         self.openai_endpoint = get_config_value("AZURE_OPENAI_ENDPOINT", required=True)
         self.openai_api_key = SecretStr(get_config_value("AZURE_OPENAI_API_KEY", required=True))
         self.openai_deployment_name = get_config_value("AZURE_OPENAI_MODEL_NAME", required=True)
+        self.embedding_deployment_name = get_config_value("EMBEDDING_DEPLOYMENT_NAME", required=True)
         self.openai_classifier_deployment_name = get_config_value(
             "AZURE_OPENAI_CLASSIFIER_MODEL_NAME", required=True
         )
@@ -162,6 +163,10 @@ class EnvironmentConfig:
         self.azure_search_endpoint = get_config_value("AZURE_SEARCH_ENDPOINT", required=True)
         self.azure_search_key = SecretStr(get_config_value("AZURE_SEARCH_KEY", required=True))
         self.azure_search_api_version = get_config_value("AZURE_SEARCH_API_VERSION", required=True)
+        self.cog_services_name = get_config_value("COG_SERVICES_NAME", required=True)
+        self.cog_services_key = SecretStr(get_config_value("COG_SERVICES_KEY", required=True))
+        self.azure_blob_storage_connection_string = SecretStr(
+            get_config_value("AZURE_BLOB_STORAGE_CONNECTION_STRING", required=True))
         # Content Safety
         self.content_safety_endpoint = get_config_value("CONTENT_SAFETY_ENDPOINT", required=True)
         self.content_safety_key = SecretStr(get_config_value("CONTENT_SAFETY_KEY", required=True))
@@ -179,3 +184,6 @@ class EnvironmentConfig:
                 os.environ["AZURE_OPENAI_ENDPOINT"] = self.openai_endpoint
             if self.openai_deployment_name:
                 os.environ["AZURE_OPENAI_MODEL_NAME"] = self.openai_deployment_name
+
+        # Set the ENV variables that Langchain needs to connect to Azure OpenAI
+        os.environ["OPENAI_API_VERSION"] = os.environ["AZURE_OPENAI_API_VERSION"]

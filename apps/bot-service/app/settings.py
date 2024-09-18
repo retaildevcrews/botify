@@ -3,7 +3,10 @@ from dataclasses import field
 from typing import Dict, Optional
 
 import pydantic
-from app.environment_config import EnvironmentConfig
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+from configs.environment_config import EnvironmentConfig
 from pydantic import RootModel
 
 

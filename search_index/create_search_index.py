@@ -7,33 +7,28 @@ from azure.storage.blob import BlobServiceClient
 from azure.core.exceptions import ResourceExistsError
 from utils import print_response_status, get_headers_and_params, load_environment_variables
 import argparse
+import sys
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-index_name= os.environ["AZURE_SEARCH_INDEX_NAME"]
-skillset_name = index_name + "skillset"
-datasource_name = index_name + "datasource"
-indexer_name = index_name + "indexer"
-blob_container_name = "docconvodocs"
+from configs.environment_config import EnvironmentConfig
 
-# Set the ENV variables that Langchain needs to connect to Azure OpenAI
-os.environ["OPENAI_API_VERSION"] = os.environ["AZURE_OPENAI_API_VERSION"]
+def validate_environment_vars(config : EnvironmentConfig):
+    required_vars = {
+        "AZURE_SEARCH_KEY": config.azure_search_key,
+        "AZURE_SEARCH_API_VERSION": config.azure_search_api_version,
+        "AZURE_SEARCH_ENDPOINT": config.azure_search_endpoint,
+        "AZURE_OPENAI_API_VERSION": config.openai_api_version,
+        "AZURE_OPENAI_ENDPOINT": config.openai_endpoint,
+        "AZURE_OPENAI_API_KEY": config.openai_api_key,
+        "EMBEDDING_DEPLOYMENT_NAME": config.embedding_deployment_name,
+        "COG_SERVICES_NAME": config.cog_services_name,
+        "COG_SERVICES_KEY": config.cog_services_key,
+        "AZURE_BLOB_STORAGE_CONNECTION_STRING": config.azure_blob_storage_connection_string
+    }
 
-def validate_environment_vars():
-    required_vars = [
-        "AZURE_SEARCH_KEY",
-        "AZURE_SEARCH_API_VERSION",
-        "AZURE_SEARCH_ENDPOINT",
-        "AZURE_OPENAI_API_VERSION",
-        "AZURE_OPENAI_ENDPOINT",
-        "AZURE_OPENAI_API_KEY",
-        "EMBEDDING_DEPLOYMENT_NAME",
-        "COG_SERVICES_NAME",
-        "COG_SERVICES_KEY",
-        "AZURE_BLOB_STORAGE_CONNECTION_STRING"
-    ]
-
-    for var in required_vars:
-        if var not in os.environ or not os.environ[var].strip():
-            raise ValueError(f"Environment variable {var} is not set or is empty")
+    for var_name, var_value in required_vars.items():
+        if var_value is None:
+            raise ValueError(f"Environment variable {var_name} is not set or is empty")
 
     print("All environment variables are set and non-empty")
 
@@ -80,10 +75,10 @@ def create_index():
                     "kind": "azureOpenAI",
                     "azureOpenAIParameters":
                     {
-                        "resourceUri" : os.environ['AZURE_OPENAI_ENDPOINT'],
-                        "apiKey" : os.environ['AZURE_OPENAI_API_KEY'],
-                        "deploymentId" : os.environ['EMBEDDING_DEPLOYMENT_NAME'],
-                        "modelName" : os.environ['EMBEDDING_DEPLOYMENT_NAME'],
+                        "resourceUri" : config.openai_endpoint,
+                        "apiKey" : config.openai_api_key.get_secret_value(),
+                        "deploymentId" : config.embedding_deployment_name,
+                        "modelName" : config.embedding_deployment_name,
 
                     }
                 }
@@ -144,7 +139,7 @@ def create_index():
             }
         ]
     }
-    url=f"{os.environ['AZURE_SEARCH_ENDPOINT']}/indexes/{index_name}"
+    url=f"{config.azure_search_endpoint}/indexes/{index_name}"
     r = requests.put(url,
                     data=json.dumps(index_payload), headers=headers, params=params)
     print_response_status(r, "Index")
@@ -230,10 +225,10 @@ def create_skillset(chunksize: int, chunkoverlapsize: int):
                 "@odata.type": "#Microsoft.Skills.Text.AzureOpenAIEmbeddingSkill",
                 "description": "Azure OpenAI Embedding Skill",
                 "context": "/document/chunks/*",
-                "resourceUri": os.environ['AZURE_OPENAI_ENDPOINT'],
-                "apiKey": os.environ['AZURE_OPENAI_API_KEY'],
-                "deploymentId": os.environ['EMBEDDING_DEPLOYMENT_NAME'],
-                "modelName": os.environ['EMBEDDING_DEPLOYMENT_NAME'],
+                "resourceUri": config.openai_endpoint,
+                "apiKey": config.openai_api_key.get_secret_value(),
+                "deploymentId": config.embedding_deployment_name,
+                "modelName": config.embedding_deployment_name,
                 "inputs": [
                     {
                         "name": "text",
@@ -284,14 +279,14 @@ def create_skillset(chunksize: int, chunkoverlapsize: int):
         },
         "cognitiveServices": {
             "@odata.type": "#Microsoft.Azure.Search.CognitiveServicesByKey",
-            "description": os.environ['COG_SERVICES_NAME'],
-            "key": os.environ['COG_SERVICES_KEY']
+            "description": config.cog_services_name,
+            "key": config.cog_services_key.get_secret_value()
         }
     }
 
     headers, params = get_headers_and_params()
 
-    r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/skillsets/" + skillset_name,
+    r = requests.put(config.azure_search_endpoint + "/skillsets/" + skillset_name,
                     data=json.dumps(skillset_payload), headers=headers, params=params)
 
     print_response_status(r, "Skillset")
@@ -304,7 +299,7 @@ def create_skillset(chunksize: int, chunkoverlapsize: int):
 
 def create_blob_container_datasource():
 
-    connect_str = os.environ["AZURE_BLOB_STORAGE_CONNECTION_STRING"]
+    connect_str = config.azure_blob_storage_connection_string.get_secret_value()
     blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
     try:
@@ -317,7 +312,7 @@ def create_blob_container_datasource():
         "description": "Demo files to demonstrate cognitive search capabilities.",
         "type": "azureblob",
         "credentials": {
-            "connectionString": os.environ['AZURE_BLOB_STORAGE_CONNECTION_STRING']
+            "connectionString": config.azure_blob_storage_connection_string.get_secret_value()
         },
         "dataDeletionDetectionPolicy" : {
             "@odata.type" :"#Microsoft.Azure.Search.SoftDeleteColumnDeletionDetectionPolicy",
@@ -333,7 +328,7 @@ def create_blob_container_datasource():
     print("Container name: ", blob_container_name)
 
     headers, params = get_headers_and_params()
-    r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/datasources/" + datasource_name,
+    r = requests.put(config.azure_search_endpoint + "/datasources/" + datasource_name,
                     data=json.dumps(datasource_payload), headers=headers, params=params)
     print_response_status(r, "Datasource")
 
@@ -380,7 +375,7 @@ def create_indexer():
     }
 
     headers, params = get_headers_and_params()
-    r = requests.put(os.environ['AZURE_SEARCH_ENDPOINT'] + "/indexers/" + indexer_name,
+    r = requests.put(config.azure_search_endpoint + "/indexers/" + indexer_name,
                     data=json.dumps(indexer_payload), headers=headers, params=params)
     print_response_status(r, "Indexer")
 
@@ -405,8 +400,15 @@ if __name__ == "__main__":
     print("Chunk overlap size: ", chunkoverlapsize)
     print()
 
+    config = load_environment_variables()
+    validate_environment_vars(config)
 
-    validate_environment_vars()
+    index_name= config.doc_index
+    skillset_name = index_name + "skillset"
+    datasource_name = index_name + "datasource"
+    indexer_name = index_name + "indexer"
+    blob_container_name = "docconvodocs"
+
     if create_index() == False:
         exit(1)
     if (create_skillset(chunksize=chunksize, chunkoverlapsize=chunkoverlapsize) == False):
