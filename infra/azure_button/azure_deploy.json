@@ -109,7 +109,11 @@
           "gpt-4o",
           "gpt-4o-mini"
         ]
-      }
+      },
+      "speechServiceName": {
+        "type": "string",
+        "defaultValue": "[format('speech-service-{0}', uniqueString(resourceGroup().id))]"
+    }
     },
     "variables": {
       "appPlanSkuName": "S1",
@@ -158,6 +162,17 @@
           "hostingMode": "[parameters('azureSearchHostingMode')]",
           "semanticSearch": "standard"
         }
+      },
+      {
+        "type": "Microsoft.CognitiveServices/accounts",
+        "apiVersion": "2023-05-01",
+        "name": "[parameters('speechServiceName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "S0"
+        },
+        "kind": "SpeechServices",
+        "properties": {}
       },
       {
         "type": "Microsoft.CognitiveServices/accounts",
@@ -382,6 +397,14 @@
       "keyVaultName": {
         "type": "string",
         "value": "[parameters('keyVaultName')]"
+      },
+      "speechServiceName": {
+        "type": "string",
+        "value": "[parameters('speechServiceName')]"
+      },
+      "speechServiceEndpoint": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('speechServiceName'))).endpoint]"
       }
     }
   }
