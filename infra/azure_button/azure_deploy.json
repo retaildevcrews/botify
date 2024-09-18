@@ -302,11 +302,15 @@
       "dependsOn": [
         "[resourceId('Microsoft.CognitiveServices/accounts', parameters('openAIServiceName'))]"
       ],
+      "sku": {
+                "name": "GlobalStandard",
+                "capacity": 100
+            },
       "properties": {
         "model": {
           "format": "OpenAI",
           "name": "[parameters('openAIModelName')]",
-          "version": "latest"
+          "version": "2024-08-06"
         },
         "scaleSettings": {
           "scaleType": "Standard"
