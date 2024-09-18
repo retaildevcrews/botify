@@ -2,6 +2,7 @@
 data/local_data/
 .DS_Store
 **/.promptflow/*
+.local
 
 # Secrets
 .streamlit/secrets.toml
