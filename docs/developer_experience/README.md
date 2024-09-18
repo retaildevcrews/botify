@@ -137,6 +137,50 @@ This performs 2 separate steps:
 1. Creates the index, skillset, datasource and indexer within Azure AI Search. This can be performed separately using ```make create-index```
 2. Loads the sample data into the index. This can be performed using  ```make load-json-data```
 
+#### Optional parameters
+
+You may specify additional parameters to customise the indexing operations and the datafile being ingested.
+
+The chunk size and the chunk overlap size are used when creating the skillset as that is what breaks the document into chunks and processes the document into the search index. The `chunksize` determines that maximum size of each chunk and the `chunkoverlapsize` determines the number of characters for each chunk that overlap with the previous chunk so that context is not lost between chunks to aid in search accuracy.
+The default values for these options when not specified are:
+
+* `chunksize`: 5000
+* `chunkoverlapsize`: 750
+
+These options can be specified using the following syntax when just invoking the index create process:
+
+```
+make create-index chunksize={chunksize} chunkoverlapsize={chunkoverlapsize}
+```
+
+or if executing the entire create and data load process:
+
+```
+make create-index-and-load-data chunksize={chunksize} chunkoverlapsize={chunkoverlapsize}
+```
+
+A datafile to process for ingestion can also be specified. The `datafile` parameter is used for this purpose. The default value for this option when the value is not specified is:
+
+* `datafile`: "./search_index/data.jsonl"
+
+This option can be specified using the following syntax when just invoking the data load process:
+
+```
+make load-json-data datafile={datafile}
+```
+
+or if executing the entire create and data load process:
+
+```
+make create-index-and-load-data datafile={datafile}
+```
+
+You can specify the entire set of options when executing the full create index and data load process using:
+
+```
+make create-index-and-load-data chunksize={chunksize} chunkoverlapsize={chunkoverlapsize} datafile={datafile}
+```
+
 ### Build and Run Docker Images
 
 Running the following Docker Compose command will build the latest images and then run them with the required networking, secrets, services, and port forwarding. Open [docker-compose.yaml](./apps/docker-compose.yaml) for more info.
