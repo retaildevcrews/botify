@@ -9,7 +9,10 @@
           "description": "Optional, defaults to resource group location. The location of the resources."
         }
       },
-
+    "contentSafetyServiceName": {
+        "type": "string",
+        "defaultValue": "[format('content-safety-{0}', uniqueString(resourceGroup().id))]"
+    },
       "azureSearchName": {
         "type": "string",
         "defaultValue": "[format('cog-search-{0}', uniqueString(resourceGroup().id))]",
@@ -188,6 +191,17 @@
             "statisticsEnabled": false
           }
         }
+      },
+      {
+        "type": "Microsoft.CognitiveServices/accounts",
+        "apiVersion": "2023-05-01",
+        "name": "[parameters('contentSafetyServiceName')]",
+        "location": "[parameters('location')]",
+        "sku": {
+          "name": "S0"
+        },
+        "kind": "ContentSafety",
+        "properties": {}
       },
       {
         "type": "Microsoft.DocumentDB/databaseAccounts",
@@ -377,6 +391,14 @@
       "blobStorageAccountName": {
         "type": "string",
         "value": "[parameters('blobStorageAccountName')]"
+      },
+      "contentSafetyServiceName": {
+        "type": "string",
+        "value": "[parameters('contentSafetyServiceName')]"
+      },
+      "contentSafetyServiceEndpoint": {
+        "type": "string",
+        "value": "[reference(resourceId('Microsoft.CognitiveServices/accounts', parameters('contentSafetyServiceName'))).endpoint]"
       },
       "cosmosDBAccountEndpoint": {
         "type": "string",
