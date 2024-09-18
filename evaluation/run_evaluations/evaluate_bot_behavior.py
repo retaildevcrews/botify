@@ -173,9 +173,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model_config = AzureOpenAIModelConfiguration(
-        azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT"),
-        api_key=os.environ.get("AZURE_OPENAI_API_KEY"),
-        azure_deployment=os.environ.get("AZURE_OPENAI_MODEL_NAME"),
+        azure_endpoint=os.environ.get("AZURE_OPENAI_ENDPOINT_EVAL"),
+        api_key=os.environ.get("AZURE_OPENAI_API_KEY_EVAL"),
+        azure_deployment=os.environ.get("AZURE_OPENAI_MODEL_NAME_EVAL"),
         api_version=os.environ.get("AZURE_OPENAI_API_VERSION"),
     )
 
