@@ -1,13 +1,11 @@
-# Don't mess with this unless you really know what you are doing
 AZURE_SEARCH_API_VERSION="2024-05-01-preview"
 AZURE_OPENAI_API_VERSION="2023-12-01-preview"
 FAST_API_SERVER="http://bot-service:8080"
-
 SPEECH_ENGINE="azure"
+LOG_LEVEL=INFO
 
 # Demo Data (edit with your own if you want to use your own data)
 AZURE_BLOB_STORAGE_CONNECTION_STRING="<connection string"
-BLOB_CONNECTION_STRING="<connection string"
 BLOB_SAS_TOKEN="<token"
 
 # Edit with your own azure services values
@@ -18,24 +16,28 @@ AZURE_OPENAI_TTS_MODEL_NAME="<model deployment name>"
 AZURE_OPENAI_ENDPOINT="https://<az-oai-resource>.openai.azure.com/"
 AZURE_OPENAI_CLASSIFICATION_ENDPOINT="https://<az-oai-resource>.openai.azure.com/"
 AZURE_OPENAI_API_KEY="<your openai key>"
+
 AZURE_SEARCH_ENDPOINT="https://<cog-search-name>.search.windows.net"
 AZURE_SEARCH_KEY="<Azure Search Key>" # Make sure is the MANAGEMENT KEY no the query key
 AZURE_SEARCH_INDEX_NAME_NO_OPTIONS="<Azure search index name>"
 AZURE_SEARCH_INDEX_NAME="<Azure search index name>"
+
 COG_SERVICES_NAME="<Cognitive Services name>"
 COG_SERVICES_KEY="<cognitive services key>"
+
 AZURE_COSMOSDB_ENDPOINT="https://<cosmos db name>.documents.azure.com:443/"
 AZURE_COSMOSDB_NAME="cosmos db name"
 AZURE_COSMOSDB_CONTAINER_NAME="cosmos container name"
 AZURE_COSMOSDB_CONNECTION_STRING="Cosmos connection string" # Find this in the Keys section
+
 AZURE_SPEECH_KEY="<key for speech service>"
 AZURE_SPEECH_REGION="<region where speech service is deployed>"
-LOG_LEVEL=INFO
 
 CONTENT_SAFETY_ENDPOINT="<content safety endpoint>"
 CONTENT_SAFETY_KEY="<content safety key>"
+
 APPLICATIONINSIGHTS_CONNECTION_STRING="<app insights conn>"
-OPEN_TELEMETRY_COLLECTOR_ENDPOINT="<collector endpoint with port>" # Telemetry disabled if not set. Set to "http://otelcol:4318" for local telemetry with docker compose
+OPEN_TELEMETRY_COLLECTOR_ENDPOINT="http://otelcol:4318" # Telemetry disabled if not set. Set to "http://otelcol:4318" for local telemetry with docker compose
 
 CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Determines if pulling the configuration from the environment or from Azure KeyVault.Default is ENV
 

@@ -1,5 +1,5 @@
 @description('Optional, defaults to resource group location. The location of the resources.')
-param location string = resourceGroup().location
+param location string = 'eastus2' //resourceGroup().location
 
 @description('Optional. Service name must only contain lowercase letters, digits or dashes, cannot use dash as the first two or last one characters, cannot contain consecutive dashes, and is limited between 2 and 60 characters in length.')
 @minLength(2)
@@ -42,7 +42,6 @@ param azureSearchPartitionCount int = 1
 param azureSearchHostingMode string = 'default'
 
 param appPlanName string = 'asp-${uniqueString(resourceGroup().id)}'
-param logAnalyticsWorkspace string = 'la-${uniqueString(resourceGroup().id)}'
 
 param principalId string = ''
 
@@ -176,7 +175,7 @@ resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/co
 ]
 
 resource configKeyVault 'Microsoft.KeyVault/vaults@2024-04-01-preview' = {
-  name: 'kv-${uniqueString(resourceGroup().id)}'
+  name: 'kv-config-${uniqueString(resourceGroup().id)}'
   location: location
   properties: {
     sku: {
@@ -202,6 +201,53 @@ resource roleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = i
   }
 }
 
+resource openAIAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
+  name: 'cog-${uniqueString(resourceGroup().id)}'
+  location: location
+  sku: {
+    name: cognitiveServiceSKU
+  }
+  kind: 'OpenAI'
+  properties: {
+    publicNetworkAccess: 'Enabled'
+  }
+}
+
+resource gpt4 'Microsoft.CognitiveServices/accounts/deployments@2024-04-01-preview' = {
+  parent: openAIAccount
+  name: 'gpt-4o'
+  sku: {
+    name: 'Standard'
+    capacity: 70
+  }
+  properties: {
+    model: {
+      name: 'gpt-4o'
+      format: 'OpenAI'
+      version: '2024-05-13'
+    }
+    raiPolicyName: 'Microsoft.Default'
+  }
+}
+
+resource embedding 'Microsoft.CognitiveServices/accounts/deployments@2024-04-01-preview' = {
+  parent: openAIAccount
+  name: 'text-embedding-ada-002'
+  sku: {
+    name: 'Standard'
+    capacity: 120
+  }
+  properties: {
+    model: {
+      name: 'text-embedding-ada-002'
+      format: 'OpenAI'
+      version: '2'
+    }
+    raiPolicyName: 'Microsoft.Default'
+  }
+  dependsOn: [gpt4]
+}
+
 output configKeyVaultName string = configKeyVault.name
 output azureSearchName string = azureSearchName
 output azureSearchEndpoint string = 'https://${azureSearchName}.search.windows.net'
@@ -216,3 +262,7 @@ output cosmosDBConnectionString string = 'AccountEndpoint=${cosmosDBAccount.prop
 output cognitiveServiceName string = cognitiveServiceName
 output cognitiveServiceKey string = cognitiveService.listKeys().key1
 output blobConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${blobStorageAccountName};AccountKey=${blobStorageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
+output openAIAccountName string = openAIAccount.name
+output gpt4DeploymentName string = gpt4.name
+output embeddingDeploymentName string = embedding.name
+output openAIKey string = openAIAccount.listKeys().key1
