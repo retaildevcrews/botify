@@ -1,5 +1,5 @@
 @description('Optional, defaults to resource group location. The location of the resources.')
-param location string = 'eastus2' //resourceGroup().location
+param location string = resourceGroup().location
 
 @description('Optional. Service name must only contain lowercase letters, digits or dashes, cannot use dash as the first two or last one characters, cannot contain consecutive dashes, and is limited between 2 and 60 characters in length.')
 @minLength(2)
