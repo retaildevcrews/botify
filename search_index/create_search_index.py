@@ -29,7 +29,8 @@ def validate_environment_vars():
         "EMBEDDING_DEPLOYMENT_NAME",
         "COG_SERVICES_NAME",
         "COG_SERVICES_KEY",
-        "AZURE_BLOB_STORAGE_CONNECTION_STRING"
+        "AZURE_BLOB_STORAGE_CONNECTION_STRING",
+        "AZURE_BLOB_STORAGE_RESOURCE_ID"
     ]
 
     for var in required_vars:
@@ -318,7 +319,7 @@ def create_blob_container_datasource():
         "description": "Demo files to demonstrate cognitive search capabilities.",
         "type": "azureblob",
         "credentials": {
-            "connectionString": os.environ['AZURE_BLOB_STORAGE_CONNECTION_STRING']
+            "connectionString": os.environ['AZURE_BLOB_STORAGE_RESOURCE_ID']
         },
         "dataDeletionDetectionPolicy" : {
             "@odata.type" :"#Microsoft.Azure.Search.SoftDeleteColumnDeletionDetectionPolicy",

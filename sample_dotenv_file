@@ -7,7 +7,7 @@ SPEECH_ENGINE="azure"
 
 # Demo Data (edit with your own if you want to use your own data)
 AZURE_BLOB_STORAGE_CONNECTION_STRING="<connection string"
-BLOB_CONNECTION_STRING="<connection string"
+AZURE_BLOB_STORAGE_RESOURCE_ID="ResourceId=/subscriptions/{subscription-id}/resourceGroups/{resource-group-name}/providers/Microsoft.Storage/storageAccounts/{storage-account-name}/;"
 BLOB_SAS_TOKEN="<token"
 
 # Edit with your own azure services values

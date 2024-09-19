@@ -100,6 +100,13 @@ az cosmosdb sql container create -a $CosmosDbName -d $CosmosDbName -n $CosmosDbN
 
 # Get document endpoint
 CosmosKey=$(az cosmosdb keys list --name $CosmosDbName -g $ResourceGroupName --query primaryMasterKey --output tsv)
+
+# Get Storage account resource id
+## NOTE: Using the ResourceId instead of the storage connection string means that the system identity will be used
+##       for authorisation, not the account key.
+##       The resource id can be extracted as per below or from the Azure portal.
+##       Note the '/;' at the end of the resource id
+StorageResourceId=$(az storage account list -g $ResourceGroupName --query "[?contains(name,'blobstorage')].id" -o tsv)+"/;"
 ```
 
 ### Create credentials.env
@@ -115,6 +122,7 @@ AZURE_COSMOSDB_ENDPOINT=https://$CosmosDbName.documents.azure.com:443/
 AZURE_COSMOSDB_NAME=$CosmosDbName
 AZURE_COSMOSDB_CONTAINER_NAME=$CosmosDbName
 AZURE_COSMOSDB_CONNECTION_STRING="AccountEndpoint=https://$CosmosDbName.documents.azure.com:443/;AccountKey=$CosmosKey;"
+AZURE_BLOB_STORAGE_RESOURCE_ID=$StorageResourceId
 EOF
 ```
 
