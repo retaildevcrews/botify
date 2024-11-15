@@ -43,7 +43,7 @@ export BTF_AZURE_SEARCH_NAME=$COG_SERVICES_NAME # ('Required. The name of the Az
 
 export BTF_AZURE_SEARCH_INDEX_NAME=$AZURE_SEARCH_INDEX_NAME # ('Required. The name of the Azure Search index name to use. e.g. cogsrch-index-intelligent-coffee')
 
-# Optional: Defaults to '2023-10-01-preview'
+# Optional: Defaults to '2024-05-01-preview'
 export BTF_AZURE_SEARCH_API_VERSION=$AZURE_SEARCH_API_VERSION # ('Optional. The API version for the Azure Search service.')
 
 export BTF_AZURE_OPEN_AI_NAME="ENTER YOUR VALUE" # ('Required. The name of the Azure OpenAI resource deployed previously. e.g if your endpoint is https://gpt4-website.openai.azure.com, you must only enter "gpt4-website"')
@@ -53,7 +53,7 @@ export BTF_AZURE_OPEN_AI_API_KEY=$AZURE_OPENAI_API_KEY  # ('Required. The API ke
 # Optional: Defaults to 'gpt-35-turbo-1106'
 export BTF_AZURE_OPEN_AI_MODEL_NAME=$AZURE_OPENAI_MODEL_NAME # ('Optional. The model name for the Azure OpenAI service.')
 
-# Optional: Defaults to '2023-12-01-preview'
+# Optional: Defaults to '2024-08-01-preview'
 export BTF_AZURE_OPEN_AI_API_VERSION=$AZURE_OPENAI_API_VERSION # ('Optional. The API version for the Azure OpenAI service.')
 
 export BTF_COSMOSDB_ACCOUNT_NAME="ENTER YOUR VALUE" # ('Required. The name of the Azure CosmosDB. e.g cosmosdb-account-wh64vuky5w7ms')

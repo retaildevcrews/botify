@@ -108,7 +108,7 @@ CosmosKey=$(az cosmosdb keys list --name $CosmosDbName -g $ResourceGroupName --q
 cat <<EOF > "apps/credentials.env"
 AZURE_OPENAI_ENDPOINT=$OpenAIEndpoint
 AZURE_OPENAI_API_KEY=$OpenAIKey
-AZURE_OPENAI_API_VERSION="2023-12-01-preview"
+AZURE_OPENAI_API_VERSION="2024-08-01-preview"
 BLOB_SAS_TOKEN=""
 AZURE_OPENAI_MODEL_NAME=$OpenAIModelName
 AZURE_COSMOSDB_ENDPOINT=https://$CosmosDbName.documents.azure.com:443/

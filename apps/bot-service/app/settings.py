@@ -79,6 +79,7 @@ class AppSettings:
 
     # Used to turn on or off content safety checks - config is in environment_config
     content_safety_enabled: bool = True
+    content_safety_threshold: int = 2
     # Use this section to turn on or off banned topic checks,
     # this is a custom tool that uses LLM to classify the topic of the question
     banned_topics: list[str] = field(

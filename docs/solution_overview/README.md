@@ -189,29 +189,3 @@ Response:
   }
 }
 ```
-
-### /agent/streaming
-
-The endpoint uses a server sent event stream to stream the output.
-
-<https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events>
-
-The encoding of events follows the following format:
-
-data - for streaming the output of the runnable
-
-{ "event": "data", "data": { ... } }
-
-error - for signaling an error in the stream, also ends the stream.
-
-{ "event": "error", "data": { "status_code": 500, "message": "Internal Server Error" } }
-
-end - for signaling the end of the stream.
-
-This helps the client to know when to stop listening for events and know that the streaming has ended successfully.
-
-{ "event": "end", }
-
-data for the data event is a JSON object that corresponds to a serialized representation of a StreamEvent.
-
-See LangChain documentation for more information about astream_events.

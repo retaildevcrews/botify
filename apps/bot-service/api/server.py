@@ -100,7 +100,7 @@ class AppFactory:
             runnable,
             path="/agent",
             dependencies=dependencies,
-            enabled_endpoints=["invoke", "stream_events", "playground"],
+            enabled_endpoints=["invoke", "playground"],
         )
 
 

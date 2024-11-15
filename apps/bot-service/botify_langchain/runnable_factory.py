@@ -4,6 +4,7 @@ import logging
 import app.messages as messages
 import yaml
 from app.settings import AppSettings
+from azure.identity import DefaultAzureCredential
 from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
@@ -69,7 +70,7 @@ class RunnableFactory:
         include_history=True,
         return_intermediate_steps=False,
         verbose=False,
-        azure_chat_open_ai_streaming=True,
+        azure_chat_open_ai_streaming=False,
     ) -> Runnable:
         # Gets the main runnable with the session history callable
         # included - this is the main entry point for the chatbot
@@ -176,20 +177,29 @@ class RunnableFactory:
         current_span.set_attribute("session_id", session_id)
         current_span.set_attribute("user_id", user_id)
 
-        if self.app_settings.environment_config.cosmos_connection_string:
-            if self.app_settings.optimize_history:
-                session_history_class = CustomCosmosDBChatMessageHistory
-            else:
-                session_history_class = CosmosDBChatMessageHistory
+        # Common parameters
+        params = {
+            'cosmos_endpoint': self.app_settings.environment_config.cosmos_endpoint,
+            'cosmos_database': self.app_settings.environment_config.cosmos_database,
+            'cosmos_container': self.app_settings.environment_config.cosmos_container,
+            'session_id': session_id,
+            'user_id': user_id,
+        }
 
-            session_history = session_history_class(
-                cosmos_endpoint=self.app_settings.environment_config.cosmos_endpoint,
-                cosmos_database=self.app_settings.environment_config.cosmos_database,
-                cosmos_container=self.app_settings.environment_config.cosmos_container,
-                connection_string=self.app_settings.environment_config.cosmos_connection_string.get_secret_value(),
-                session_id=session_id,
-                user_id=user_id,
-            )
+        # Extract the connection string if available
+        cosmos_conn_str = self.app_settings.environment_config.cosmos_connection_string
+        if (
+            cosmos_conn_str is not None
+            and cosmos_conn_str.get_secret_value() is not None
+        ):
+            params['connection_string'] = cosmos_conn_str.get_secret_value()
+            self.logger.debug("Using connection string for CosmosDB")
+        else:
+            params['credential'] = DefaultAzureCredential()
+            self.logger.debug("Using DefaultAzureCredential for CosmosDB")
+
+        # Create the session history instance
+        session_history = CustomCosmosDBChatMessageHistory(**params)
 
         # Create database and container if they don't exist
         session_history.prepare_cosmos()
@@ -263,7 +273,7 @@ class RunnableFactory:
                 captured_harmful_categories = [
                     category
                     for category in harmful_prompt_results["categoriesAnalysis"]
-                    if category["severity"] > 0
+                    if category["severity"] > self.app_settings.content_safety_threshold
                 ]
                 attack_detected = prompt_shield_results["userPromptAnalysis"]["attackDetected"]
                 current_span.set_attribute("attackDetected", str(attack_detected))
@@ -287,9 +297,7 @@ class RunnableFactory:
             logging.error(
                 f"Error in content safety tool unable to determine result so exiting without responding: {e}"
             )
-            unable_to_complete_safety_check = (
-                self.app_settings.banned_topics > 0 or self.app_settings.content_safety_enabled
-            )
+            unable_to_complete_safety_check = True
             current_span.set_attribute(
                 "unable_to_complete_safety_check", str(unable_to_complete_safety_check)
             )

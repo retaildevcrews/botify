@@ -1,7 +1,7 @@
 services:
   # OpenTelemetry Collector
   otelcol:
-    image: otel/opentelemetry-collector-contrib:0.100.0
+    build: ./collector
     container_name: otelcol
     deploy:
       resources:
