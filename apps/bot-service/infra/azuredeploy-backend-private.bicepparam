@@ -31,7 +31,7 @@ param appConfigurationSecretNames = [
   'AZURE_OPENAI_API_KEY=AzureOpenAIApiKey'
   'AZURE_COSMOSDB_ENDPOINT=AzureCosmosDBEndpoint'
   'AZURE_COSMOSDB_CONNECTION_STRING=AzureCosmosDBConnectionString'
-  'CONTENT_SAFTEY_KEY=PromptShieldSubscriptionKey'
+  'CONTENT_SAFETY_KEY=PromptShieldSubscriptionKey'
 ]
 
 // Optional parameters

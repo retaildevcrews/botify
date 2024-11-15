@@ -90,7 +90,7 @@ class Anonymizer:
             # Log the exception
             logger.error(f"Failed to process the request body: {str(e)}")
 
-def invoke(input_data, config_data, runnable_factory, retry=0):
+def invoke(input_data, config_data, runnable_factory, retry_count=0):
     error_response = {"output": GENERIC_ERROR_MESSAGE_JSON}
     try:
         invoke_runnable_factory = runnable_factory or RunnableFactory()
@@ -99,5 +99,5 @@ def invoke(input_data, config_data, runnable_factory, retry=0):
         return result
     except Exception as e:
         logging.error(f"Error invoking runnable: {e}")
-        invoke(input_data, config_data, invoke_runnable_factory, retry + 1) if retry < 3 else error_response
+        invoke(input_data, config_data, invoke_runnable_factory, retry_count + 1) if retry < 3 else error_response
         return error_response

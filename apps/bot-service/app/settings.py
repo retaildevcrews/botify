@@ -47,11 +47,12 @@ class AppSettings:
     # Default model configuration can be seen in the ModelConfig class
     model_config: ModelConfig = field(default_factory=ModelConfig)
     # When this is set to true, the agent will attempt to store only the display message and not entire bot response
-    optimize_history: bool = True
+    history_limit: int = 10
     search_tool_topk: int = 10
     search_similarity_field: str = "summary"
     search_tool_reranker_threshold: int = 1
     item_detail_reranker_threshold: int = 1
+    invoke_retry_count: int = 3
     # Adds memory to the agent so that it can engage in multi-turn conversations
     add_memory: bool = True
     load_environment_config: bool = True
