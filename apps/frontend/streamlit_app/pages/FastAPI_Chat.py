@@ -33,13 +33,11 @@ user_query = st.chat_input("Type your message here...")
 def write_payload(payload):
     result = ""
     container = st.empty()
-
+    answer = payload.json()
     if "invoke" in api_url:
-        json = next(iter(payload), None)
-        if json:
-            result = generate_display_and_audio_response(json, False)
-            container.markdown(result)
-            return result
+        result = generate_display_and_audio_response(answer["output"], False)
+        container.markdown(result)
+        return result
     else:
         for chunk in payload:
             result += chunk

@@ -4,13 +4,43 @@ import logging
 from app.settings import AppSettings
 from common.presidio.anonymizer import Anonymizer as PresidioAnonymizer
 from fastapi import Request
+from fastapi.responses import JSONResponse
+from typing import Callable
+from http import HTTPStatus
+import functools
+from app.messages import GENERIC_ERROR_MESSAGE_JSON
+from botify_langchain.runnable_factory import RunnableFactory
+
 
 logger = logging.getLogger(__name__)
 
+def anonymize(app_settings: AppSettings):
+    async def error_response(code: int, message: str) -> dict:
+        logger.exception(message)
+        return JSONResponse(content=message, status_code=code)
+
+    def decorator(func: Callable):
+        @functools.wraps(func)
+        async def anonymize_wrap(request: Request, *args, **kws):
+            try:
+                anonymizer = Anonymizer(app_settings)
+                await anonymizer.set_body(request)
+
+            except Exception as e:
+                return await error_response(
+                    code=HTTPStatus.INTERNAL_SERVER_ERROR.value,
+                    message=f"Error while anonymizing request: {str(e)}"
+                )
+            return await func(request, *args, **kws)
+        return anonymize_wrap
+    return decorator
 
 class Anonymizer:
+    def __init__(self, app_settings: AppSettings):
+        self._app_settings = app_settings
+
     async def set_body(self, request: Request):
-        app_settings = AppSettings()
+        app_settings = self._app_settings
         pii_entities = app_settings.anonymizer_entities
         mode = app_settings.environment_config.anonymizer_mode
         anonymizer_key = app_settings.environment_config.anonymizer_crypto_key
@@ -19,6 +49,8 @@ class Anonymizer:
         logger.debug(f"Anonymizer encryption key: {anonymizer_key}")
         anonymizer = PresidioAnonymizer(pii_entities, mode, anonymizer_key)
         try:
+            logger.debug("Anonymizing request")
+
             receive_ = await request._receive()
             # Decode body to JSON
             body = json.loads(receive_["body"].decode("utf-8"))
@@ -36,6 +68,11 @@ class Anonymizer:
                         f"Replaced Question With: {
                                 anonymized_question}"
                     )
+                    question_in_body = body['input']['question']
+                    logger.info(f"Question that has been replaced in body: {
+                                question_in_body}")
+                    request._body = json.dumps(body).encode('utf-8')
+                    logger.info(f"Body after anonymization: {request._body}")
 
                 async def receive():
                     receive_["body"] = json.dumps(body).encode("utf-8")
@@ -52,3 +89,15 @@ class Anonymizer:
         except Exception as e:
             # Log the exception
             logger.error(f"Failed to process the request body: {str(e)}")
+
+def invoke(input_data, config_data, retry=0):
+    error_response = {"output": GENERIC_ERROR_MESSAGE_JSON}
+    try:
+        runnable_factory = RunnableFactory()
+        runnable = runnable_factory.get_runnable()
+        result = runnable.invoke(input_data, config_data)
+        return result
+    except Exception as e:
+        logging.error(f"Error invoking runnable: {e}")
+        invoke(input_data, config_data, retry + 1) if retry < 3 else error_response
+        return error_response

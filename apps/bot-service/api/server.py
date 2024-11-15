@@ -7,13 +7,17 @@ from typing import Any, List, TypedDict
 import _additional_version_info
 import pydantic
 import toml
-from api.pii_utils import Anonymizer
+from api.pii_utils import Anonymizer, anonymize, invoke as invoke_runnable
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from langserve import add_routes
+from fastapi import Request
+from typing import Dict
+from api.models import Payload
+import json
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -94,15 +98,40 @@ class AppFactory:
             runnable = self.runnable_factory.get_runnable(include_history=False).with_types(
                 input_type=Input, output_type=Output
             )
-        # Add API route for the agent
-        add_routes(
-            self.app,
-            runnable,
-            path="/agent",
-            dependencies=dependencies,
-            enabled_endpoints=["invoke", "playground"],
+        
+        @self.app.post(
+            "/agent/invoke",
+            response_model=Output,
+            summary="Invoke the runnable",
+            description="This endpoint invokes the runnable with the provided input and configuration.",
+            responses={
+                200: {
+                    "description": "Successful invocation",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "result": "The result of the runnable"
+                            }
+                        }
+                    }
+                },
+            }
         )
-
+        @anonymize(self.app_settings)
+        async def invoke(request: Request, payload: Payload):
+            with tracer.start_as_current_span("".join(request.url.path)) as request_span:
+                request_span.set_attribute("source_ip", self.get_source_ip(request))
+                body = await request.body()
+                body = json.loads(body)
+                input_data = body.get("input")
+                config_data = body.get("config")
+                if ("user_id" in config_data["configurable"]):
+                    request_span.set_attribute("user_id", config_data["configurable"]["user_id"])
+                if ("session_id" in config_data["configurable"]):
+                    request_span.set_attribute("session_id", config_data["configurable"]["session_id"])
+                logger.info(f"Received input: {input_data}")
+                logger.info(f"Received config: {config_data}")
+                return await invoke_runnable(input_data, config_data, self.runnable_factory, self.app_settings.invoke_retry_count)
 
 # Instantiate the settings and factory
 app_settings = AppSettings()

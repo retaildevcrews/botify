@@ -101,57 +101,18 @@ def consume_api(url, user_query, session_id, user_id):
     )
     logger.debug("Payload: %s", payload)
 
-    with requests.post(url, json=payload, headers=headers, stream=True) as response:
+    with requests.post(url, json=payload, headers=headers) as response:
         try:
             # Raises an HTTPError if the response is not 200.
             response.raise_for_status()
             logger.info("Received streaming response from API.")
-            for line in response.iter_lines():
-                if line:  # Check if the line is not empty.
-                    decoded_line = line.decode("utf-8")
-                    logger.debug("Received line: %s", decoded_line)
-                    if decoded_line.startswith("data: "):
-                        # Extract JSON data following 'data: '.
-                        json_data = decoded_line[len("data: ") :]
-                        try:
-                            data = json.loads(json_data)
-                            if "event" in data:
-                                event_type = data["event"]
-                                logger.debug("Event type: %s", event_type)
-                                if event_type == "on_chat_model_stream":
-                                    content = data["data"]["chunk"]["content"]
-                                    if content:  # Ensure content is not None or empty.
-                                        # Yield content with paragraph breaks.
-                                        yield content
-                                elif event_type == "on_tool_start" or event_type == "on_tool_end":
-                                    pass
-                            elif "content" in data:
-                                # Yield immediate content with added Markdown for line breaks.
-                                yield f"{data['content']}\n\n"
-                            elif "steps" in data:
-                                yield f"{data['steps']}\n\n"
-                            elif "output" in data:
-                                yield f"{data['output']}\n\n"
-                        except json.JSONDecodeError as e:
-                            logger.error("JSON decoding error: %s", e)
-                            yield f"JSON decoding error: {e}\n\n"
-                    # Decoding if using invoke endpoint
-                    elif decoded_line.startswith('{"output":'):
-                        json_data = json.loads(decoded_line)
-                        yield json.dumps(json_data['output']['output'])
-                    elif decoded_line.startswith("event: "):
-                        pass
-                    elif ": ping" in decoded_line:
-                        pass
-                    else:
-                        # Adding line breaks for plain text lines.
-                        yield f"{decoded_line}\n\n"
+            return response
         except requests.exceptions.HTTPError as err:
             logger.error("HTTP Error: %s", err)
-            yield f"HTTP Error: {err}\n\n"
+            return response
         except Exception as e:
             logger.error("An error occurred: %s", e)
-            yield f"An error occurred: {e}\n\n"
+            return "error"
 
 
 def _private_get_api_version(url):
