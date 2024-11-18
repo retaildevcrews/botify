@@ -4,6 +4,7 @@ import logging
 import app.messages as messages
 import yaml
 from app.settings import AppSettings
+from app.exceptions import InputTooLongError
 from azure.identity import DefaultAzureCredential
 from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
@@ -153,12 +154,14 @@ class RunnableFactory:
             verbose=verbose,
         )
         graph = StateGraph(dict)
+        graph.add_node("pre_processor", self.pre_processor)
         graph.add_node("content_safety", self.content_safety)
         graph.add_node("stop_for_safety", self.return_safety_error_message)
         graph.add_node("identify_disclaimers", self.identify_disclaimers)
         graph.add_node("call_model", tools_agent_with_history)
         graph.add_node("post_processor", self.post_processor)
-        graph.add_edge(START, "content_safety")
+        graph.add_edge(START, "pre_processor")
+        graph.add_edge("pre_processor", "content_safety")
         graph.add_conditional_edges(
             "content_safety",
             self.should_stop_for_safety,
@@ -313,6 +316,14 @@ class RunnableFactory:
             }
         )
         return state
+
+    def pre_processor(self, state: dict):
+        """Invoke prechecks before running the graph."""
+        if len(state["question"]) > self.app_settings.invoke_question_character_limit:
+            raise InputTooLongError(
+                f"Question exceeds character limit: {len(state['question'])} > {self.app_settings.invoke_question_character_limit}")
+        if state["question"].strip() == "":
+            raise ValueError("Question is empty")
 
     def should_stop_for_safety(self, state: dict):
         """Make a decision based on detected prompts."""

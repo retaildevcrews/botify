@@ -8,7 +8,8 @@ from fastapi.responses import JSONResponse
 from typing import Callable
 from http import HTTPStatus
 import functools
-from app.messages import GENERIC_ERROR_MESSAGE_JSON
+from app.messages import GENERIC_ERROR_MESSAGE_JSON, CHARACTER_LIMIT_ERROR_MESSAGE_JSON
+from app.exceptions import InputTooLongError
 from botify_langchain.runnable_factory import RunnableFactory
 
 
@@ -90,14 +91,20 @@ class Anonymizer:
             # Log the exception
             logger.error(f"Failed to process the request body: {str(e)}")
 
-def invoke(input_data, config_data, runnable_factory, retry_count=0):
+retries_limit = AppSettings().invoke_retry_count
+
+def invoke(input_data, config_data, runnable_factory:RunnableFactory, retry_count=0):
     error_response = {"output": GENERIC_ERROR_MESSAGE_JSON}
     try:
-        invoke_runnable_factory = runnable_factory or RunnableFactory()
+        invoke_runnable_factory = runnable_factory
         runnable = invoke_runnable_factory.get_runnable()
         result = runnable.invoke(input_data, config_data)
         return result
     except Exception as e:
         logging.error(f"Error invoking runnable: {e}")
-        invoke(input_data, config_data, invoke_runnable_factory, retry_count + 1) if retry < 3 else error_response
+        if isinstance(e, InputTooLongError):
+            return {"output": CHARACTER_LIMIT_ERROR_MESSAGE_JSON}
+        if not isinstance(e, ValueError):
+           return invoke(input_data, config_data, invoke_runnable_factory,
+                   retry_count + 1) if retry_count < retries_limit else error_response
         return error_response

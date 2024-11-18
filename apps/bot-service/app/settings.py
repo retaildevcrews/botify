@@ -53,6 +53,7 @@ class AppSettings:
     search_tool_reranker_threshold: int = 1
     item_detail_reranker_threshold: int = 1
     invoke_retry_count: int = 3
+    invoke_question_character_limit: int = 1000
     # Adds memory to the agent so that it can engage in multi-turn conversations
     add_memory: bool = True
     load_environment_config: bool = True
