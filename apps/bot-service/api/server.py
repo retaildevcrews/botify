@@ -17,10 +17,13 @@ from langserve import add_routes
 from fastapi import Request
 from typing import Dict
 from api.models import Payload
+from opentelemetry import trace
 import json
 
 # Configure logging
 logger = logging.getLogger(__name__)
+
+tracer = trace.get_tracer(__name__)
 
 
 class Config:
@@ -51,6 +54,14 @@ class AppFactory:
         self.setup_middleware()
         self.setup_routes()
         logging.getLogger().setLevel(self.app_settings.environment_config.log_level)
+
+    def get_source_ip(self, request: Request) -> str:
+        x_forward = request.headers.get('X-Forwarded-For')
+        x_real_ip = request.headers.get('X-Real-IP')
+        x_azure = request.headers.get('X-Azure-ClientIP')
+        x_origin_ip = request.headers.get('X-Origin-IP')
+        http_client_ip = request.headers.get('HTTP_CLIENT_IP')
+        return ",".join(filter(None, [x_forward, x_real_ip, x_azure, x_origin_ip, http_client_ip, request.client.host]))
 
     def get_version(self) -> str:
         # Load the pyproject.toml file
