@@ -11,6 +11,8 @@ from langchain_core.messages import (
     messages_from_dict,
 )
 
+from datetime import datetime
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:

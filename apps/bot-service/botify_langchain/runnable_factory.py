@@ -262,7 +262,7 @@ class RunnableFactory:
             )
             return runnable
 
-    def content_safety(self, state: dict):
+    async def content_safety(self, state: dict):
         """Evaluate content safety."""
         self.logger.debug(f"Prompt Input: {state}")
         harmful_prompt_results = None
@@ -272,10 +272,10 @@ class RunnableFactory:
         harmful_prompt_detected = False
         banned_topic_results = []
         unable_to_complete_safety_check = False
+        current_span = get_current_span()
         try:
-            current_span = get_current_span()
             if self.app_settings.content_safety_enabled:
-                results = self.content_safety_tool.run(state["question"])
+                results = await self.content_safety_tool._arun(state["question"])
                 self.logger.debug(f"GetContentSafetyValidation_Tool results: {results}")
                 harmful_prompt_results = results["analyzed_harmful_text_response"]
                 prompt_shield_results = results["prompt_shield_validation_response"]
@@ -292,9 +292,16 @@ class RunnableFactory:
                     current_span.set_attribute(
                         "harmful_categories_detected", str(captured_harmful_categories)
                     )
+        except Exception as e:
+            logging.error(
+                f"Error in content safety tool unable to determine result so exiting without responding: {e}")
+            unable_to_complete_safety_check = True
+            current_span.set_attribute(
+                "unable_to_complete_safety_check", str(unable_to_complete_safety_check))
+        try:
+            self.logger.debug(f"Starting Topic Detection: {state}")
             if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected == False:
-                tool_input = {"text_entry": state["question"], "topics": AppSettings().banned_topics}
-                banned_topic_results = TopicDetectionTool().run(tool_input)
+                banned_topic_results = await TopicDetectionTool()._arun(state["question"], AppSettings().banned_topics)
                 banned_topic_detected = len(banned_topic_results) > 0
                 current_span.set_attribute("banned_topic_detected", str(banned_topic_detected))
                 if banned_topic_detected:
@@ -304,7 +311,7 @@ class RunnableFactory:
                 )
         except Exception as e:
             logging.error(
-                f"Error in content safety tool unable to determine result so exiting without responding: {e}"
+                f"Error in topic detection tool unable to determine result so exiting without responding: {e}"
             )
             unable_to_complete_safety_check = True
             current_span.set_attribute(
@@ -356,11 +363,10 @@ class RunnableFactory:
         state["output"] = messages.SAFETY_ERROR_MESSAGE_JSON
         return state
 
-    def identify_disclaimers(self, state: dict):
+    async def identify_disclaimers(self, state: dict):
         self.logger.debug(f"Topic Detection Tool Executing")
         current_span = get_current_span()
-        tool_input = {"text_entry": state["question"], "topics": AppSettings().disclaimer_topics}
-        results = TopicDetectionTool().run(tool_input)
+        results = await TopicDetectionTool()._arun(state["question"], AppSettings().disclaimer_topics)
         self.logger.debug(f"Topic Detection Tool results: {results}")
         current_span.set_attribute("disclaimers_added", str(results))
         state["disclaimers"] = results

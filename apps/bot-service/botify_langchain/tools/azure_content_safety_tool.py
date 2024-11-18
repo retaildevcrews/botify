@@ -1,10 +1,9 @@
-import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
-import aiohttp
 import requests
+import httpx
 from app.settings import AppSettings
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 from langchain.tools import BaseTool
@@ -32,18 +31,6 @@ class AzureContentSafety_Tool(BaseTool):
         "Ocp-Apim-Subscription-Key": app_settings.environment_config.content_safety_key.get_secret_value(),
         "Content-Type": "application/json",
     }
-
-    def _retry_request(self, func, *args, retries=3, **kwargs):
-        for attempt in range(retries):
-            try:
-                return func(*args, **kwargs)
-            except requests.RequestException as e:
-                if attempt == retries - 1:
-                    raise e
-
-    def _make_sync_request(self, url, payload):
-        jsonrequest = JsonRequestsWrapper(headers=self.headers)
-        return self._retry_request(jsonrequest.post, url=url, data=payload)
 
     def _run(self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None):
         payload_shield = {"userPrompt": query, "documents": None}
@@ -79,18 +66,16 @@ class AzureContentSafety_Tool(BaseTool):
     async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None):
         payload_shield = {"userPrompt": query, "documents": None}
         payload_harmful = {"text": query}
-
-        async with aiohttp.ClientSession() as session:
-            shield_task = asyncio.create_task(
-                self._make_async_request(self.prompt_shield_endpoint, payload_shield)
+        transport = httpx.AsyncHTTPTransport(retries=3)
+        async with httpx.AsyncClient(transport=transport) as client:
+            shield_response = await client.post(
+                self.prompt_shield_endpoint, json=payload_shield, headers=self.headers
             )
-            harmful_task = asyncio.create_task(
-                self._make_async_request(self.harmful_text_analysis_endpoint, payload_harmful)
+            harmful_response = await client.post(
+                self.harmful_text_analysis_endpoint, json=payload_harmful, headers=self.headers
             )
 
-            shield_response, harmful_response = await asyncio.gather(shield_task, harmful_task)
-
-        return self._format_response(shield_response, harmful_response)
+        return self._format_response(shield_response.json(), harmful_response.json())
 
     def _format_response(self, sheld_response, harmful_response):
         errors = []
