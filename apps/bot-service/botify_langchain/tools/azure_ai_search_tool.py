@@ -102,10 +102,7 @@ class AzureAISearch_Tool(BaseTool):
             callback_manager=self.callbacks,
             max_results=self.max_results,
         )
-        # Please note below that running a non-async function like run_agent in a separate thread won't make it truly asynchronous.
-        # It allows the function to be called without blocking the event loop, but it may still have synchronous behavior internally.
-        loop = asyncio.get_event_loop()
-        results = await loop.run_in_executor(ThreadPoolExecutor(), retriever.invoke, query)
+        results = await retriever.ainvoke(query)
         return results
 
 
@@ -215,8 +212,5 @@ class AzureAIFilterableSearch_Tool(BaseTool):
             callback_manager=self.callbacks,
             max_results=self.max_results,
         )
-        # Please note below that running a non-async function like run_agent in a separate thread won't make it truly asynchronous.
-        # It allows the function to be called without blocking the event loop, but it may still have synchronous behavior internally.
-        loop = asyncio.get_event_loop()
-        results = await loop.run_in_executor(ThreadPoolExecutor(), retriever.invoke, query)
+        results = await retriever.ainvoke(query)
         return results

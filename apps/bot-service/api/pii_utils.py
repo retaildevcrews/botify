@@ -93,12 +93,12 @@ class Anonymizer:
 
 retries_limit = AppSettings().invoke_retry_count
 
-def invoke(input_data, config_data, runnable_factory: RunnableFactory, retry_count=0):
+async def invoke(input_data, config_data, runnable_factory: RunnableFactory, retry_count=0):
     error_response = {"output": GENERIC_ERROR_MESSAGE_JSON}
     try:
         invoke_runnable_factory = runnable_factory
         runnable = invoke_runnable_factory.get_runnable()
-        result = runnable.invoke(input_data, config_data)
+        result = await runnable.ainvoke(input_data, config_data)
         return result
     except Exception as e:
         logging.error(f"Error invoking runnable: {e}")
@@ -107,6 +107,7 @@ def invoke(input_data, config_data, runnable_factory: RunnableFactory, retry_cou
         if isinstance(e, MaxTurnsExceededError):
             return {"output": MAX_TURNS_EXCEEDED_ERROR_MESSAGE_JSON}
         if not isinstance(e, ValueError):
-            return invoke(input_data, config_data, invoke_runnable_factory,
+            result = await invoke(input_data, config_data, invoke_runnable_factory,
                     retry_count + 1) if retry_count < retries_limit else error_response
+            return result
         return error_response
