@@ -4,7 +4,7 @@ import logging
 import app.messages as messages
 import yaml
 from app.settings import AppSettings
-from app.exceptions import InputTooLongError
+from app.exceptions import InputTooLongError, MaxTurnsExceededError
 from azure.identity import DefaultAzureCredential
 from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
@@ -29,6 +29,8 @@ class RunnableFactory:
         self.promptgen = PromptGen()
 
         self.byo_session_history_callable = byo_session_history_callable
+
+        self.current_turn_count = 0
 
         from botify_langchain.tools.azure_ai_search_tool import AzureAISearch_Tool
         from botify_langchain.tools.azure_content_safety_tool import AzureContentSafety_Tool
@@ -209,6 +211,8 @@ class RunnableFactory:
         # Create database and container if they don't exist
         session_history.prepare_cosmos()
 
+        self.current_turn_count = 0
+
         return session_history
 
     def _create_tools_agent_runnable(
@@ -321,6 +325,13 @@ class RunnableFactory:
 
     def pre_processor(self, state: dict):
         """Invoke prechecks before running the graph."""
+        current_turn_count = self.current_turn_count
+        max_turn_count = self.app_settings.max_turn_count
+        self.logger.info("Current Turn Count: " + str(current_turn_count))
+        self.logger.info("Max Turn Count: " + str(max_turn_count))
+        if current_turn_count >= max_turn_count:
+            raise MaxTurnsExceededError(
+                f"Max turn count exceeded: {current_turn_count} >= {max_turn_count}")
         if len(state["question"]) > self.app_settings.invoke_question_character_limit:
             raise InputTooLongError(
                 f"Question exceeds character limit: {len(state['question'])} > {self.app_settings.invoke_question_character_limit}")

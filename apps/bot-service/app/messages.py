@@ -7,3 +7,6 @@ SAFETY_ERROR_MESSAGE_JSON = {"displayResponse": SAFETY_ERROR_MESSAGE, "voiceSumm
 
 CHARACTER_LIMIT_ERROR_MESSAGE = "I'm sorry, the question you asked is too long. Please try asking a shorter question."
 CHARACTER_LIMIT_MESSAGE_JSON = {"displayResponse": CHARACTER_LIMIT_ERROR_MESSAGE, "voiceSummary": CHARACTER_LIMIT_ERROR_MESSAGE}
+
+MAX_TURNS_EXCEEDED_ERROR_MESSAGE = "I'm sorry, unfortunately I am unable to continue this conversation. You have exceeded the maximum number of questions I am allowed to answer."
+MAX_TURNS_EXCEEDED_MESSAGE_JSON = {"displayResponse": MAX_TURNS_EXCEEDED_ERROR_MESSAGE, "voiceSummary": MAX_TURNS_EXCEEDED_ERROR_MESSAGE}
