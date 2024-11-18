@@ -14,7 +14,7 @@ class Config:
 @pydantic.dataclasses.dataclass(config=Config)
 class ModelConfig:
     menu_search_tool_topk: int = 10
-    max_tokens: int = 800
+    max_tokens: int = 550
     temperature: float = 0.1
     top_p: float = 0.5
     logit_bias: Dict[int, int] = field(default_factory=dict)
@@ -57,6 +57,7 @@ class AppSettings:
     max_turn_count: int = 30
     invoke_retry_count: int = 3
     invoke_question_character_limit: int = 1000
+    topic_model_max_completion_tokens = 100
     # Adds memory to the agent so that it can engage in multi-turn conversations
     add_memory: bool = True
     load_environment_config: bool = True

@@ -30,6 +30,7 @@ class TopicDetectionTool(BaseTool):
         app_settings = AppSettings()
         llm = AzureChatOpenAI(
             deployment_name=app_settings.environment_config.openai_classifier_deployment_name,
+            max_tokens=app_settings.topic_model_max_completion_tokens,
         )
         return llm
 
