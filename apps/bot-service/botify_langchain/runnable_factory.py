@@ -124,6 +124,8 @@ class RunnableFactory:
             logit_bias=aoi_logit_bias,
             streaming=azure_chat_open_ai_streaming,
             model_kwargs={"response_format": response_format},
+            timeout=self.app_settings.model_config.timeout,
+            max_retries=self.app_settings.model_config.max_retries,
         )
 
         # Doc Search Tool for searching the menu
