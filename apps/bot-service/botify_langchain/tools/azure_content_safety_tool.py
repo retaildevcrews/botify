@@ -52,18 +52,6 @@ class AzureContentSafety_Tool(BaseTool):
 
         return self._format_response(shield_response, harmful_response)
 
-    async def _retry_async_request(self, func, *args, retries=3, **kwargs):
-        for attempt in range(retries):
-            try:
-                return await func(*args, **kwargs)
-            except aiohttp.ClientError as e:
-                if attempt == retries - 1:
-                    raise e
-
-    async def _make_async_request(self, url, payload):
-        jsonrequest = JsonRequestsWrapper(headers=self.headers)
-        return await self._retry_async_request(jsonrequest.apost, url=url, data=payload)
-
     async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None):
         payload_shield = {"userPrompt": query, "documents": None}
         payload_harmful = {"text": query}
