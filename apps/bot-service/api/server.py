@@ -99,7 +99,7 @@ class AppFactory:
         # Instantiate the anonymizer
         dependencies: List[Depends] = []
         if self.app_settings.environment_config.anonymize_input:
-            anonymizer = Anonymizer()
+            anonymizer = Anonymizer(self.app_settings)
             dependencies.append(Depends(anonymizer.set_body))
 
         if self.app_settings.add_memory:
@@ -109,7 +109,7 @@ class AppFactory:
             runnable = self.runnable_factory.get_runnable(include_history=False).with_types(
                 input_type=Input, output_type=Output
             )
-        
+
         @self.app.post(
             "/agent/invoke",
             response_model=Output,
