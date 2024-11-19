@@ -16,8 +16,7 @@ logger = get_logger(__name__)
 
 def generate_display_and_audio_response(json_str, play_voice_summary):
     # Load the JSON string into a Python dictionary
-    data = json.loads(json_str)
-
+    data = json_str
     logger.debug(json_str)
 
     # Initialize the result string

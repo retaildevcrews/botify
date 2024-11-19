@@ -52,9 +52,10 @@ class Anonymizer:
         try:
             logger.debug("Anonymizing request")
 
-            receive_ = await request._receive()
             # Decode body to JSON
-            body = json.loads(receive_["body"].decode("utf-8"))
+            body = await request.body()
+            body = json.loads(body)
+
             # Check if 'input' and 'question' fields are present
             if "input" in body and "question" in body["input"]:
                 # Extract and log the 'question' field
@@ -74,13 +75,6 @@ class Anonymizer:
                                 question_in_body}")
                     request._body = json.dumps(body).encode('utf-8')
                     logger.info(f"Body after anonymization: {request._body}")
-
-                async def receive():
-                    receive_["body"] = json.dumps(body).encode("utf-8")
-                    return receive_
-
-                request._receive = receive
-
             else:
                 # Log that the input/question field is missing
                 logger.info(
