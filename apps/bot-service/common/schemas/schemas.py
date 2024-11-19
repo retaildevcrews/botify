@@ -56,7 +56,7 @@ class ResponseSchema:
                 return schema_content
         except FileNotFoundError as e:
             logger.error(f"Error loading response schema: {e}")
-        raise e
+            raise e
 
     def get_response_schema_yaml(self):
         current_path = os.path.dirname(__file__)
@@ -68,4 +68,4 @@ class ResponseSchema:
                 return schema_content
         except FileNotFoundError as e:
             logger.error(f"Error loading response schema: {e}")
-        raise e
+            raise e

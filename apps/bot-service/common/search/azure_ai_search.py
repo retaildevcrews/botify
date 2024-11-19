@@ -111,8 +111,8 @@ class AzureRAGSearchClient:
                     content[result_id] = result
                 else:
                     logger.debug(
-                        f"Reranker Score below threshold for product number {
-                        result['id']}, Skipping"
+                        f"""Reranker Score below threshold for product number:
+                        {result['id']}, Skipping"""
                     )
         # Sort results by score in descending order
         sorted_results = sorted(content.values(), key=lambda item: item["@search.score"], reverse=True)
