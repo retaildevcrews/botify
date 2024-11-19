@@ -1,8 +1,6 @@
 import os
 import unittest
-import uuid
 
-import pandas as pd
 from promptflow.core import AzureOpenAIModelConfiguration
 from run_evaluations.evaluate_bot_behavior import evaluate_bot_behavior
 

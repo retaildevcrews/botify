@@ -1,7 +1,6 @@
 import unittest
 
 from evaluators import (
-    CalledToolEvaluator,
     CoherenceEvaluator,
     FluencyEvaluator,
     JsonSchemaValidationEvaluator,
