@@ -1,7 +1,14 @@
 services:
+  azclicredsproxy:
+    image: workleap/azure-cli-credentials-proxy:latest #https://github.com/gsoft-inc/azure-cli-credentials-proxy
+    user: "$UID:$GID"
+    networks:
+      - langchain-net
+    volumes:
+      - "/home/vscode/.azure:/app/.azure/" # Dev container
   # OpenTelemetry Collector
   otelcol:
-    image: otel/opentelemetry-collector-contrib:0.100.0
+    build: ./collector
     container_name: otelcol
     deploy:
       resources:
@@ -19,6 +26,7 @@ services:
   bot-service:
     depends_on:
       - otelcol
+      - azclicredsproxy
     build: ./bot-service
     develop:
       watch:

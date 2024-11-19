@@ -4,6 +4,8 @@ import logging
 import app.messages as messages
 import yaml
 from app.settings import AppSettings
+from app.exceptions import InputTooLongError, MaxTurnsExceededError
+from azure.identity import DefaultAzureCredential
 from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
@@ -27,6 +29,8 @@ class RunnableFactory:
         self.promptgen = PromptGen()
 
         self.byo_session_history_callable = byo_session_history_callable
+
+        self.current_turn_count = 0
 
         from botify_langchain.tools.azure_ai_search_tool import AzureAISearch_Tool
         from botify_langchain.tools.azure_content_safety_tool import AzureContentSafety_Tool
@@ -69,7 +73,7 @@ class RunnableFactory:
         include_history=True,
         return_intermediate_steps=False,
         verbose=False,
-        azure_chat_open_ai_streaming=True,
+        azure_chat_open_ai_streaming=False,
     ) -> Runnable:
         # Gets the main runnable with the session history callable
         # included - this is the main entry point for the chatbot
@@ -122,6 +126,8 @@ class RunnableFactory:
             logit_bias=aoi_logit_bias,
             streaming=azure_chat_open_ai_streaming,
             model_kwargs={"response_format": response_format},
+            timeout=self.app_settings.model_config.timeout,
+            max_retries=self.app_settings.model_config.max_retries,
         )
 
         # Doc Search Tool for searching the menu
@@ -152,12 +158,14 @@ class RunnableFactory:
             verbose=verbose,
         )
         graph = StateGraph(dict)
+        graph.add_node("pre_processor", self.pre_processor)
         graph.add_node("content_safety", self.content_safety)
         graph.add_node("stop_for_safety", self.return_safety_error_message)
         graph.add_node("identify_disclaimers", self.identify_disclaimers)
         graph.add_node("call_model", tools_agent_with_history)
         graph.add_node("post_processor", self.post_processor)
-        graph.add_edge(START, "content_safety")
+        graph.add_edge(START, "pre_processor")
+        graph.add_edge("pre_processor", "content_safety")
         graph.add_conditional_edges(
             "content_safety",
             self.should_stop_for_safety,
@@ -176,23 +184,34 @@ class RunnableFactory:
         current_span.set_attribute("session_id", session_id)
         current_span.set_attribute("user_id", user_id)
 
-        if self.app_settings.environment_config.cosmos_connection_string:
-            if self.app_settings.optimize_history:
-                session_history_class = CustomCosmosDBChatMessageHistory
-            else:
-                session_history_class = CosmosDBChatMessageHistory
+        # Common parameters
+        params = {
+            'cosmos_endpoint': self.app_settings.environment_config.cosmos_endpoint,
+            'cosmos_database': self.app_settings.environment_config.cosmos_database,
+            'cosmos_container': self.app_settings.environment_config.cosmos_container,
+            'session_id': session_id,
+            'user_id': user_id,
+        }
 
-            session_history = session_history_class(
-                cosmos_endpoint=self.app_settings.environment_config.cosmos_endpoint,
-                cosmos_database=self.app_settings.environment_config.cosmos_database,
-                cosmos_container=self.app_settings.environment_config.cosmos_container,
-                connection_string=self.app_settings.environment_config.cosmos_connection_string.get_secret_value(),
-                session_id=session_id,
-                user_id=user_id,
-            )
+        # Extract the connection string if available
+        cosmos_conn_str = self.app_settings.environment_config.cosmos_connection_string
+        if (
+            cosmos_conn_str is not None
+            and cosmos_conn_str.get_secret_value() is not None
+        ):
+            params['connection_string'] = cosmos_conn_str.get_secret_value()
+            self.logger.debug("Using connection string for CosmosDB")
+        else:
+            params['credential'] = DefaultAzureCredential()
+            self.logger.debug("Using DefaultAzureCredential for CosmosDB")
+
+        # Create the session history instance
+        session_history = CustomCosmosDBChatMessageHistory(**params)
 
         # Create database and container if they don't exist
         session_history.prepare_cosmos()
+
+        self.current_turn_count = 0
 
         return session_history
 
@@ -243,7 +262,7 @@ class RunnableFactory:
             )
             return runnable
 
-    def content_safety(self, state: dict):
+    async def content_safety(self, state: dict):
         """Evaluate content safety."""
         self.logger.debug(f"Prompt Input: {state}")
         harmful_prompt_results = None
@@ -253,17 +272,17 @@ class RunnableFactory:
         harmful_prompt_detected = False
         banned_topic_results = []
         unable_to_complete_safety_check = False
+        current_span = get_current_span()
         try:
-            current_span = get_current_span()
             if self.app_settings.content_safety_enabled:
-                results = self.content_safety_tool.run(state["question"])
+                results = await self.content_safety_tool._arun(state["question"])
                 self.logger.debug(f"GetContentSafetyValidation_Tool results: {results}")
                 harmful_prompt_results = results["analyzed_harmful_text_response"]
                 prompt_shield_results = results["prompt_shield_validation_response"]
                 captured_harmful_categories = [
                     category
                     for category in harmful_prompt_results["categoriesAnalysis"]
-                    if category["severity"] > 0
+                    if category["severity"] > self.app_settings.content_safety_threshold
                 ]
                 attack_detected = prompt_shield_results["userPromptAnalysis"]["attackDetected"]
                 current_span.set_attribute("attackDetected", str(attack_detected))
@@ -273,9 +292,16 @@ class RunnableFactory:
                     current_span.set_attribute(
                         "harmful_categories_detected", str(captured_harmful_categories)
                     )
+        except Exception as e:
+            logging.error(
+                f"Error in content safety tool unable to determine result so exiting without responding: {e}")
+            unable_to_complete_safety_check = True
+            current_span.set_attribute(
+                "unable_to_complete_safety_check", str(unable_to_complete_safety_check))
+        try:
+            self.logger.debug(f"Starting Topic Detection: {state}")
             if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected == False:
-                tool_input = {"text_entry": state["question"], "topics": AppSettings().banned_topics}
-                banned_topic_results = TopicDetectionTool().run(tool_input)
+                banned_topic_results = await TopicDetectionTool()._arun(state["question"], AppSettings().banned_topics)
                 banned_topic_detected = len(banned_topic_results) > 0
                 current_span.set_attribute("banned_topic_detected", str(banned_topic_detected))
                 if banned_topic_detected:
@@ -285,11 +311,9 @@ class RunnableFactory:
                 )
         except Exception as e:
             logging.error(
-                f"Error in content safety tool unable to determine result so exiting without responding: {e}"
+                f"Error in topic detection tool unable to determine result so exiting without responding: {e}"
             )
-            unable_to_complete_safety_check = (
-                self.app_settings.banned_topics > 0 or self.app_settings.content_safety_enabled
-            )
+            unable_to_complete_safety_check = True
             current_span.set_attribute(
                 "unable_to_complete_safety_check", str(unable_to_complete_safety_check)
             )
@@ -305,6 +329,21 @@ class RunnableFactory:
             }
         )
         return state
+
+    def pre_processor(self, state: dict):
+        """Invoke prechecks before running the graph."""
+        current_turn_count = self.current_turn_count
+        max_turn_count = self.app_settings.max_turn_count
+        self.logger.info("Current Turn Count: " + str(current_turn_count))
+        self.logger.info("Max Turn Count: " + str(max_turn_count))
+        if current_turn_count >= max_turn_count:
+            raise MaxTurnsExceededError(
+                f"Max turn count exceeded: {current_turn_count} >= {max_turn_count}")
+        if len(state["question"]) > self.app_settings.invoke_question_character_limit:
+            raise InputTooLongError(
+                f"Question exceeds character limit: {len(state['question'])} > {self.app_settings.invoke_question_character_limit}")
+        if state["question"].strip() == "":
+            raise ValueError("Question is empty")
 
     def should_stop_for_safety(self, state: dict):
         """Make a decision based on detected prompts."""
@@ -324,11 +363,10 @@ class RunnableFactory:
         state["output"] = messages.SAFETY_ERROR_MESSAGE_JSON
         return state
 
-    def identify_disclaimers(self, state: dict):
+    async def identify_disclaimers(self, state: dict):
         self.logger.debug(f"Topic Detection Tool Executing")
         current_span = get_current_span()
-        tool_input = {"text_entry": state["question"], "topics": AppSettings().disclaimer_topics}
-        results = TopicDetectionTool().run(tool_input)
+        results = await TopicDetectionTool()._arun(state["question"], AppSettings().disclaimer_topics)
         self.logger.debug(f"Topic Detection Tool results: {results}")
         current_span.set_attribute("disclaimers_added", str(results))
         state["disclaimers"] = results

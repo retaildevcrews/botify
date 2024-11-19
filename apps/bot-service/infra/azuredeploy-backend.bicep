@@ -27,7 +27,7 @@ param azureSearchName string
 param azureSearchIndexName string
 
 @description('Optional. The API version for the Azure Search service.')
-param azureSearchAPIVersion string = '2023-10-01-preview'
+param azureSearchAPIVersion string = '2024-05-01-preview'
 
 @description('Required. The name of the Azure OpenAI resource deployed previously.')
 param azureOpenAIName string
@@ -40,7 +40,7 @@ param azureOpenAIAPIKey string
 param azureOpenAIModelName string = 'gpt-35-turbo-1106'
 
 @description('Optional. The API version for the Azure OpenAI service.')
-param azureOpenAIAPIVersion string = '2023-12-01-preview'
+param azureOpenAIAPIVersion string = '2024-08-01-preview'
 
 @description('Required. The name of the Azure CosmosDB.')
 param cosmosDBAccountName string

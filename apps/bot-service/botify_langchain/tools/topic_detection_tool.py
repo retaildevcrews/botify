@@ -30,6 +30,7 @@ class TopicDetectionTool(BaseTool):
         app_settings = AppSettings()
         llm = AzureChatOpenAI(
             deployment_name=app_settings.environment_config.openai_classifier_deployment_name,
+            max_tokens=app_settings.topic_model_max_completion_tokens,
         )
         return llm
 
@@ -44,13 +45,13 @@ class TopicDetectionTool(BaseTool):
         self, text_entry, topics, run_manager: Optional[CallbackManagerForToolRun] = None
     ) -> Tuple[str, bool, float]:
         # Call Azure OpenAI to classify the prompt
-        response = self.get_llm().invoke(self.make_prompt(text_entry, topics))
+        response = self.get_llm().ainvoke(self.make_prompt(text_entry, topics))
         return self.format_response(response)
 
     async def _arun(
         self, text_entry, topics, run_manager: Optional[AsyncCallbackManagerForToolRun] = None
     ) -> Tuple[str, bool, float]:
         # Call Azure OpenAI to classify the prompt asynchronously
-        response = await self.get_llm().invoke(self.make_prompt(text_entry, topics))
+        response = await self.get_llm().ainvoke(self.make_prompt(text_entry, topics))
 
         return self.format_response(response)

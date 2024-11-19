@@ -155,7 +155,7 @@ class EnvironmentConfig:
         self.cosmos_database = get_config_value("AZURE_COSMOSDB_NAME", required=True)
         self.cosmos_container = get_config_value("AZURE_COSMOSDB_CONTAINER_NAME", required=True)
         self.cosmos_connection_string = SecretStr(
-            get_config_value("AZURE_COSMOSDB_CONNECTION_STRING", required=True)
+            get_config_value("AZURE_COSMOSDB_CONNECTION_STRING", required=False)
         )
         # Azure Search
         self.doc_index = get_config_value("AZURE_SEARCH_INDEX_NAME", required=True)
@@ -165,6 +165,7 @@ class EnvironmentConfig:
         # Content Safety
         self.content_safety_endpoint = get_config_value("CONTENT_SAFETY_ENDPOINT", required=True)
         self.content_safety_key = SecretStr(get_config_value("CONTENT_SAFETY_KEY", required=True))
+        self.content_safety_api_version = get_config_value("CONTENT_SAFETY_API_VERSION", required=False, default_value="2024-09-01")
         self.log_level = get_config_value("LOG_LEVEL", required=False)
         # Anonymize Questions
         self.anonymize_input = TypeAdapter(bool).validate_python(

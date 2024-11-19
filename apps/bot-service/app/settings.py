@@ -14,10 +14,12 @@ class Config:
 @pydantic.dataclasses.dataclass(config=Config)
 class ModelConfig:
     menu_search_tool_topk: int = 10
-    max_tokens: int = 800
+    max_tokens: int = 550
     temperature: float = 0.1
     top_p: float = 0.5
     logit_bias: Dict[int, int] = field(default_factory=dict)
+    timeout: float = 30.0
+    max_retries: int = 3
     use_structured_output: bool = False
     use_json_format: bool = True
 
@@ -47,11 +49,15 @@ class AppSettings:
     # Default model configuration can be seen in the ModelConfig class
     model_config: ModelConfig = field(default_factory=ModelConfig)
     # When this is set to true, the agent will attempt to store only the display message and not entire bot response
-    optimize_history: bool = True
+    history_limit: int = 10
     search_tool_topk: int = 10
     search_similarity_field: str = "summary"
     search_tool_reranker_threshold: int = 1
     item_detail_reranker_threshold: int = 1
+    max_turn_count: int = 30
+    invoke_retry_count: int = 3
+    invoke_question_character_limit: int = 1000
+    topic_model_max_completion_tokens = 100
     # Adds memory to the agent so that it can engage in multi-turn conversations
     add_memory: bool = True
     load_environment_config: bool = True
@@ -79,6 +85,7 @@ class AppSettings:
 
     # Used to turn on or off content safety checks - config is in environment_config
     content_safety_enabled: bool = True
+    content_safety_threshold: int = 2
     # Use this section to turn on or off banned topic checks,
     # this is a custom tool that uses LLM to classify the topic of the question
     banned_topics: list[str] = field(

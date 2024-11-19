@@ -2,25 +2,37 @@ receivers:
   otlp:
     protocols:
       http:
+        include_metadata: true
         endpoint: 0.0.0.0:4318
 exporters:
   azuremonitor:
     connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
 
 processors:
+  filter/cosmos404:
+    spans:
+      exclude:
+        match_type: regexp
+        attributes:
+          - key: http.url
+            value: https:\/\/[a-zA-Z0-9.-]+\.documents\.azure\.com:443.*\/docs\/
+          - key: http.status_code
+            value: "404"
+          - key: http.method
+            value: "GET"
   batch:
 
 service:
   pipelines:
     traces:
       receivers: [otlp]
-      processors: [batch]
+      processors: [filter/cosmos404, batch]
       exporters: [azuremonitor]
     metrics:
       receivers: [otlp]
-      processors: [batch]
+      processors: [filter/cosmos404, batch]
       exporters: [azuremonitor]
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [filter/cosmos404, batch]
       exporters: [azuremonitor]
