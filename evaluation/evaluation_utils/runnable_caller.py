@@ -128,10 +128,7 @@ class RunnableCaller:
         try:
             output = parse_full_flow_response(result, self.factory)
         except TypeError:
-            output["answer"] = (
-                f"Failed to parse response - unparsed result: {
-                result}"
-            )
+            output["answer"] = f"Failed to parse response - unparsed result: {result}"
         output["start_time"] = start_time
         output["end_time"] = end_time
         output["ellapsed_time"] = ellapsed_time

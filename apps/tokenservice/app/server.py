@@ -41,7 +41,8 @@ app = FastAPI(
     root_path=url_prefix,
     title="Gen AI Rag Example Token Service",
     version=version,
-    description="A token service for public clients to obtain access tokens for the Gen AI Rag Example API and Speech Service.",
+    description="""A token service for public clients to obtain access tokens for
+                   the Gen AI Rag Example API and Speech Service.""",
 )
 
 # Set all CORS enabled origins
@@ -72,7 +73,7 @@ def refreshSpeechToken() -> None:
         try:
             token = credential.get_token(speech_service_scope)
             speech_token = f"aad#{speech_resource_id}#{token.token}"
-        except:
+        except Exception:
             logger.error("Failed to refresh speech token")
         finally:
             logger.info("Sleeping for 9 minutes...")
@@ -97,7 +98,7 @@ def get_speech_token(response: Response):
 def get_api_token():
     try:
         token = credential.get_token(api_scope)
-    except:
+    except Exception:
         raise HTTPException(status_code=500, detail="Failed to get API token")
     return {"access_token": token.token, "expires_on": token.expires_on}
 
@@ -105,5 +106,5 @@ def get_api_token():
 # Start the speech token refresh thread
 speechTokenRefereshThread = threading.Thread(target=refreshSpeechToken)
 speechTokenRefereshThread.daemon = True
-logger.debug(f"Starting speech token refresh thread")
+logger.debug("Starting speech token refresh thread")
 speechTokenRefereshThread.start()
