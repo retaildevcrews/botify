@@ -4,7 +4,6 @@ from io import BytesIO
 
 import azure.cognitiveservices.speech as speechsdk
 import streamlit as st
-from helpers.streamlit_helpers import extract_voice_summary_and_text
 from openai import AzureOpenAI
 from streamlit.logger import get_logger
 from streamlit_app import (
@@ -16,13 +15,6 @@ from streamlit_app import (
     tts_voice_name,
     whisper_model_name,
 )
-
-
-def get_logger(name):
-    from streamlit.logger import get_logger
-
-    return get_logger(name)
-
 
 logger = get_logger(__name__)
 

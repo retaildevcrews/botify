@@ -2,7 +2,6 @@ import json
 import logging
 import traceback
 
-from fastapi import Request
 from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_anonymizer import AnonymizerEngine, DeanonymizeEngine

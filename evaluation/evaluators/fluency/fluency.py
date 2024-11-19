@@ -3,7 +3,6 @@
 # ---------------------------------------------------------
 
 import os
-import re
 
 import numpy as np
 from promptflow._utils.async_utils import async_run_allowing_running_loop

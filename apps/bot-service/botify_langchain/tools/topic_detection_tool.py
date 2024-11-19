@@ -18,7 +18,8 @@ class TopicDetectionTool(BaseTool):
             SystemMessage(
                 content=f"""
                           Identify if it contains any of these topics topics: {', '.join(topics)}.
-                          If the prompt contains any of the following topics, please respond with the list of all topics that are present in the prompt.
+                          If the prompt contains any of the following topics,
+                          please respond with the list of all topics that are present in the prompt.
                           If the prompt does not contain any of the banned topics, please respond with 'None'
                           Example Responses: 'medical, legal', 'None'
                           """

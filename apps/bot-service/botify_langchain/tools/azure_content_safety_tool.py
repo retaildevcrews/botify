@@ -2,7 +2,6 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
-import requests
 import httpx
 from app.settings import AppSettings
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
@@ -20,11 +19,13 @@ class AzureContentSafety_Tool(BaseTool):
 
     prompt_shield_endpoint = (
         app_settings.environment_config.content_safety_endpoint
-        + f"contentsafety/text:shieldPrompt?api-version={app_settings.environment_config.content_safety_api_version}"
+        + "contentsafety/text:shieldPrompt?api-version="
+        + app_settings.environment_config.content_safety_api_version
     )
     harmful_text_analysis_endpoint = (
         app_settings.environment_config.content_safety_endpoint
-        + f"contentsafety/text:analyze?api-version={app_settings.environment_config.content_safety_api_version}"
+        + "contentsafety/text:analyze?api-version="
+        + app_settings.environment_config.content_safety_api_version
     )
 
     headers = {
@@ -50,18 +51,6 @@ class AzureContentSafety_Tool(BaseTool):
         harmful_response = harmful_future.result()
 
         return self._format_response(shield_response, harmful_response)
-
-    async def _retry_async_request(self, func, *args, retries=3, **kwargs):
-        for attempt in range(retries):
-            try:
-                return await func(*args, **kwargs)
-            except aiohttp.ClientError as e:
-                if attempt == retries - 1:
-                    raise e
-
-    async def _make_async_request(self, url, payload):
-        jsonrequest = JsonRequestsWrapper(headers=self.headers)
-        return await self._retry_async_request(jsonrequest.apost, url=url, data=payload)
 
     async def _arun(self, query: str, run_manager: Optional[AsyncCallbackManagerForToolRun] = None):
         payload_shield = {"userPrompt": query, "documents": None}

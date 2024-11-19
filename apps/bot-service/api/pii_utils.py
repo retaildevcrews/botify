@@ -1,19 +1,23 @@
+import functools
 import json
 import logging
+from http import HTTPStatus
+from typing import Callable
 
+from app.exceptions import InputTooLongError, MaxTurnsExceededError
+from app.messages import (
+    CHARACTER_LIMIT_ERROR_MESSAGE_JSON,
+    GENERIC_ERROR_MESSAGE_JSON,
+    MAX_TURNS_EXCEEDED_ERROR_MESSAGE_JSON,
+)
 from app.settings import AppSettings
+from botify_langchain.runnable_factory import RunnableFactory
 from common.presidio.anonymizer import Anonymizer as PresidioAnonymizer
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from typing import Callable
-from http import HTTPStatus
-import functools
-from app.messages import GENERIC_ERROR_MESSAGE_JSON, CHARACTER_LIMIT_ERROR_MESSAGE_JSON, MAX_TURNS_EXCEEDED_ERROR_MESSAGE_JSON
-from app.exceptions import InputTooLongError, MaxTurnsExceededError
-from botify_langchain.runnable_factory import RunnableFactory
-
 
 logger = logging.getLogger(__name__)
+
 
 def anonymize(app_settings: AppSettings):
     async def error_response(code: int, message: str) -> dict:
@@ -30,11 +34,14 @@ def anonymize(app_settings: AppSettings):
             except Exception as e:
                 return await error_response(
                     code=HTTPStatus.INTERNAL_SERVER_ERROR.value,
-                    message=f"Error while anonymizing request: {str(e)}"
+                    message=f"Error while anonymizing request: {str(e)}",
                 )
             return await func(request, *args, **kws)
+
         return anonymize_wrap
+
     return decorator
+
 
 class Anonymizer:
     def __init__(self, app_settings: AppSettings):
@@ -70,10 +77,12 @@ class Anonymizer:
                         f"Replaced Question With: {
                                 anonymized_question}"
                     )
-                    question_in_body = body['input']['question']
-                    logger.info(f"Question that has been replaced in body: {
-                                question_in_body}")
-                    request._body = json.dumps(body).encode('utf-8')
+                    question_in_body = body["input"]["question"]
+                    logger.info(
+                        f"Question that has been replaced in body: {
+                                question_in_body}"
+                    )
+                    request._body = json.dumps(body).encode("utf-8")
                     logger.info(f"Body after anonymization: {request._body}")
             else:
                 # Log that the input/question field is missing
@@ -85,7 +94,9 @@ class Anonymizer:
             # Log the exception
             logger.error(f"Failed to process the request body: {str(e)}")
 
+
 retries_limit = AppSettings().invoke_retry_count
+
 
 async def invoke(input_data, config_data, runnable_factory: RunnableFactory, retry_count=0):
     error_response = {"output": GENERIC_ERROR_MESSAGE_JSON}
@@ -101,7 +112,10 @@ async def invoke(input_data, config_data, runnable_factory: RunnableFactory, ret
         if isinstance(e, MaxTurnsExceededError):
             return {"output": MAX_TURNS_EXCEEDED_ERROR_MESSAGE_JSON}
         if not isinstance(e, ValueError):
-            result = await invoke(input_data, config_data, invoke_runnable_factory,
-                    retry_count + 1) if retry_count < retries_limit else error_response
+            result = (
+                await invoke(input_data, config_data, invoke_runnable_factory, retry_count + 1)
+                if retry_count < retries_limit
+                else error_response
+            )
             return result
         return error_response

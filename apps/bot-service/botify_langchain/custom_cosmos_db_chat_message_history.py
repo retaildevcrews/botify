@@ -1,28 +1,13 @@
 from __future__ import annotations
 
-import json
 import logging
-from typing import TYPE_CHECKING, Any, List, Optional
+from datetime import datetime
+from typing import Any, List, Optional
 
 from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
-from langchain_core.messages import (
-    BaseMessage,
-    messages_to_dict,
-    messages_from_dict,
-)
-
-from datetime import datetime
+from langchain_core.messages import BaseMessage, messages_from_dict, messages_to_dict
 
 logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from azure.cosmos import ContainerProxy
-
-
-logger = logging.getLogger(__name__)
-
-if TYPE_CHECKING:
-    from azure.cosmos import ContainerProxy
 
 
 class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
@@ -60,7 +45,7 @@ class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
     def add_message(self, message: BaseMessage) -> None:
         self.history.append(message)
         super().add_message(message)
-    
+
     def load_messages(self):
         """Retrieve the messages from Cosmos"""
         if not self._container:
@@ -75,9 +60,7 @@ class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
                 "Please install it with `pip install azure-cosmos`."
             ) from exc
         try:
-            item = self._container.read_item(
-                item=self.session_id, partition_key=self.user_id
-            )
+            item = self._container.read_item(item=self.session_id, partition_key=self.user_id)
         except CosmosHttpResponseError:
             logger.info("no session found")
             return
@@ -91,7 +74,7 @@ class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
         # Trim context messages
         if len(self.messages) > self.history_limit and self.history_limit > 0:
             logger.debug(f"Limiting history to {self.history_limit} messages")
-            self.messages = self.messages[(-1*self.history_limit):]
+            self.messages = self.messages[(-1 * self.history_limit) :]
 
     def upsert_messages(self):
         """Update the cosmosdb item."""
@@ -104,11 +87,11 @@ class CustomCosmosDBChatMessageHistory(CosmosDBChatMessageHistory):
                 "id": self.session_id,
                 "user_id": self.user_id,
                 "messages": messages_to_dict(self.history),
-                "session_start_ts": self.session_start_timestamp
+                "session_start_ts": self.session_start_timestamp,
             }
         )
-    
+
     def get_session_turn_count(self) -> int:
         message_count = len(self.history)
-        session_turn_count = message_count/2
+        session_turn_count = message_count / 2
         return session_turn_count

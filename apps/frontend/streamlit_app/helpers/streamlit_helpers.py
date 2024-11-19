@@ -1,4 +1,3 @@
-import json
 import re
 import uuid
 
@@ -43,7 +42,8 @@ def set_page_config(title, icon):
         page_icon=icon,
         layout="wide",
         menu_items={
-            "about": f"""**Front-End Version:** {frontend_version}\n\n**Back-End Version:** {backend_version}"""
+            "about": f"""**Front-End Version:** {frontend_version}\n\n
+                         **Back-End Version:** {backend_version}"""
         },
     )
 
