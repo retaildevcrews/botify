@@ -2,7 +2,6 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
-import requests
 import httpx
 from app.settings import AppSettings
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
@@ -20,11 +19,13 @@ class AzureContentSafety_Tool(BaseTool):
 
     prompt_shield_endpoint = (
         app_settings.environment_config.content_safety_endpoint
-        + f"contentsafety/text:shieldPrompt?api-version={app_settings.environment_config.content_safety_api_version}"
+        + "contentsafety/text:shieldPrompt?api-version="
+        + app_settings.environment_config.content_safety_api_version
     )
     harmful_text_analysis_endpoint = (
         app_settings.environment_config.content_safety_endpoint
-        + f"contentsafety/text:analyze?api-version={app_settings.environment_config.content_safety_api_version}"
+        + "contentsafety/text:analyze?api-version="
+        + app_settings.environment_config.content_safety_api_version
     )
 
     headers = {

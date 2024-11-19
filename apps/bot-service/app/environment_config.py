@@ -132,7 +132,8 @@ class EnvironmentConfig:
     # Validating anonymizer mode
     if anonymizer_mode not in VALID_ANONYMIZER_MODES:
         raise ValueError(
-            f"Invalid anonymizer mode: '{anonymizer_mode}'. Valid modes are: {', '.join(VALID_ANONYMIZER_MODES)}"
+            f"""Invalid anonymizer mode: '{anonymizer_mode}'.
+            Valid modes are: {', '.join(VALID_ANONYMIZER_MODES)}"""
         )
     anonymizer_crypto_key = SecretStr(
         get_config_value("ANONYMIZER_CRYPTO_KEY", default_value="", required=False)
@@ -165,7 +166,9 @@ class EnvironmentConfig:
         # Content Safety
         self.content_safety_endpoint = get_config_value("CONTENT_SAFETY_ENDPOINT", required=True)
         self.content_safety_key = SecretStr(get_config_value("CONTENT_SAFETY_KEY", required=True))
-        self.content_safety_api_version = get_config_value("CONTENT_SAFETY_API_VERSION", required=False, default_value="2024-09-01")
+        self.content_safety_api_version = get_config_value(
+            "CONTENT_SAFETY_API_VERSION", required=False, default_value="2024-09-01"
+        )
         self.log_level = get_config_value("LOG_LEVEL", required=False)
         # Anonymize Questions
         self.anonymize_input = TypeAdapter(bool).validate_python(

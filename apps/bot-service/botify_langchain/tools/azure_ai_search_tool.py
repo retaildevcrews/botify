@@ -1,6 +1,4 @@
-import asyncio
 import logging
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional, Type
 
 from app.settings import AppSettings

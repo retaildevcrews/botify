@@ -3,8 +3,8 @@ import logging
 
 import app.messages as messages
 import yaml
-from app.settings import AppSettings
 from app.exceptions import InputTooLongError, MaxTurnsExceededError
+from app.settings import AppSettings
 from azure.identity import DefaultAzureCredential
 from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
@@ -186,23 +186,20 @@ class RunnableFactory:
 
         # Common parameters
         params = {
-            'cosmos_endpoint': self.app_settings.environment_config.cosmos_endpoint,
-            'cosmos_database': self.app_settings.environment_config.cosmos_database,
-            'cosmos_container': self.app_settings.environment_config.cosmos_container,
-            'session_id': session_id,
-            'user_id': user_id,
+            "cosmos_endpoint": self.app_settings.environment_config.cosmos_endpoint,
+            "cosmos_database": self.app_settings.environment_config.cosmos_database,
+            "cosmos_container": self.app_settings.environment_config.cosmos_container,
+            "session_id": session_id,
+            "user_id": user_id,
         }
 
         # Extract the connection string if available
         cosmos_conn_str = self.app_settings.environment_config.cosmos_connection_string
-        if (
-            cosmos_conn_str is not None
-            and cosmos_conn_str.get_secret_value() is not None
-        ):
-            params['connection_string'] = cosmos_conn_str.get_secret_value()
+        if cosmos_conn_str is not None and cosmos_conn_str.get_secret_value() is not None:
+            params["connection_string"] = cosmos_conn_str.get_secret_value()
             self.logger.debug("Using connection string for CosmosDB")
         else:
-            params['credential'] = DefaultAzureCredential()
+            params["credential"] = DefaultAzureCredential()
             self.logger.debug("Using DefaultAzureCredential for CosmosDB")
 
         # Create the session history instance
@@ -294,20 +291,26 @@ class RunnableFactory:
                     )
         except Exception as e:
             logging.error(
-                f"Error in content safety tool unable to determine result so exiting without responding: {e}")
+                f"Error in content safety tool unable to determine result so exiting without responding: {e}"
+            )
             unable_to_complete_safety_check = True
             current_span.set_attribute(
-                "unable_to_complete_safety_check", str(unable_to_complete_safety_check))
+                "unable_to_complete_safety_check", str(unable_to_complete_safety_check)
+            )
         try:
             self.logger.debug(f"Starting Topic Detection: {state}")
-            if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected == False:
-                banned_topic_results = await TopicDetectionTool()._arun(state["question"], AppSettings().banned_topics)
+            if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected is False:
+                banned_topic_results = await TopicDetectionTool()._arun(
+                    state["question"], AppSettings().banned_topics
+                )
                 banned_topic_detected = len(banned_topic_results) > 0
                 current_span.set_attribute("banned_topic_detected", str(banned_topic_detected))
                 if banned_topic_detected:
                     current_span.set_attribute("banned_topics_detected", str(banned_topic_results))
                 self.logger.debug(
-                    f"Topic Detection Tool - banned topic detected: {banned_topic_detected} results: {banned_topic_results}"
+                    f"""Topic Detection Tool -
+                    banned topic detected: {banned_topic_detected}
+                    results: {banned_topic_results}"""
                 )
         except Exception as e:
             logging.error(
@@ -337,11 +340,12 @@ class RunnableFactory:
         self.logger.info("Current Turn Count: " + str(current_turn_count))
         self.logger.info("Max Turn Count: " + str(max_turn_count))
         if current_turn_count >= max_turn_count:
-            raise MaxTurnsExceededError(
-                f"Max turn count exceeded: {current_turn_count} >= {max_turn_count}")
+            raise MaxTurnsExceededError(f"Max turn count exceeded: {current_turn_count} >= {max_turn_count}")
         if len(state["question"]) > self.app_settings.invoke_question_character_limit:
             raise InputTooLongError(
-                f"Question exceeds character limit: {len(state['question'])} > {self.app_settings.invoke_question_character_limit}")
+                f"""Question exceeds character limit:
+                {len(state['question'])} > {self.app_settings.invoke_question_character_limit}"""
+            )
         if state["question"].strip() == "":
             raise ValueError("Question is empty")
 
@@ -364,7 +368,7 @@ class RunnableFactory:
         return state
 
     async def identify_disclaimers(self, state: dict):
-        self.logger.debug(f"Topic Detection Tool Executing")
+        self.logger.debug("Topic Detection Tool Executing")
         current_span = get_current_span()
         results = await TopicDetectionTool()._arun(state["question"], AppSettings().disclaimer_topics)
         self.logger.debug(f"Topic Detection Tool results: {results}")
@@ -407,7 +411,9 @@ class RunnableFactory:
                 llm_output = llm_output[1:-1]
             if llm_output == data:
                 self.logger.warning(
-                    f"LLM returned incorrect format so will wrap in json object llm response was: {llm_output}"
+                    f"""LLM returned incorrect format.
+                    Will wrap in json object.
+                    llm response was: {llm_output}"""
                 )
                 data = {"displayResponse": llm_output, "voiceSummary": llm_output}
         except Exception as e:

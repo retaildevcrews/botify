@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import json
 import logging
 from pathlib import Path
 from typing import Any, List, TypedDict
@@ -7,18 +8,15 @@ from typing import Any, List, TypedDict
 import _additional_version_info
 import pydantic
 import toml
-from api.pii_utils import Anonymizer, anonymize, invoke as invoke_runnable
+from api.models import Payload
+from api.pii_utils import Anonymizer, anonymize
+from api.pii_utils import invoke as invoke_runnable
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from langserve import add_routes
-from fastapi import Request
-from typing import Dict
-from api.models import Payload
 from opentelemetry import trace
-import json
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -49,19 +47,23 @@ class AppFactory:
         self.app = FastAPI(
             title="Botify API",
             version=self.get_version(),
-            description="An API server utilizing LangChain's Runnable interfaces to create a chatbot that uses an index as grounding material for answering questions.",
+            description="""An API server utilizing LangChain's Runnable
+            interfaces to create a chatbot that uses an
+            index as grounding material for answering questions.""",
         )
         self.setup_middleware()
         self.setup_routes()
         logging.getLogger().setLevel(self.app_settings.environment_config.log_level)
 
     def get_source_ip(self, request: Request) -> str:
-        x_forward = request.headers.get('X-Forwarded-For')
-        x_real_ip = request.headers.get('X-Real-IP')
-        x_azure = request.headers.get('X-Azure-ClientIP')
-        x_origin_ip = request.headers.get('X-Origin-IP')
-        http_client_ip = request.headers.get('HTTP_CLIENT_IP')
-        return ",".join(filter(None, [x_forward, x_real_ip, x_azure, x_origin_ip, http_client_ip, request.client.host]))
+        x_forward = request.headers.get("X-Forwarded-For")
+        x_real_ip = request.headers.get("X-Real-IP")
+        x_azure = request.headers.get("X-Azure-ClientIP")
+        x_origin_ip = request.headers.get("X-Origin-IP")
+        http_client_ip = request.headers.get("HTTP_CLIENT_IP")
+        return ",".join(
+            filter(None, [x_forward, x_real_ip, x_azure, x_origin_ip, http_client_ip, request.client.host])
+        )
 
     def get_version(self) -> str:
         # Load the pyproject.toml file
@@ -104,9 +106,9 @@ class AppFactory:
 
         if self.app_settings.add_memory:
             # Add API route for the agent
-            runnable = self.runnable_factory.get_runnable().with_types(input_type=Input, output_type=Output)
+            self.runnable_factory.get_runnable().with_types(input_type=Input, output_type=Output)
         else:
-            runnable = self.runnable_factory.get_runnable(include_history=False).with_types(
+            self.runnable_factory.get_runnable(include_history=False).with_types(
                 input_type=Input, output_type=Output
             )
 
@@ -118,15 +120,9 @@ class AppFactory:
             responses={
                 200: {
                     "description": "Successful invocation",
-                    "content": {
-                        "application/json": {
-                            "example": {
-                                "result": "The result of the runnable"
-                            }
-                        }
-                    }
+                    "content": {"application/json": {"example": {"result": "The result of the runnable"}}},
                 },
-            }
+            },
         )
         @anonymize(self.app_settings)
         async def invoke(request: Request, payload: Payload):
@@ -136,13 +132,16 @@ class AppFactory:
                 body = json.loads(body)
                 input_data = body.get("input")
                 config_data = body.get("config")
-                if ("user_id" in config_data["configurable"]):
+                if "user_id" in config_data["configurable"]:
                     request_span.set_attribute("user_id", config_data["configurable"]["user_id"])
-                if ("session_id" in config_data["configurable"]):
+                if "session_id" in config_data["configurable"]:
                     request_span.set_attribute("session_id", config_data["configurable"]["session_id"])
                 logger.info(f"Received input: {input_data}")
                 logger.info(f"Received config: {config_data}")
-                return await invoke_runnable(input_data, config_data, self.runnable_factory, self.app_settings.invoke_retry_count)
+                return await invoke_runnable(
+                    input_data, config_data, self.runnable_factory, self.app_settings.invoke_retry_count
+                )
+
 
 # Instantiate the settings and factory
 app_settings = AppSettings()
