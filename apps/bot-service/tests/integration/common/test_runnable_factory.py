@@ -20,8 +20,12 @@ class TestStringMethods(unittest.TestCase):
         return result
 
     def test_normal_question(self):
+        app_settings = self.factory.app_settings
+        anonymizer = Anonymizer(app_settings=app_settings, mode=app_settings.environment_config.anonymizer_mode,
+                                crypto_key=app_settings.environment_config.anonymizer_crypto_key)
         question = "How do I get a stain out of my shirt?"
-        result = self.ask_question(question)
+        anonymized_text = anonymizer.anonymize_text(question).to_json()
+        result = self.ask_question(anonymized_text)
         print(result)
         self.assertIsNotNone(result)
 
