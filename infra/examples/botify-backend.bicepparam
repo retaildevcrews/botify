@@ -16,7 +16,6 @@ param vaultSecrets = {
 param appConfigurationValues = [
   'AZURE_OPENAI_API_VERSION=2024-08-01-preview'
   'AZURE_SEARCH_INDEX_NAME=cogsrch-index-coffee-from-json'
-  'AZURE_SEARCH_INDEX_NAME_NO_OPTIONS=cogsrch-index-coffee-from-json-no-options'
   'AZURE_SEARCH_API_VERSION=2024-05-01-preview'
   'AZURE_COSMOSDB_NAME=chatHistory'
   'AZURE_COSMOSDB_CONTAINER_NAME=completions'

@@ -32,7 +32,6 @@ class TestStringMethods(unittest.TestCase):
         os.environ["AZURE_SEARCH_KEY"] = "key"
         os.environ["AZURE_SEARCH_API_VERSION"] = "api_version"
         os.environ["AZURE_SEARCH_INDEX_NAME"] = "index_name"
-        os.environ["AZURE_SEARCH_INDEX_NAME_NO_OPTIONS"] = "index_name"
         os.environ["AZURE_OPENAI_ENDPOINT"] = "https://localhost:8081"
         os.environ["AZURE_OPENAI_API_KEY"] = "key"
         os.environ["AZURE_OPENAI_CLASSIFIER_MODEL_NAME"] = "model_name"
