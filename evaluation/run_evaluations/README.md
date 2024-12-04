@@ -87,3 +87,32 @@ python evaluation/run_evaluations/evaluate_full_flow.py
 After running the flow you should be able to view results of run at the forwarded port
 you will see what port the app is available by looking in vscode ports tab
 ![promptflow traces port](promptflow_eval_port.png)
+
+## Run Unit Tests
+
+To get started with running the evaluation unit tests, run through the following steps:
+
+```bash
+
+# navigate to root of repo
+cd /workspaces/botify
+
+# install all required tools
+poetry install --directory=apps/bot-service
+
+# activate virtualenv
+source $(poetry env info --path --directory apps/bot-service)/bin/activate
+
+## navigate to eval directory
+cd ../../evaluation
+
+# Install eval specific python requirements
+poetry install
+
+# run evaluation unit tests
+python -m unittest discover -s ./tests/unit -t ./tests
+
+# exit virtualenv
+deactivate
+
+```

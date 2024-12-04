@@ -4,7 +4,7 @@ from presidio_analyzer import AnalyzerEngine
 from presidio_anonymizer import AnonymizerEngine
 from pydantic import SecretStr
 from common.presidio.anonymizer import Anonymizer, Deanonymizer
-from app.app_settings import EnvironmentConfig, AppSettings
+from app.settings import EnvironmentConfig, AppSettings
 import secrets
 import string
 import time

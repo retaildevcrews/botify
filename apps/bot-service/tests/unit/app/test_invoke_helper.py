@@ -1,9 +1,9 @@
 import unittest
 from unittest.mock import Mock, AsyncMock
-from app.invoke_helper import invoke
-from app.app_messages import GENERIC_ERROR_MESSAGE_JSON, CHARACTER_LIMIT_ERROR_MESSAGE_JSON
+from api.pii_utils import invoke
+from app.messages import GENERIC_ERROR_MESSAGE_JSON, CHARACTER_LIMIT_ERROR_MESSAGE_JSON
 from app.exceptions import InputTooLongError
-from app.app_settings import AppSettings
+from app.settings import AppSettings
 
 
 class TestInvokeHelper(unittest.IsolatedAsyncioTestCase):
