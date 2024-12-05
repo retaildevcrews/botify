@@ -20,10 +20,14 @@ class TestStringMethods(unittest.TestCase):
         self.assertEqual(str(app_settings.environment_config.openai_api_key), "**********")
         self.assertEqual(str(app_settings.environment_config.cosmos_connection_string), "**********")
 
+    def test_app_settings(self):
+        app_settings = AppSettings(load_environment_config=False)
+        self.assertIsNotNone(app_settings)
+
     def test_app_settings_full(self):
         os.environ["LOG_LEVEL"] = "DEBUG"
-        os.environ["AZURE_OPENAI_API_VERSION"] = "2024-04-01-preview"
-        os.environ["OPENAI_API_VERSION"] = "2024-04-01-preview"
+        os.environ["AZURE_OPENAI_API_VERSION"] = "2024-06-01"
+        os.environ["OPENAI_API_VERSION"] = "2024-06-01"
         os.environ["AZURE_COSMOSDB_ENDPOINT"] = "https://localhost:8081"
         os.environ["AZURE_COSMOSDB_NAME"] = "database"
         os.environ["AZURE_COSMOSDB_CONTAINER_NAME"] = "container"
@@ -40,7 +44,7 @@ class TestStringMethods(unittest.TestCase):
         os.environ["CONTENT_SAFETY_KEY"] = "key"
         app_settings = AppSettings()
         self.assertEqual(app_settings.environment_config.log_level, "DEBUG")
-        self.assertEqual(app_settings.environment_config.openai_api_version, "2024-04-01-preview")
+        self.assertEqual(app_settings.environment_config.openai_api_version, "2024-06-01")
         self.assertEqual(app_settings.environment_config.openai_endpoint, "https://localhost:8081")
         self.assertEqual(app_settings.environment_config.openai_api_key.get_secret_value(), "key")
         self.assertEqual(app_settings.environment_config.openai_deployment_name, "model_name")

@@ -6,7 +6,6 @@ import httpx
 from app.settings import AppSettings
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 from langchain.tools import BaseTool
-from langchain_community.utilities.requests import JsonRequestsWrapper
 
 logger = logging.getLogger(__name__)
 

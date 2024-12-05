@@ -73,7 +73,7 @@ def get_evaluator_configs(config: AzureOpenAIModelConfiguration):
     evaluator_configs = EvaluatorConfigList()
     evaluator_configs.append_config(
         "json_schema_validation",
-        JsonSchemaValidationEvaluator(ResponseSchema().get_response_schema_as_string()),
+        JsonSchemaValidationEvaluator(ResponseSchema().get_response_schema_json_as_string()),
         {"content": "${target.bot_response}"},
     )
     evaluator_configs.append_config(

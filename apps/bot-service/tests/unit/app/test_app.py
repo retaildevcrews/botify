@@ -1,7 +1,6 @@
 import os
 import unittest
 
-from api.server import AppFactory
 from app.settings import AppSettings, EnvironmentConfig
 from fastapi.testclient import TestClient
 from langchain_core.runnables import Runnable, RunnableLambda
@@ -24,6 +23,7 @@ os.environ["AZURE_OPENAI_CLASSIFIER_MODEL_NAME"] = "model_name"
 os.environ["CONTENT_SAFETY_ENDPOINT"] = "DEBUG"
 os.environ["CONTENT_SAFETY_KEY"] = "key"
 
+from api.server import AppFactory
 
 class MockRunnableFactory:
     def get_runnable(self) -> Runnable:

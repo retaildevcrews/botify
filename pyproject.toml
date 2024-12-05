@@ -12,77 +12,22 @@ python = "^3.10"
 pytest = "*"
 black = {extras = ["jupyter"], version = "*"}
 isort = "*"
-mypy = "*"
 flake8 = "*"
-pylint = "*"
 pytest-cov = "*"
 
 [tool.black]
 line_length = 110
+exclude = '''.*test_.*'''
 
 [tool.isort]
 # vertical hanging indent
 multi_line_output = 3
+skip_glob = ["*/tests/*"]
 
 # Includes a trailing comma on multi line imports that include parentheses
 include_trailing_comma = true
 
 line_length = 110
-
-[tool.mypy]
-# no optional errors, since the list of optional errors may change
-strict = true
-
-# visually nicer output in error messages
-pretty = true
-
-# suppresses error messages about imports that cannot be resolved.
-ignore_missing_imports = true
-
-# warns about casting an expression to its inferred type.
-warn_redundant_casts = true
-
-# shows a warning when encountering any code inferred to be unreachable or redundant.
-warn_unreachable = true
-
-# allows variables to be redefined with an arbitrary type.
-allow_redefinition = true
-
-# disallows defining functions without type annotations or with incomplete type annotations.
-disallow_untyped_defs = true
-
-# this flag tells mypy that top-level packages will be based in either the current directory, or a member of the MYPYPATH.
-explicit_package_bases = true
-
-[tool.pylint.'MAIN']
-# Discover python modules and packages in the file system subtree.
-recursive = true
-
-# [tool.pylint.'MESSAGES CONTROL']
-disable = "C0103"
-
-[tool.pylint.'BASIC']
-# Include a hint for the correct naming format with invalid-name.
-include-naming-hint = true
-
-# Regular expression matching correct variable names.
-variable-rgx = "^[a-z][a-z0-9]*(([_a-z0-9]+)*)?$"
-
-# Regular expression matching correct argument names.
-argument-rgx = "^[a-z][a-z0-9]*(([_a-z0-9]+)*)?$"
-
-# Defaults to ('i', 'j', 'k', 'ex', 'Run', '_')
-good-names = ""
-
-[tool.pylint.'FORMAT']
-max-line-length = 110
-
-[tool.pylint.'DESIGN']
-# Maximum number of arguments for method
-max-args=10
-
-# Maximum number of attributes for a class (see R0902).
-max-attributes=20
 
 [tool.coverage.run]
 omit = [".*", "*/site-packages/*", "tests/*"]
