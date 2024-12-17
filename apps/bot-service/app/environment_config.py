@@ -91,6 +91,7 @@ class EnvironmentConfig:
     openai_endpoint: Optional[str] = field(default=None)
     openai_api_key: Optional[SecretStr] = field(default=None)
     openai_deployment_name: Optional[str] = field(default=None)
+    openai_embedding_deployment_name: Optional[str] = field(default=None)
     openai_classifier_deployment_name: Optional[str] = field(default=None)
 
     # Azure Cosmos DB environment variables
@@ -145,6 +146,9 @@ class EnvironmentConfig:
         self.openai_endpoint = get_config_value("AZURE_OPENAI_ENDPOINT", required=True)
         self.openai_api_key = SecretStr(get_config_value("AZURE_OPENAI_API_KEY", required=True))
         self.openai_deployment_name = get_config_value("AZURE_OPENAI_MODEL_NAME", required=True)
+        self.openai_embedding_deployment_name = get_config_value(
+            "AZURE_OPENAI_EMBEDDING_MODEL_NAME", required=False
+        )
         self.openai_classifier_deployment_name = get_config_value(
             "AZURE_OPENAI_CLASSIFIER_MODEL_NAME", required=True
         )
