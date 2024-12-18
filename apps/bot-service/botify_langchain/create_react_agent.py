@@ -534,7 +534,10 @@ def create_react_agent(
     tool_calling_enabled = len(tool_classes) > 0
 
     if _should_bind_tools(model, tool_classes) and tool_calling_enabled:
-        model = cast(BaseChatModel, model).bind_tools(tool_classes, strict=True)
+        useStrict = False
+        if hasattr(model, 'model_kwargs') and model.model_kwargs is not None and  "response_format" in model.model_kwargs and "type" in model.model_kwargs["response_format"]:
+            useStrict = model.model_kwargs["response_format"]["type"] == "json_object"
+        model = cast(BaseChatModel, model).bind_tools(tool_classes, strict=useStrict)
 
     # we're passing store here for validation
     preprocessor = _get_model_preprocessing_runnable(state_modifier, messages_modifier, store)
