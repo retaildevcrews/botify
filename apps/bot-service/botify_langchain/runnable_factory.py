@@ -10,11 +10,12 @@ from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosD
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
 from langchain.agents import AgentExecutor, create_tool_calling_agent
+from botify_langchain.create_react_agent import create_react_agent
+from langchain_openai import AzureChatOpenAI
 from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import ConfigurableFieldSpec, Runnable
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from langchain_openai import AzureChatOpenAI
 from langgraph.graph import END, START, StateGraph
 from opentelemetry.trace import get_current_span
 from prompts.prompt_gen import PromptGen
@@ -53,6 +54,37 @@ class RunnableFactory:
         )
 
         self.content_safety_tool = AzureContentSafety_Tool()
+
+    def create_qna_agent(self, azure_chat_open_ai_streaming=False):
+        # Configure the language model
+        use_structured_output = self.app_settings.model_config.use_structured_output
+        response_format = (
+            {"type": "json_object", "name": "response", "schema": ResponseSchema().get_response_schema()}
+            if use_structured_output
+            else (
+                {"type": "json_object"}
+                if self.app_settings.model_config.use_json_format
+                else {"type": "text"}
+            )
+        )
+
+        llm = AzureChatOpenAI(
+            deployment_name=self.app_settings.environment_config.openai_deployment_name,
+            temperature=self.app_settings.model_config.temperature,
+            max_tokens=self.app_settings.model_config.max_tokens,
+            top_p=self.app_settings.model_config.top_p,
+            logit_bias=self.app_settings.model_config.logit_bias,
+            streaming=azure_chat_open_ai_streaming,
+            model_kwargs={"response_format": response_format},
+            timeout=self.app_settings.model_config.timeout,
+            max_retries=self.app_settings.model_config.max_retries,
+        )
+        tools = [self.azure_ai_search_tool]
+        prompt_text = self.promptgen.generate_prompt(self.app_settings.prompt_template_paths)
+
+        # Instantiate the tools to be used by the agent
+        agent_graph = create_react_agent(llm, tools, state_modifier=prompt_text)
+        return agent_graph
 
     def make_prompt(self, file_names):
         schema = ResponseSchema().get_response_schema()
