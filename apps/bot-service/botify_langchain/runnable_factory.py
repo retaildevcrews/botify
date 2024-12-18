@@ -10,12 +10,14 @@ from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosD
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-from botify_langchain.create_react_agent import create_react_agent
+
 from langchain_openai import AzureChatOpenAI
 from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import ConfigurableFieldSpec, Runnable
 from langchain_core.runnables.history import RunnableWithMessageHistory
+from botify_langchain.create_react_agent import create_react_agent
+from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from opentelemetry.trace import get_current_span
 from prompts.prompt_gen import PromptGen
@@ -83,7 +85,7 @@ class RunnableFactory:
         prompt_text = self.promptgen.generate_prompt(self.app_settings.prompt_template_paths)
 
         # Instantiate the tools to be used by the agent
-        agent_graph = create_react_agent(llm, tools, state_modifier=prompt_text)
+        agent_graph = create_react_agent(llm, tools,state_modifier=prompt_text)
         return agent_graph
 
     def make_prompt(self, file_names):

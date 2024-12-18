@@ -2,15 +2,8 @@ from typing import Callable, Literal, Optional, Sequence, Type, TypeVar, Union, 
 
 from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
-from langchain_core.runnables import (
-    Runnable,
-    RunnableBinding,
-    RunnableConfig,
-)
+from langchain_core.runnables import Runnable, RunnableBinding, RunnableConfig
 from langchain_core.tools import BaseTool
-from typing_extensions import Annotated, TypedDict
-
-from langgraph._api.deprecation import deprecated_parameter
 from langgraph.errors import ErrorCode, create_error_message
 from langgraph.graph import StateGraph
 from langgraph.graph.graph import CompiledGraph
@@ -21,6 +14,7 @@ from langgraph.prebuilt.tool_node import ToolNode
 from langgraph.store.base import BaseStore
 from langgraph.types import Checkpointer
 from langgraph.utils.runnable import RunnableCallable
+from typing_extensions import Annotated, TypedDict
 
 
 # We create the AgentState that we will pass around
@@ -41,13 +35,6 @@ StateSchema = TypeVar("StateSchema", bound=AgentState)
 StateSchemaType = Type[StateSchema]
 
 STATE_MODIFIER_RUNNABLE_NAME = "StateModifier"
-
-MessagesModifier = Union[
-    SystemMessage,
-    str,
-    Callable[[Sequence[BaseMessage]], Sequence[BaseMessage]],
-    Runnable[Sequence[BaseMessage], Sequence[BaseMessage]],
-]
 
 StateModifier = Union[
     SystemMessage,
@@ -89,36 +76,11 @@ def _get_state_modifier_runnable(
     return state_modifier_runnable
 
 
-def _convert_messages_modifier_to_state_modifier(
-    messages_modifier: MessagesModifier,
-) -> StateModifier:
-    state_modifier: StateModifier
-    if isinstance(messages_modifier, (str, SystemMessage)):
-        return messages_modifier
-    elif callable(messages_modifier):
-
-        def state_modifier(state: AgentState) -> Sequence[BaseMessage]:
-            return messages_modifier(state["messages"])
-
-        return state_modifier
-    elif isinstance(messages_modifier, Runnable):
-        state_modifier = (lambda state: state["messages"]) | messages_modifier
-        return state_modifier
-    raise ValueError(f"Got unexpected type for `messages_modifier`: {type(messages_modifier)}")
-
-
 def _get_model_preprocessing_runnable(
     state_modifier: Optional[StateModifier],
-    messages_modifier: Optional[MessagesModifier],
     store: Optional[BaseStore],
 ) -> Runnable:
     # Add the state or message modifier, if exists
-    if state_modifier is not None and messages_modifier is not None:
-        raise ValueError("Expected value for either state_modifier or messages_modifier, got values for both")
-
-    if state_modifier is None and messages_modifier is not None:
-        state_modifier = _convert_messages_modifier_to_state_modifier(messages_modifier)
-
     return _get_state_modifier_runnable(state_modifier, store)
 
 
@@ -185,13 +147,11 @@ def _validate_chat_history(
     raise ValueError(error_message)
 
 
-@deprecated_parameter("messages_modifier", "0.1.9", "state_modifier", removal="0.3.0")
 def create_react_agent(
     model: LanguageModelLike,
     tools: Union[ToolExecutor, Sequence[BaseTool], ToolNode],
     *,
     state_schema: Optional[StateSchemaType] = None,
-    messages_modifier: Optional[MessagesModifier] = None,
     state_modifier: Optional[StateModifier] = None,
     checkpointer: Optional[Checkpointer] = None,
     store: Optional[BaseStore] = None,
@@ -535,12 +495,17 @@ def create_react_agent(
 
     if _should_bind_tools(model, tool_classes) and tool_calling_enabled:
         useStrict = False
-        if hasattr(model, 'model_kwargs') and model.model_kwargs is not None and  "response_format" in model.model_kwargs and "type" in model.model_kwargs["response_format"]:
+        if (
+            hasattr(model, "model_kwargs")
+            and model.model_kwargs is not None
+            and "response_format" in model.model_kwargs
+            and "type" in model.model_kwargs["response_format"]
+        ):
             useStrict = model.model_kwargs["response_format"]["type"] == "json_object"
         model = cast(BaseChatModel, model).bind_tools(tool_classes, strict=useStrict)
 
     # we're passing store here for validation
-    preprocessor = _get_model_preprocessing_runnable(state_modifier, messages_modifier, store)
+    preprocessor = _get_model_preprocessing_runnable(state_modifier, store)
     model_runnable = preprocessor | model
 
     # Define the function that calls the model
@@ -667,11 +632,7 @@ def create_react_agent(
     )
 
 
-# Keep for backwards compatibility
-create_tool_calling_executor = create_react_agent
-
 __all__ = [
     "create_react_agent",
-    "create_tool_calling_executor",
     "AgentState",
 ]
