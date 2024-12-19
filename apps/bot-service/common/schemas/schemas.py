@@ -35,6 +35,8 @@ class ResponseSchema:
             return ""
 
     def validate_json_response(self, content):
+        if isinstance(content, str):
+            content = json.loads(content)
         schema = self.get_response_schema_json()
         validate(instance=content, schema=schema)
 

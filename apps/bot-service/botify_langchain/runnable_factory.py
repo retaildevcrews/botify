@@ -10,6 +10,7 @@ from botify_langchain.create_react_agent import create_react_agent
 from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
+from common.schemas.json.schema import Response
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
@@ -59,16 +60,7 @@ class RunnableFactory:
     def create_qna_agent(self, azure_chat_open_ai_streaming=False):
         # Configure the language model
         use_structured_output = self.app_settings.model_config.use_structured_output
-        response_format = (
-            {"type": "json_object", "name": "response", "schema": ResponseSchema().get_response_schema()}
-            if use_structured_output
-            else (
-                {"type": "json_object"}
-                if self.app_settings.model_config.use_json_format
-                else {"type": "text"}
-            )
-        )
-
+        use_json_format = self.app_settings.model_config.use_json_format
         llm = AzureChatOpenAI(
             deployment_name=self.app_settings.environment_config.openai_deployment_name,
             temperature=self.app_settings.model_config.temperature,
@@ -76,10 +68,15 @@ class RunnableFactory:
             top_p=self.app_settings.model_config.top_p,
             logit_bias=self.app_settings.model_config.logit_bias,
             streaming=azure_chat_open_ai_streaming,
-            model_kwargs={"response_format": response_format},
             timeout=self.app_settings.model_config.timeout,
             max_retries=self.app_settings.model_config.max_retries,
         )
+        if use_json_format:
+            llm.model_kwargs = {"response_format": {"type": "json_object"}}
+        if use_structured_output:
+            llm.model_kwargs = {
+                "response_format": {"type": "json_schema", "json_schema": {"name":"response", "schema": json.loads(ResponseSchema().get_response_schema())}}
+            }
         tools = [self.azure_ai_search_tool]
         prompt_text = self.promptgen.generate_prompt(
             self.app_settings.prompt_template_paths, schema=ResponseSchema().get_response_schema()
@@ -264,48 +261,43 @@ class RunnableFactory:
             llm_output = state["messages"][-1].content
             output_format = self.app_settings.selected_format_config
             llm_output = self.extract_content(llm_output, f"```{output_format}")
-
-            if output_format == "json":
-                # Parse the cleaned JSON input
-                data = json.loads(llm_output)
-
-            if output_format == "yaml":
-                # Parse the cleaned YAML input
-                data = yaml.safe_load(llm_output)
-            if llm_output.startswith('"') and llm_output.endswith('"'):
-                llm_output = llm_output[1:-1]
-            if llm_output == data:
-                self.logger.warning(
-                    f"""LLM returned incorrect format.
-                        Will wrap in json object.
-                        llm response was: {llm_output}"""
-                )
-                data = {"displayResponse": llm_output, "voiceSummary": llm_output}
+            logging.debug(f"Ouput format: {output_format}")
+            logging.debug(f"LLM Output: {llm_output}")
+            if output_format == "json" or output_format == "yaml":
+                if llm_output.startswith('"') and llm_output.endswith('"'):
+                    llm_output = llm_output[1:-1]
+                if output_format == "json":
+                    # Parse the cleaned JSON input
+                    data = json.loads(llm_output)
+                    if llm_output == data:
+                        self.logger.warning(
+                            f"""LLM returned incorrect format.
+                                Will wrap in json object.
+                                llm response was: {llm_output}"""
+                        )
+                        data = {"displayResponse": llm_output, "voiceSummary": llm_output}
+                    state["output"] = json.dumps(data)
+            else:
+                state["output"] = llm_output
         except Exception as e:
             self.logger.error(f"Error parsing {output_format} output from the LLM: {e}")
             self.logger.error(f"LLM Output: {llm_output}")
-
-        # Convert the parsed data to JSON and return it
-        state["output"] = json.dumps(data)
         return state
 
     def post_processor(self, state: dict):
         """Post-process the response based on the output format."""
         try:
-            if (
-                self.app_settings.model_config.use_json_format
-                or self.app_settings.model_config.use_structured_output
-            ):
-                if self.app_settings.selected_format_config != "json_schema":
-                    state = self.process_llm_output(state)
-                    output = state["output"]
-                else:
-                    output = state["messages"][-1].content
+            output_format = self.app_settings.selected_format_config
+            state = self.process_llm_output(state)
+            output = state["output"]
             if self.app_settings.validate_json_output:
                 self.logger.debug(f"Validating JSON Response Output: {output}")
                 ResponseSchema().validate_json_response(output)
             if "disclaimers" in state:
-                output["disclaimers"] = state["disclaimers"]
+                if output_format == "json" or output_format == "json_schema":
+                    output["disclaimers"] = state["disclaimers"]
+                else:
+                    output = output + "\n\ndisclaimers:" + state["disclaimers"]
         except Exception as e:
             self.logger.error(f"JSON Validation Error: {e}")
             output = messages.GENERIC_ERROR_MESSAGE_JSON

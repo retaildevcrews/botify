@@ -34,6 +34,7 @@ class AppSettings:
     # Format in which the LLM output will be generated
     selected_format_config: str = "json"
     format_config_paths = {
+        "md": {},
         "json_schema": {
             "prompt_template_paths": ["common.md", "structured_output.md", "history_marker.md"],
             "response_schema_name": "response_schema.json",
@@ -41,6 +42,10 @@ class AppSettings:
         "json": {
             "prompt_template_paths": ["common.md", "json_output.md", "history_marker.md"],
             "response_schema_name": "response_schema.json",
+        },
+        "yaml": {
+            "prompt_template_paths": ["common.md", "yaml_output.md", "history_marker.md"],
+            "response_schema_name": "yaml_example.txt",
         },
     }
     prompt_template_paths = format_config_paths[selected_format_config]["prompt_template_paths"]
