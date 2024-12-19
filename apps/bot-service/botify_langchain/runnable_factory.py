@@ -6,17 +6,16 @@ import yaml
 from app.exceptions import InputTooLongError, MaxTurnsExceededError
 from app.settings import AppSettings
 from azure.identity import DefaultAzureCredential
+from botify_langchain.create_react_agent import create_react_agent
 from botify_langchain.custom_cosmos_db_chat_message_history import CustomCosmosDBChatMessageHistory
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
 from langchain.agents import AgentExecutor, create_tool_calling_agent
-
-from langchain_openai import AzureChatOpenAI
 from langchain_community.chat_message_histories import CosmosDBChatMessageHistory
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import ConfigurableFieldSpec, Runnable
 from langchain_core.runnables.history import RunnableWithMessageHistory
-from botify_langchain.create_react_agent import create_react_agent
+from langchain_openai import AzureChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from opentelemetry.trace import get_current_span
@@ -82,10 +81,12 @@ class RunnableFactory:
             max_retries=self.app_settings.model_config.max_retries,
         )
         tools = [self.azure_ai_search_tool]
-        prompt_text = self.promptgen.generate_prompt(self.app_settings.prompt_template_paths)
+        prompt_text = self.promptgen.generate_prompt(
+            self.app_settings.prompt_template_paths, schema=ResponseSchema().get_response_schema()
+        )
 
         # Instantiate the tools to be used by the agent
-        agent_graph = create_react_agent(llm, tools,state_modifier=prompt_text)
+        agent_graph = create_react_agent(llm, tools, state_modifier=prompt_text)
         return agent_graph
 
     def make_prompt(self, file_names):
@@ -102,101 +103,13 @@ class RunnableFactory:
         )
         return cpt
 
-    def get_runnable(
-        self,
-        include_history=True,
-        return_intermediate_steps=False,
-        verbose=False,
-        azure_chat_open_ai_streaming=False,
-    ) -> Runnable:
-        # Gets the main runnable with the session history callable
-        # included - this is the main entry point for the chatbot
-        if include_history:
-            history_callable = self._get_cosmos_db_chat_history
-        else:
-            history_callable = None
-        return self.get_runnable_byo_session_history_callable(
-            history_callable,
-            return_intermediate_steps=return_intermediate_steps,
-            verbose=verbose,
-            azure_chat_open_ai_streaming=azure_chat_open_ai_streaming,
-        )
-
-    def get_runnable_byo_session_history_callable(
-        self,
-        get_session_history_callable,
-        return_intermediate_steps=False,
-        verbose=False,
-        azure_chat_open_ai_streaming=True,
-    ) -> Runnable:
-        """
-        Gets the main runnable with the session history callable as a
-        parameter - this is to be used mainly for validations where we want
-        to inject an alternative session history callable this also allows us to
-        create an agent without history
-        """
-
-        CHAT_BOT_PROMPT = self.make_prompt(self.app_settings.prompt_template_paths)
-
-        aoi_top_p = self.app_settings.model_config.top_p
-        aoi_logit_bias = self.app_settings.model_config.logit_bias
-
-        # Configure the language model
-        use_structured_output = self.app_settings.model_config.use_structured_output
-        response_format = (
-            {"type": "json_object", "name": "response", "schema": ResponseSchema().get_response_schema()}
-            if use_structured_output
-            else (
-                {"type": "json_object"}
-                if self.app_settings.model_config.use_json_format
-                else {"type": "text"}
-            )
-        )
-        llm = AzureChatOpenAI(
-            deployment_name=self.app_settings.environment_config.openai_deployment_name,
-            temperature=self.app_settings.model_config.temperature,
-            max_tokens=self.app_settings.model_config.max_tokens,
-            top_p=aoi_top_p,
-            logit_bias=aoi_logit_bias,
-            streaming=azure_chat_open_ai_streaming,
-            model_kwargs={"response_format": response_format},
-            timeout=self.app_settings.model_config.timeout,
-            max_retries=self.app_settings.model_config.max_retries,
-        )
-
-        # Doc Search Tool for searching the menu
-        search_tool = self.azure_ai_search_tool
-
-        # Instantiate the tools to be used by the agent
-        tools = [search_tool]
-        runnable = self._create_decision_making_graph_runnable(
-            llm,
-            tools,
-            CHAT_BOT_PROMPT,
-            get_session_history_callable,
-            return_intermediate_steps=return_intermediate_steps,
-            verbose=verbose,
-        )
-        return runnable
-
-    def _create_decision_making_graph_runnable(
-        self, llm, tools, prompt, get_session_history_callable, return_intermediate_steps=False, verbose=False
-    ):
-        """Create a decision-making graph runnable."""
-        tools_agent_with_history = self._create_tools_agent_runnable(
-            llm,
-            tools,
-            prompt,
-            get_session_history_callable,
-            return_intermediate_steps=return_intermediate_steps,
-            verbose=verbose,
-        )
+    def get_runnable(self):
         graph = StateGraph(dict)
         graph.add_node("pre_processor", self.pre_processor)
         graph.add_node("content_safety", self.content_safety)
         graph.add_node("stop_for_safety", self.return_safety_error_message)
         graph.add_node("identify_disclaimers", self.identify_disclaimers)
-        graph.add_node("call_model", tools_agent_with_history)
+        graph.add_node("call_model", self.create_qna_agent())
         graph.add_node("post_processor", self.post_processor)
         graph.add_edge(START, "pre_processor")
         graph.add_edge("pre_processor", "content_safety")
@@ -212,87 +125,6 @@ class RunnableFactory:
         graph_runnable = graph.compile()
         return graph_runnable
 
-    def _get_cosmos_db_chat_history(self, session_id: str, user_id: str) -> CosmosDBChatMessageHistory:
-        """Get the session history from CosmosDB."""
-        current_span = get_current_span()
-        current_span.set_attribute("session_id", session_id)
-        current_span.set_attribute("user_id", user_id)
-
-        # Common parameters
-        params = {
-            "cosmos_endpoint": self.app_settings.environment_config.cosmos_endpoint,
-            "cosmos_database": self.app_settings.environment_config.cosmos_database,
-            "cosmos_container": self.app_settings.environment_config.cosmos_container,
-            "session_id": session_id,
-            "user_id": user_id,
-        }
-
-        # Extract the connection string if available
-        cosmos_conn_str = self.app_settings.environment_config.cosmos_connection_string
-        if cosmos_conn_str is not None and cosmos_conn_str.get_secret_value() is not None:
-            params["connection_string"] = cosmos_conn_str.get_secret_value()
-            self.logger.debug("Using connection string for CosmosDB")
-        else:
-            params["credential"] = DefaultAzureCredential()
-            self.logger.debug("Using DefaultAzureCredential for CosmosDB")
-
-        # Create the session history instance
-        session_history = CustomCosmosDBChatMessageHistory(**params)
-
-        # Create database and container if they don't exist
-        session_history.prepare_cosmos()
-
-        self.current_turn_count = 0
-
-        return session_history
-
-    def _create_tools_agent_runnable(
-        self,
-        llm,
-        tools,
-        prompt,
-        get_session_history_callable=None,
-        return_intermediate_steps=False,
-        verbose=False,
-    ):
-        """Create a runnable agent with tools."""
-        agent = create_tool_calling_agent(llm, tools, prompt)
-        agent_executor = AgentExecutor(
-            agent=agent,
-            tools=tools,
-            stream_runnable=False,
-            return_intermediate_steps=return_intermediate_steps,
-            verbose=verbose,
-        )
-        if get_session_history_callable is None:
-            return agent_executor
-        else:
-            runnable = RunnableWithMessageHistory(
-                agent_executor,
-                get_session_history_callable,
-                input_messages_key="question",
-                history_messages_key="history",
-                history_factory_config=[
-                    ConfigurableFieldSpec(
-                        id="user_id",
-                        annotation=str,
-                        name="User ID",
-                        description="Unique identifier for the user.",
-                        default="",
-                        is_shared=True,
-                    ),
-                    ConfigurableFieldSpec(
-                        id="session_id",
-                        annotation=str,
-                        name="Session ID",
-                        description="Unique identifier for the conversation.",
-                        default="",
-                        is_shared=True,
-                    ),
-                ],
-            )
-            return runnable
-
     async def content_safety(self, state: dict):
         """Evaluate content safety."""
         self.logger.debug(f"Prompt Input: {state}")
@@ -306,7 +138,8 @@ class RunnableFactory:
         current_span = get_current_span()
         try:
             if self.app_settings.content_safety_enabled:
-                results = await self.content_safety_tool._arun(state["question"])
+                question = state["messages"][-1][1]
+                results = await self.content_safety_tool._arun(question)
                 self.logger.debug(f"GetContentSafetyValidation_Tool results: {results}")
                 harmful_prompt_results = results["analyzed_harmful_text_response"]
                 prompt_shield_results = results["prompt_shield_validation_response"]
@@ -334,9 +167,7 @@ class RunnableFactory:
         try:
             self.logger.debug(f"Starting Topic Detection: {state}")
             if len(self.app_settings.banned_topics) > 0 and harmful_prompt_detected is False:
-                banned_topic_results = await TopicDetectionTool()._arun(
-                    state["question"], AppSettings().banned_topics
-                )
+                banned_topic_results = await TopicDetectionTool()._arun(question, AppSettings().banned_topics)
                 banned_topic_detected = len(banned_topic_results) > 0
                 current_span.set_attribute("banned_topic_detected", str(banned_topic_detected))
                 if banned_topic_detected:
@@ -375,12 +206,13 @@ class RunnableFactory:
         self.logger.info("Max Turn Count: " + str(max_turn_count))
         if current_turn_count >= max_turn_count:
             raise MaxTurnsExceededError(f"Max turn count exceeded: {current_turn_count} >= {max_turn_count}")
-        if len(state["question"]) > self.app_settings.invoke_question_character_limit:
+        question = state["messages"][-1][1]
+        if len(question) > self.app_settings.invoke_question_character_limit:
             raise InputTooLongError(
                 f"""Question exceeds character limit:
-                {len(state['question'])} > {self.app_settings.invoke_question_character_limit}"""
+                {len(question)} > {self.app_settings.invoke_question_character_limit}"""
             )
-        if state["question"].strip() == "":
+        if question.strip() == "":
             raise ValueError("Question is empty")
 
     def should_stop_for_safety(self, state: dict):
@@ -404,7 +236,8 @@ class RunnableFactory:
     async def identify_disclaimers(self, state: dict):
         self.logger.debug("Topic Detection Tool Executing")
         current_span = get_current_span()
-        results = await TopicDetectionTool()._arun(state["question"], AppSettings().disclaimer_topics)
+        question = state["messages"][-1][1]
+        results = await TopicDetectionTool()._arun(question, AppSettings().disclaimer_topics)
         self.logger.debug(f"Topic Detection Tool results: {results}")
         current_span.set_attribute("disclaimers_added", str(results))
         state["disclaimers"] = results
@@ -428,10 +261,8 @@ class RunnableFactory:
 
     def process_llm_output(self, state: dict):
         try:
-            llm_output = state["output"]
-
+            llm_output = state["messages"][-1].content
             output_format = self.app_settings.selected_format_config
-
             llm_output = self.extract_content(llm_output, f"```{output_format}")
 
             if output_format == "json":
@@ -446,8 +277,8 @@ class RunnableFactory:
             if llm_output == data:
                 self.logger.warning(
                     f"""LLM returned incorrect format.
-                    Will wrap in json object.
-                    llm response was: {llm_output}"""
+                        Will wrap in json object.
+                        llm response was: {llm_output}"""
                 )
                 data = {"displayResponse": llm_output, "voiceSummary": llm_output}
         except Exception as e:
@@ -461,13 +292,20 @@ class RunnableFactory:
     def post_processor(self, state: dict):
         """Post-process the response based on the output format."""
         try:
-            if self.app_settings.selected_format_config != "json_schema":
-                state = self.process_llm_output(state)
-            output = json.loads(state["output"])
+            if (
+                self.app_settings.model_config.use_json_format
+                or self.app_settings.model_config.use_structured_output
+            ):
+                if self.app_settings.selected_format_config != "json_schema":
+                    state = self.process_llm_output(state)
+                    output = state["output"]
+                else:
+                    output = state["messages"][-1].content
             if self.app_settings.validate_json_output:
                 self.logger.debug(f"Validating JSON Response Output: {output}")
                 ResponseSchema().validate_json_response(output)
-            output["disclaimers"] = state["disclaimers"]
+            if "disclaimers" in state:
+                output["disclaimers"] = state["disclaimers"]
         except Exception as e:
             self.logger.error(f"JSON Validation Error: {e}")
             output = messages.GENERIC_ERROR_MESSAGE_JSON
