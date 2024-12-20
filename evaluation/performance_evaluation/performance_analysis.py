@@ -21,12 +21,13 @@ async def call_full_flow_perf_data(index, results: list, row, semaphore: asyncio
                 row["question"],
                 row["session_id"],
                 row["user_id"],
+                row["sbux_global_id"],
                 row["chat_history"],
             )
             results.append(
                 {
                     "question": row["question"],
-                    "answer": result["bot_response"],
+                    "answer": result["answer"],
                     "start_time": result["start_time"],
                     "end_time": result["end_time"],
                     "ellapsed_time": result["ellapsed_time"],
@@ -35,7 +36,7 @@ async def call_full_flow_perf_data(index, results: list, row, semaphore: asyncio
                     "total_tokens": result["total_tokens"],
                 }
             )
-        except Exception:
+        except Exception as e:
             results.append(
                 {
                     "question": row["question"],
@@ -150,7 +151,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_path",
         help="Test dataset to use with evaluation",
-        default="/workspaces/botify/evaluation/data_files/chatbot_test.jsonl",
+        default="/workspaces/genai-pcc-search/evaluation/data_files/chatbot_test.jsonl",
         type=str,
     )
     parser.add_argument(
@@ -164,7 +165,7 @@ if __name__ == "__main__":
 
     # Create a directory with the name results + current timestamp
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    results_dir = f"results_{timestamp}"
+    results_dir = f"../data_files/results/perf_results_{timestamp}"
     os.makedirs(results_dir, exist_ok=True)
 
     # Save scatter plots and CSV to the created directory

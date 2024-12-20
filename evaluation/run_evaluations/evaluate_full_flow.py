@@ -1,13 +1,16 @@
 import argparse
+import csv
+import logging
 import os
+import time
 
-from common.schemas import ResponseSchema
+import pandas as pd
 from evaluation_utils.evaluator_config import EvaluatorConfigList
+from evaluation_utils.formatting_utils import string_to_dict
 from evaluation_utils.runnable_caller import RunnableCaller
 from evaluators import (
     CoherenceEvaluator,
     FluencyEvaluator,
-    JsonSchemaValidationEvaluator,
     RAGGroundednessEvaluator,
     RelevanceOptionalContextEvaluator,
 )
@@ -15,29 +18,35 @@ from promptflow.core import AzureOpenAIModelConfiguration
 from promptflow.evals.evaluate import evaluate
 from run_evaluations.utils import run_evaluation
 
+logger = logging.getLogger(__name__)
 
-def call_full_flow(*, question, session_id, user_id, chat_history, **kwargs):
+
+def call_full_flow(*, question, session_id, user_id, sbux_global_id, chat_history, **kwargs):
     runnable_caller = RunnableCaller()
+    query_list = []
+    called_tools = []
     # Call the full flow - this is the system under test
     # Call the full flow - this is the system under test
-    result = runnable_caller.call_full_flow(question, session_id, user_id, chat_history)
+    logger.debug(
+        f"Calling full flow with question: {question} and session_id: {
+                 session_id} and user_id: {user_id} and chat_history: {chat_history}"
+    )
+    result = runnable_caller.call_full_flow(question, session_id, user_id, sbux_global_id, chat_history)
     # Capture parts of result that will be fed into the evaluation framework for
     # either reporting purposes or inputs to the evaluators
-    consolidated_tool_actions = result["consolidated_tool_actions"]
-    chat_history = result["history"]
-    bot_response = result["bot_response"]
-    display_response = result["display_response"]
-    voice_summary = result["voice_summary"]
+    chat_history = chat_history
+    answer = result["answer"]
     config = result["app_config"]
     config_hash = result["app_config_hash"]
-    search_results = []
-    for action in consolidated_tool_actions:
-        documents = action["documents"]
-        for doc in documents:
-            search_results.append(doc.page_content)
-    query_list = [i["query"] for i in consolidated_tool_actions]
-    called_tools = [i["tool"] for i in consolidated_tool_actions]
-    context = {"history": chat_history, "search_results": search_results}
+    documents_list = result["search_documents"]
+    called_tools_list = result["called_tools"]
+    for tool in called_tools_list:
+        called_tools.append(tool["name"])
+        query = tool["args"]["query"]
+        query_list.append(query)
+
+    # query_list = [i['query'] for i in tool_action_dict]
+    # called_tools = [i['tool'] for i in tool_action_dict]
     prompt_tokens = result["prompt_tokens"]
     completion_tokens = result["completion_tokens"]
     total_tokens = result["total_tokens"]
@@ -47,13 +56,11 @@ def call_full_flow(*, question, session_id, user_id, chat_history, **kwargs):
     # Return dictionary with all the necessary information for reporting or
     # evaluation purposes
     return {
-        "bot_response": bot_response,
-        "display_response": display_response,
-        "voice_summary": voice_summary,
+        "question": question,
+        "answer": answer,
         "query_list": query_list,
-        "search_results": search_results,
+        "search_results": documents_list,
         "called_tools": called_tools,
-        "context": context,
         "app_config": config,
         "app_config_hash": config_hash,
         "prompt_tokens": prompt_tokens,
@@ -72,52 +79,24 @@ def get_evaluator_configs(config: AzureOpenAIModelConfiguration):
     """
     evaluator_configs = EvaluatorConfigList()
     evaluator_configs.append_config(
-        "json_schema_validation",
-        JsonSchemaValidationEvaluator(ResponseSchema().get_response_schema_json_as_string()),
-        {"content": "${target.bot_response}"},
-    )
-    evaluator_configs.append_config(
-        "display_response_groundedness",
+        "response_groundedness",
         RAGGroundednessEvaluator(config),
-        {
-            "question": "${data.question}",
-            "answer": "${target.display_response}",
-            "context": "${target.search_results}",
-        },
+        {"question": "${data.question}", "answer": "${target.answer}", "context": "${target.search_results}"},
     )
     evaluator_configs.append_config(
-        "voice_summary_groundedness",
-        RAGGroundednessEvaluator(config),
-        {
-            "question": "${data.question}",
-            "answer": "${target.voice_summary}",
-            "context": "${target.search_results}",
-        },
-    )
-    evaluator_configs.append_config(
-        "display_response_fluency",
+        "response_fluency",
         FluencyEvaluator(config),
-        {"question": "${data.question}", "answer": "${target.display_response}"},
+        {"question": "${data.question}", "answer": "${target.answer}"},
     )
     evaluator_configs.append_config(
-        "voice_summary_fluency",
-        FluencyEvaluator(config),
-        {"question": "${data.question}", "answer": "${target.voice_summary}"},
-    )
-    evaluator_configs.append_config(
-        "display_response_coherence",
+        "response_coherence",
         CoherenceEvaluator(config),
-        {"question": "${data.question}", "answer": "${target.display_response}"},
+        {"question": "${data.question}", "answer": "${target.answer}"},
     )
     evaluator_configs.append_config(
-        "voice_summary_coherence",
-        CoherenceEvaluator(config),
-        {"question": "${data.question}", "answer": "${target.voice_summary}"},
-    )
-    evaluator_configs.append_config(
-        "relevance",
+        "response_relevance",
         RelevanceOptionalContextEvaluator(config),
-        {"question": "${data.question}", "answer": "${target.bot_response}", "context": "${target.context}"},
+        {"question": "${data.question}", "answer": "${target.answer}", "context": "${target.search_results}"},
     )
     return evaluator_configs
 
@@ -130,7 +109,7 @@ def evaluate_full_flow(dataset_path, model_config, evaluate_function=evaluate, *
         evaluator_config_list=evaluator_configs,
         target_function=call_full_flow,
         evaluate_function=evaluate_function,
-        **kwargs
+        **kwargs,
     )
     return result
 
@@ -146,7 +125,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_path",
         help="Test dataset to use with evaluation",
-        default="/workspaces/botify/evaluation/data_files/chatbot_test.jsonl",
+        default="/workspaces/genai-pcc-search/evaluation/data_files/golden_dataset.jsonl",
         type=str,
     )
 

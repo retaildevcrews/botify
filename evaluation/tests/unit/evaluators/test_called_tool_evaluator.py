@@ -53,7 +53,3 @@ class TestCalledToolEvaluator(unittest.TestCase):
         self.assertEqual(result["score"], 0.5)
         self.assertEqual(result["called not expected"], ["tool3"])
         self.assertEqual(result["expected not called"], [])
-
-
-if __name__ == "__main__":
-    unittest.main()

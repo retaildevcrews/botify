@@ -2,7 +2,7 @@
 name = "evaluations"
 version = "0.1.0"
 description = ""
-authors = ["gen-ai-chatbot-team"]
+authors = ["botify-team"]
 readme = "README.md"
 packages = [
     { include = "evaluators" },
