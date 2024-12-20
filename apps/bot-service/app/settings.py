@@ -4,6 +4,7 @@ from typing import Dict, Optional
 
 import pydantic
 from app.environment_config import EnvironmentConfig
+from common import Singleton
 from pydantic import RootModel
 
 
@@ -21,19 +22,22 @@ class ModelConfig:
     timeout: float = 30.0
     max_retries: int = 3
     use_structured_output: bool = False
-    use_json_format: bool = True
+    use_json_format: bool = False
 
 
 @pydantic.dataclasses.dataclass(config=Config)
-class AppSettings:
+class AppSettings(metaclass=Singleton):
     environment_config: Optional[EnvironmentConfig] = field(default=None)  # Useful in unit tests
 
     # The name of the schema file that will be used to validate the final JSON output that the bot generates
     json_validation_schema_name = "response_schema.json"
     response_schema_name: str = "response_schema.json"
     # Format in which the LLM output will be generated
-    selected_format_config: str = "json"
+    selected_format_config: str = "yaml"
     format_config_paths = {
+        "text": {
+            "prompt_template_paths": ["common.md", "history_marker.md"],
+        },
         "json_schema": {
             "prompt_template_paths": ["common.md", "structured_output.md", "history_marker.md"],
             "response_schema_name": "response_schema.json",
@@ -42,9 +46,13 @@ class AppSettings:
             "prompt_template_paths": ["common.md", "json_output.md", "history_marker.md"],
             "response_schema_name": "response_schema.json",
         },
+        "yaml": {
+            "prompt_template_paths": ["common.md", "yaml_output.md", "history_marker.md"],
+        },
     }
     prompt_template_paths = format_config_paths[selected_format_config]["prompt_template_paths"]
-    response_schema_name = format_config_paths[selected_format_config]["response_schema_name"]
+
+    response_schema_name = format_config_paths[selected_format_config].get("response_schema_name", "")
 
     # Default model configuration can be seen in the ModelConfig class
     model_config: ModelConfig = field(default_factory=ModelConfig)

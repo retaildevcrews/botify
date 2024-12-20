@@ -11,7 +11,7 @@ def get_env_var(var_name, default_value=None, required=True):
 
 # Set environment variables for LangChain
 api_base_url = get_env_var("FAST_API_SERVER", required=True)
-api_url = f"{api_base_url}/agent/invoke"
+api_url = f"{api_base_url}/invoke"
 
 api_url_version = f"{api_base_url}/version"
 

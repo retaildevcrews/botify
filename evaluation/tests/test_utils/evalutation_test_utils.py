@@ -2,9 +2,7 @@ import unittest
 
 
 def validate_evaluator(self: unittest.TestCase, evaluators, evaluator_name, evaluator_type):
-
     evaluator = evaluators[evaluator_name]
-
     self.assertTrue(type(evaluator) is evaluator_type)
 
 

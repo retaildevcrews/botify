@@ -6,28 +6,29 @@ import httpx
 from app.settings import AppSettings
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 from langchain.tools import BaseTool
+from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class AzureContentSafety_Tool(BaseTool):
-    app_settings = AppSettings()
+    app_settings:ClassVar[AppSettings] = AppSettings()
     """Tool for performing Prompt Shields validation and Harmful Text validation for a query."""
-    name = "Content Safety Validation"
-    description = "Combines Prompt Shields validation and Harmful Text Analysis.\n"
+    name:ClassVar[str] = "Content Safety Validation"
+    description:ClassVar[str] = "Combines Prompt Shields validation and Harmful Text Analysis.\n"
 
-    prompt_shield_endpoint = (
+    prompt_shield_endpoint:ClassVar[str] = (
         app_settings.environment_config.content_safety_endpoint
         + "contentsafety/text:shieldPrompt?api-version="
         + app_settings.environment_config.content_safety_api_version
     )
-    harmful_text_analysis_endpoint = (
+    harmful_text_analysis_endpoint:ClassVar[str] = (
         app_settings.environment_config.content_safety_endpoint
         + "contentsafety/text:analyze?api-version="
         + app_settings.environment_config.content_safety_api_version
     )
 
-    headers = {
+    headers:ClassVar[dict] = {
         "Ocp-Apim-Subscription-Key": app_settings.environment_config.content_safety_key.get_secret_value(),
         "Content-Type": "application/json",
     }

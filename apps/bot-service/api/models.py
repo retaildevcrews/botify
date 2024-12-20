@@ -1,8 +1,15 @@
+from typing import List
+
 from pydantic import BaseModel
 
 
+class Message(BaseModel):
+    role: str
+    content: str
+
+
 class Input(BaseModel):
-    question: str
+    messages: List[Message]
 
 
 class Configurable(BaseModel):

@@ -2,10 +2,14 @@ GENERIC_ERROR_MESSAGE = """That’s embarrassing.
 For some reason, I wasn’t able to come up with a good response.
 Could you try asking me the question again?"""
 
+SAFETY_ERROR_MESSAGE = (
+    """I'm afraid you have violated the terms of service. I am unable to engage with that type of question."""
+)
+
+SAFETY_ERROR_MESSAGE_JSON = {"displayResponse": SAFETY_ERROR_MESSAGE, "voiceSummary": SAFETY_ERROR_MESSAGE}
+
 GENERIC_ERROR_MESSAGE_JSON = {"displayResponse": GENERIC_ERROR_MESSAGE, "voiceSummary": GENERIC_ERROR_MESSAGE}
 
-SAFETY_ERROR_MESSAGE = "I'm sorry, I can't answer that question. Please ask something else."
-SAFETY_ERROR_MESSAGE_JSON = {"displayResponse": SAFETY_ERROR_MESSAGE, "voiceSummary": SAFETY_ERROR_MESSAGE}
 
 CHARACTER_LIMIT_ERROR_MESSAGE = (
     "I'm sorry, the question you asked is too long. Please try asking a shorter question."

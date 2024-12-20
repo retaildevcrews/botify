@@ -91,7 +91,7 @@ def consume_api(url, user_query, session_id, user_id):
     if api_key:
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
     config = {"configurable": {"session_id": session_id, "user_id": user_id}}
-    payload = {"input": {"question": user_query}, "config": config}
+    payload = {"messages": {"user": user_query}, "configurable": config}
 
     logger.info(
         "Sending API request to %s with session_id: %s and user_id: %s",
@@ -106,6 +106,7 @@ def consume_api(url, user_query, session_id, user_id):
             # Raises an HTTPError if the response is not 200.
             response.raise_for_status()
             logger.info("Received streaming response from API.")
+
             return response
         except requests.exceptions.HTTPError as err:
             logger.error("HTTP Error: %s", err)

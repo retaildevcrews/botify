@@ -55,11 +55,12 @@ if user_query:
 
     with st.chat_message("AI"):
         try:
+            response=consume_api(api_url, user_query, session_id, user_id)
             ai_response = write_payload(payload=consume_api(api_url, user_query, session_id, user_id))
             logger.info("AI response received and written to stream.")
         except Exception as e:
             logger.error(f"Error consuming API: {e}")
-            st.error("Failed to get a response from the AI.")
+            st.error("Failed to get a response from the AI." + response)
             ai_response = None
 
     if ai_response:

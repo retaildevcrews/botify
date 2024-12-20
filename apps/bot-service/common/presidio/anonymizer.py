@@ -2,6 +2,7 @@ import json
 import logging
 import traceback
 
+from fastapi import Request
 from presidio_analyzer import AnalyzerEngine
 from presidio_analyzer.nlp_engine import NlpEngineProvider
 from presidio_anonymizer import AnonymizerEngine, DeanonymizeEngine
@@ -39,12 +40,15 @@ class Anonymizer:
             operator_config = {"lambda": self.redacted_text_replacement}
         for entity in self.pii_entities:
             config[entity] = OperatorConfig(self.anonymizer_mode.lower(), operator_config)
-        logger.info(f"Configured operators: {config.keys()}")
+        logger.debug(f"Configured operators: {config.keys()}")
         return config
 
-    def anonymize_text(self, text):
+    def analyze_text(self, text):
         analyzed_text = self.pii_analyzer.analyze(text, entities=self.pii_entities, language="en")
-        anonymized_text = self.pii_anonymizer.anonymize(text, analyzed_text, operators=self.operators)
+        return analyzed_text
+
+    def anonymize_text(self, input_text, analyzed_text):
+        anonymized_text = self.pii_anonymizer.anonymize(input_text, analyzed_text, operators=self.operators)
         return anonymized_text
 
 

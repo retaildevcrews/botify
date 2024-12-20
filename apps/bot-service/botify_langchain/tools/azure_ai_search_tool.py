@@ -4,17 +4,18 @@ from typing import List, Optional, Type
 from app.settings import AppSettings
 from common.search.azure_ai_search import AzureRAGSearchClient
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
-from langchain.pydantic_v1 import BaseModel, Field
+from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
+from typing import ClassVar
 
 logger = logging.getLogger(__name__)
 
 
 class CustomAzureSearchRetriever(BaseRetriever):
-    app_settings = AppSettings()
+    app_settings: ClassVar[AppSettings] = AppSettings()
     indexes: List
     fields_to_select: str
     vector_query_fields: str
@@ -25,7 +26,7 @@ class CustomAzureSearchRetriever(BaseRetriever):
     vector_query_weight: int
     max_results: int
 
-    search_client = AzureRAGSearchClient(
+    search_client: ClassVar[AzureRAGSearchClient] = AzureRAGSearchClient(
         api_key=app_settings.environment_config.azure_search_key.get_secret_value(),
         api_version=app_settings.environment_config.azure_search_api_version,
         search_endpoint=app_settings.environment_config.azure_search_endpoint,
@@ -69,6 +70,7 @@ class AzureAISearch_Tool(BaseTool):
     reranker_th: int = 1
     vector_query_weight: int = 1
     max_results: int = 3
+    strict: bool = True
 
     def _run(self, query: str, run_manager: Optional[CallbackManagerForToolRun] = None) -> str:
         retriever = CustomAzureSearchRetriever(
