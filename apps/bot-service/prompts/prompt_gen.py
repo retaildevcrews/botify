@@ -120,8 +120,11 @@ class PromptGen:
             str: _Rendered template in order
         """
         for arg in kwargs:
+            arg_value = kwargs[arg]
+            if arg_value == None:
+                arg_value = ""
             kwargs[arg] = self.escape_curly_braces(
-                kwargs[arg], open_brace="""{{'{{'}}""", close_brace="""{{'}}'}}"""
+                arg_value, open_brace="""{{'{{'}}""", close_brace="""{{'}}'}}"""
             )
         consolidated_template = self._env.get_template(template_name)
         rendered_template = consolidated_template.render(kwargs)
@@ -143,7 +146,10 @@ class PromptGen:
                 content = file.read()
                 trimmed_content = content.strip()
                 for arg in kwargs:
-                    escaped_arg = self.escape_curly_braces(kwargs[arg])
+                    arg_value = kwargs[arg]
+                    if arg_value == None:
+                        arg_value = ""
+                    escaped_arg = self.escape_curly_braces(arg_value)
                     trimmed_content = trimmed_content.replace(f"{{{arg}}}", escaped_arg)
                 return trimmed_content
         except FileNotFoundError:

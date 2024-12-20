@@ -3,14 +3,14 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, List, TypedDict
+from typing import Any, Dict, List, TypedDict
 
 import _additional_version_info
 import pydantic
 import toml
+from api.anonymize_decorator import Anonymizer, anonymize
 from api.models import Payload
-from api.pii_utils import Anonymizer, anonymize
-from api.pii_utils import invoke as invoke_runnable
+from api.utils import invoke_wrapper as invoke_runnable
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 from fastapi import Depends, FastAPI, Request
@@ -98,12 +98,6 @@ class AppFactory:
             """Redirect to the API documentation."""
             return RedirectResponse("/docs")
 
-        # Instantiate the anonymizer
-        dependencies: List[Depends] = []
-        if self.app_settings.environment_config.anonymize_input:
-            anonymizer = Anonymizer(self.app_settings)
-            dependencies.append(Depends(anonymizer.set_body))
-
         if self.app_settings.add_memory:
             # Add API route for the agent
             self.runnable_factory.get_runnable().with_types(input_type=Input, output_type=Output)
@@ -113,8 +107,8 @@ class AppFactory:
             )
 
         @self.app.post(
-            "/agent/invoke",
-            response_model=Output,
+            "/invoke",
+            response_model=Dict[str, Any],
             summary="Invoke the runnable",
             description="This endpoint invokes the runnable with the provided input and configuration.",
             responses={
@@ -122,9 +116,27 @@ class AppFactory:
                     "description": "Successful invocation",
                     "content": {"application/json": {"example": {"result": "The result of the runnable"}}},
                 },
+                401: {
+                    "description": "Unauthorized",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "detail": "Please provide authorization header in the format : 'Bearer <token>'"
+                            }
+                        }
+                    },
+                },
+                500: {
+                    "description": "Internal Server Error",
+                    "content": {
+                        "application/json": {
+                            "example": {"detail": "Error while decoding token: <error_message>"}
+                        }
+                    },
+                },
             },
         )
-        @anonymize(self.app_settings)
+        @anonymize
         async def invoke(request: Request, payload: Payload):
             with tracer.start_as_current_span("".join(request.url.path)) as request_span:
                 request_span.set_attribute("source_ip", self.get_source_ip(request))
@@ -132,15 +144,9 @@ class AppFactory:
                 body = json.loads(body)
                 input_data = body.get("input")
                 config_data = body.get("config")
-                if "user_id" in config_data["configurable"]:
-                    request_span.set_attribute("user_id", config_data["configurable"]["user_id"])
-                if "session_id" in config_data["configurable"]:
-                    request_span.set_attribute("session_id", config_data["configurable"]["session_id"])
-                logger.info(f"Received input: {input_data}")
-                logger.info(f"Received config: {config_data}")
-                return await invoke_runnable(
-                    input_data, config_data, self.runnable_factory, self.app_settings.invoke_retry_count
-                )
+                result = await invoke_runnable(input_data, config_data, self.runnable_factory)
+                logger.error(f"Result: {result}")
+                return result
 
 
 # Instantiate the settings and factory

@@ -10,7 +10,7 @@ class TestStringMethods(unittest.TestCase):
 
     # Create Agent instance
     factory = RunnableFactory()
-    runnable = factory.create_qna_agent()
+    runnable = factory.call_agent_graph()
 
     def ask_question(self, question):
         question = question
@@ -25,8 +25,6 @@ class TestStringMethods(unittest.TestCase):
         result = self.ask_question(question)
         print(result)
         self.assertIsNotNone(result)
-
-
 
 
 if __name__ == "__main__":
