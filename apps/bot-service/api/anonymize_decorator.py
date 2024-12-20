@@ -4,7 +4,6 @@ import logging
 from http import HTTPStatus
 from typing import Callable
 
-from api.models import Output
 from app.messages import GENERIC_ERROR_MESSAGE
 from app.settings import AppSettings
 from common import Singleton
@@ -32,7 +31,7 @@ def anonymize(func: Callable):
                             entity_type_detected}",
                         extra={"triggered_scanner": "input_anonymize", "pii_detected": entity_type_detected},
                     )
-                response = Output(question=question, answer=GENERIC_ERROR_MESSAGE).dict()
+                response = GENERIC_ERROR_MESSAGE
                 logger.info(
                     "Response logged",
                     extra={
@@ -49,7 +48,7 @@ def anonymize(func: Callable):
             question = body["input"].get("messages")[-1]["content"]
             return JSONResponse(
                 status_code=HTTPStatus.OK.value,
-                content=Output(question=question, answer=GENERIC_ERROR_MESSAGE).dict(),
+                content=GENERIC_ERROR_MESSAGE,
             )
         return await func(request, *args, **kws)
 

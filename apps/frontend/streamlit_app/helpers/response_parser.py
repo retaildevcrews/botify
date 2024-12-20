@@ -2,10 +2,17 @@ import ast
 import json
 import logging
 
-from api.models import Output
 from langchain_core.messages import AIMessage, ToolMessage
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
+
+
+class Output(BaseModel):
+    question: str
+    called_tools: list = []
+    search_documents: list = []
+    answer: str
 
 
 def parse_document_string(document_string):

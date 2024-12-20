@@ -106,7 +106,7 @@ def consume_api(url, user_query, session_id, user_id):
             # Raises an HTTPError if the response is not 200.
             response.raise_for_status()
             logger.info("Received streaming response from API.")
-            
+
             return response
         except requests.exceptions.HTTPError as err:
             logger.error("HTTP Error: %s", err)

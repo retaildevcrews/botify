@@ -16,7 +16,9 @@ class TestStringMethods(unittest.TestCase):
 
     def ask_question(self, question):
         question = question
-        messages = [("user", question)]
+        messages = [
+            {"role": "user", "content": question},
+        ]
         question_payload = {"messages": messages}
         configurable_payload = {"configurable": {"session_id": str(session_id), "user_id": "3123455512"}}
         result = asyncio.run(self.runnable.ainvoke(question_payload, configurable_payload))

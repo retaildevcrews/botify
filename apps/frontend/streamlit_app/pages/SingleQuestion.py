@@ -1,3 +1,4 @@
+import json
 import uuid
 
 import streamlit as st
@@ -9,8 +10,8 @@ configure_page("Q&A Search", "🔍")
 logger = get_logger(__name__)
 logger.info("Page configured with title 'FastAPI Chat Bot'.")
 
-session_id = uuid.uuid4().hex
-user_id = uuid.uuid4().hex
+session_id = str(uuid.uuid4())
+user_id = str(uuid.uuid4())
 
 # Input fields
 question = st.text_input(

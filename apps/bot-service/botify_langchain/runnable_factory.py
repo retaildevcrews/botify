@@ -91,7 +91,7 @@ class RunnableFactory:
 
     def pre_processor(self, state: dict):
         """Invoke prechecks before running the graph."""
-        question = state["messages"][-1][1]
+        question = state["messages"][-1]["content"]
         state["question"] = question
         current_turn_count = self.current_turn_count
         max_turn_count = self.app_settings.max_turn_count
@@ -195,9 +195,7 @@ class RunnableFactory:
 
     def return_safety_error_message(self, state: dict):
         """Return a safety error message."""
-        question = state["messages"][-1]["content"]
-        state["messages"][-1] = HumanMessage(content=question)
-        state["messages"].append(AIMessage(content=messages.GENERIC_ERROR_MESSAGE))
+        state["messages"].append(AIMessage(content=messages.SAFETY_ERROR_MESSAGE))
         return state
 
     async def identify_disclaimers(self, state: dict):
