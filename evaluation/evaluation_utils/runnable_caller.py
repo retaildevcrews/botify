@@ -75,7 +75,7 @@ class RunnableCaller:
         return result
 
     def call_full_flow(
-        self, question: str, session_id: str, user_id: str, sbux_global_id: str, chat_history: str = []
+        self, question: str, session_id: str, user_id: str, global_id: str, chat_history: str = []
     ):
         # Inject artificial chat history for multi turn testing
         messages_from_data = get_history_messages_from_data(chat_history)

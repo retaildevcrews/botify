@@ -10,7 +10,7 @@ retries_limit = AppSettings().invoke_retry_count
 
 
 async def invoke_wrapper(input_data, config_data, runnable_factory: RunnableFactory, retry_count=0):
-    error_response =GENERIC_ERROR_MESSAGE
+    error_response = GENERIC_ERROR_MESSAGE
     try:
         runnable = runnable_factory.get_runnable()
         result = await runnable.ainvoke(input_data, config_data)

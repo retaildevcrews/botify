@@ -21,7 +21,7 @@ async def call_full_flow_perf_data(index, results: list, row, semaphore: asyncio
                 row["question"],
                 row["session_id"],
                 row["user_id"],
-                row["sbux_global_id"],
+                row["global_id"],
                 row["chat_history"],
             )
             results.append(

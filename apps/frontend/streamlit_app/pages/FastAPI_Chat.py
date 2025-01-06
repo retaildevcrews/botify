@@ -35,7 +35,8 @@ def write_payload(payload):
     container = st.empty()
     answer = payload.json()
     if "invoke" in api_url:
-        result = generate_display_and_audio_response(answer["output"], False)
+        answer = payload.json()['messages'][-1]
+        result = generate_display_and_audio_response(answer["content"], False)
         container.markdown(result)
         return result
     else:

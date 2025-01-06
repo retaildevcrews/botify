@@ -62,10 +62,10 @@ def extract_intermediate_steps(messages):
 
 
 def parse_response(response):
-    logger.debug(f"Response inside parse response: {response}")
-    messages = response["messages"]
-    question = messages[0].content
-    answer = messages[-1].content
+    logger.debug(f"Response inside parse response: {response.json()}")
+    messages = response.json()["messages"]
+    question = messages[0]["content"]
+    answer = messages[-1]["content"]
     intermediate_steps = extract_intermediate_steps(messages)
     parsed_response = Output(
         question=question,

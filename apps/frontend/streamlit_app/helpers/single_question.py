@@ -11,6 +11,6 @@ logger = get_logger(__name__)
 
 def process_input(question, session_id, user_id):
     response = consume_api(api_url, question, session_id, user_id)
-    logger.error(f"Response: {str(response)}")
+    logger.error(f"Response: {str(response.json())}")
     parsed_response = parse_response(response)
     return parsed_response

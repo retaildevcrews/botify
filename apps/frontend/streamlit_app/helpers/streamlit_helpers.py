@@ -90,8 +90,11 @@ def consume_api(url, user_query, session_id, user_id):
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
-    config = {"configurable": {"session_id": session_id, "user_id": user_id}}
-    payload = {"messages": {"user": user_query}, "configurable": config}
+
+    payload = {
+        "input": {"messages": [{"role": "user", "content": user_query}]},
+        "config": {"configurable": {"session_id": session_id, "user_id": user_id}}
+    }
 
     logger.info(
         "Sending API request to %s with session_id: %s and user_id: %s",

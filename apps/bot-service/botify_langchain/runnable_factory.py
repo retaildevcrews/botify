@@ -263,7 +263,7 @@ class RunnableFactory:
         try:
             output_format = self.app_settings.selected_format_config
             response_content = self.extract_content(response_content, f"```{output_format}")
-            logging.error(f"Ouput format: {output_format}")
+            logging.error(f"Output format: {output_format}")
             logging.debug(f"LLM Output: {response_content}")
             if output_format == "json" or output_format == "yaml":
                 if response_content.startswith('"') and response_content.endswith('"'):

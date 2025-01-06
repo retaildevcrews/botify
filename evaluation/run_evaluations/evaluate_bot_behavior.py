@@ -19,9 +19,9 @@ def call_full_flow(*, question, **kwargs):
     runnable_caller = RunnableCaller()
     session_id = uuid.uuid4()
     user_id = "tdaley"
-    sbux_global_id = "global_id"
+    global_id = "global_id"
     bot_response = runnable_caller.call_full_flow(
-        question, session_id, user_id, sbux_global_id, "")
+        question, session_id, user_id, global_id, "")
     print(f'Bot Response: {bot_response}')
     answer = bot_response["answer"]
     config = bot_response["app_config"]
