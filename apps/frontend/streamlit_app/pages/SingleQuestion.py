@@ -28,9 +28,11 @@ if question:
             st.write("Search Results:")
             documents = response["search_documents"]
             for document in documents:
+                document_title = document["page_content"]["title"]
+                if not document_title:
+                    continue
                 output = f"""
-                [{document["page_content"]["short_description"]}]({document["page_content"]["link"]})\n
-                {document["page_content"]["@search.captions"][0]["text"]}\n
+                [{document["page_content"]["title"]}]({document["page_content"]["location"]})\n
                 \n
                 """
                 st.write(output)

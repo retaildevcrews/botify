@@ -44,15 +44,16 @@ def extract_intermediate_steps(messages):
     document_list = []
     called_tools = []
     for message in messages:
-        if isinstance(message, ToolMessage) and "Document" in message.content:
+        if message["type"] == "tool" and "Document" in message["content"]:
+            logger.info(f"Tooooool message: {message}")
             try:
-                document_list_str = message.content
+                document_list_str = message["content"]
                 document_list = parse_document_string(document_list_str)
             except Exception as e:
                 logger.exception(f"Failed to parse document: {e}")
-        if isinstance(message, AIMessage) and hasattr(message, "tool_calls"):
+        if message["type"] == "ai" and hasattr(message, "tool_calls"):
             try:
-                tool_calls = message.tool_calls
+                tool_calls = message["tool_calls"]
                 for call in tool_calls:
                     tool_call = {"name": call["name"], "args": call["args"]}
                     called_tools.append(tool_call)
@@ -77,8 +78,8 @@ def parse_response(response):
     searchdict = {}
     for i in range(len(search_docs)):
         search_res = []
-        link = search_docs[i]["page_content"]["link"]
-        text = search_docs[i]["page_content"]["text"]
+        link = search_docs[i]["page_content"]["location"]
+        text = search_docs[i]["page_content"]["title"]
         search_res.append(link)
         search_res.append(text)
         searchdict[i + 1] = search_res
