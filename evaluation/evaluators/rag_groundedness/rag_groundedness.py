@@ -27,10 +27,10 @@ class RAGGroundednessEvaluator:
         prompty_path = os.path.join(current_dir, "rag_groundedness.prompty")
         self._flow = load_flow(source=prompty_path, model=prompty_model_config)
 
-    def __call__(self, *, bot_response: str, context: str, **kwargs):
+    def __call__(self, *, answer: str, context: str, **kwargs):
         try:
             # Run the evaluation flow
-            llm_output = self._flow(bot_response=bot_response, context=context)
+            llm_output = self._flow(answer=answer, context=context)
             output = json.loads(llm_output)
             score = output["score"]
             reason = output["explanation"]

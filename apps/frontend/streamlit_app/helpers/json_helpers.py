@@ -1,3 +1,5 @@
+import json
+
 from helpers.speech_helpers import handle_audio_response
 
 
@@ -12,7 +14,7 @@ logger = get_logger(__name__)
 
 def generate_display_and_audio_response(json_str, play_voice_summary):
     # Load the JSON string into a Python dictionary
-    data = json_str
+    data = json.loads(json_str)
     logger.debug(json_str)
 
     # Initialize the result string

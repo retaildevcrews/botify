@@ -3,6 +3,7 @@ import csv
 import logging
 import os
 import time
+import asyncio
 
 import pandas as pd
 from evaluation_utils.evaluator_config import EvaluatorConfigList
@@ -21,7 +22,7 @@ from run_evaluations.utils import run_evaluation
 logger = logging.getLogger(__name__)
 
 
-def call_full_flow(*, question, session_id, user_id, sbux_global_id, chat_history, **kwargs):
+def call_full_flow(*, question, session_id, user_id, chat_history, **kwargs):
     runnable_caller = RunnableCaller()
     query_list = []
     called_tools = []
@@ -31,14 +32,14 @@ def call_full_flow(*, question, session_id, user_id, sbux_global_id, chat_histor
         f"Calling full flow with question: {question} and session_id: {
                  session_id} and user_id: {user_id} and chat_history: {chat_history}"
     )
-    result = runnable_caller.call_full_flow(question, session_id, user_id, sbux_global_id, chat_history)
+    result = asyncio.run(runnable_caller.call_full_flow(question, session_id, user_id, chat_history))
     # Capture parts of result that will be fed into the evaluation framework for
     # either reporting purposes or inputs to the evaluators
     chat_history = chat_history
     answer = result["answer"]
     config = result["app_config"]
     config_hash = result["app_config_hash"]
-    documents_list = result["search_documents"]
+    documents_list = []#result["search_documents"]
     called_tools_list = result["called_tools"]
     for tool in called_tools_list:
         called_tools.append(tool["name"])
@@ -125,7 +126,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_path",
         help="Test dataset to use with evaluation",
-        default="/workspaces/genai-pcc-search/evaluation/data_files/golden_dataset.jsonl",
+        default="/workspaces/botify/evaluation/data_files/chatbot_test.jsonl",
         type=str,
     )
 

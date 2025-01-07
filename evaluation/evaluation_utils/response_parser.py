@@ -44,16 +44,15 @@ def extract_intermediate_steps(messages):
     document_list = []
     called_tools = []
     for message in messages:
-        if message["type"] == "tool" and "Document" in message["content"]:
-            logger.info(f"Tooooool message: {message}")
+        if isinstance(message, ToolMessage) and "Document" in message.content:
             try:
-                document_list_str = message["content"]
+                document_list_str = message.content
                 document_list = parse_document_string(document_list_str)
             except Exception as e:
                 logger.exception(f"Failed to parse document: {e}")
-        if message["type"] == "ai" and hasattr(message, "tool_calls"):
+        if isinstance(message, AIMessage) and hasattr(message, "tool_calls"):
             try:
-                tool_calls = message["tool_calls"]
+                tool_calls = message.tool_calls
                 for call in tool_calls:
                     tool_call = {"name": call["name"], "args": call["args"]}
                     called_tools.append(tool_call)
@@ -63,10 +62,10 @@ def extract_intermediate_steps(messages):
 
 
 def parse_response(response):
-    logger.debug(f"Response inside parse response: {response.json()}")
-    messages = response.json()["messages"]
-    question = messages[0]["content"]
-    answer = messages[-1]["content"]
+    logger.debug(f"Response inside parse response: {response}")
+    messages = response["messages"]
+    question = messages[0].content
+    answer = messages[-1].content
     intermediate_steps = extract_intermediate_steps(messages)
     parsed_response = Output(
         question=question,
@@ -74,14 +73,4 @@ def parse_response(response):
         called_tools=intermediate_steps["tool_calls"],
         answer=answer,
     ).model_dump()
-    search_docs = intermediate_steps["documents"]
-    searchdict = {}
-    for i in range(len(search_docs)):
-        search_res = []
-        link = search_docs[i]["page_content"]["location"]
-        text = search_docs[i]["page_content"]["title"]
-        search_res.append(link)
-        search_res.append(text)
-        searchdict[i + 1] = search_res
-    logger.info(f"Search Results: {searchdict}")
     return parsed_response

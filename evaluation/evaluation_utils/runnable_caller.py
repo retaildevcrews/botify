@@ -74,8 +74,8 @@ class RunnableCaller:
         result = self.factory.content_safety_tool.invoke(question)
         return result
 
-    def call_full_flow(
-        self, question: str, session_id: str, user_id: str, sbux_global_id: str, chat_history: str = []
+    async def call_full_flow(
+        self, question: str, session_id: str, user_id: str, chat_history: str = []
     ):
         # Inject artificial chat history for multi turn testing
         messages_from_data = get_history_messages_from_data(chat_history)
@@ -84,11 +84,11 @@ class RunnableCaller:
         question_payload = {"messages": [{"role": "user", "content": question}]}
         configurable_payload = {"configurable": {"session_id": session_id, "user_id": user_id}}
         # call runnable - note that we get the version where we can inject the chat history
-        runnable = self.factory.get_runnable(azure_chat_open_ai_streaming=False, stream_usage=False)
+        runnable = self.factory.get_runnable()
         output = {}
         with get_openai_callback() as cb:
             start_time = perf_counter()
-            result = runnable.invoke(question_payload, configurable_payload)
+            result = await runnable.ainvoke(question_payload, configurable_payload)
             end_time = perf_counter()
             ellapsed_time = end_time - start_time
         try:

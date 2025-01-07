@@ -21,7 +21,6 @@ async def call_full_flow_perf_data(index, results: list, row, semaphore: asyncio
                 row["question"],
                 row["session_id"],
                 row["user_id"],
-                row["sbux_global_id"],
                 row["chat_history"],
             )
             results.append(
@@ -151,7 +150,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--dataset_path",
         help="Test dataset to use with evaluation",
-        default="/workspaces/genai-pcc-search/evaluation/data_files/chatbot_test.jsonl",
+        default="/workspaces/botify/evaluation/data_files/chatbot_test.jsonl",
         type=str,
     )
     parser.add_argument(

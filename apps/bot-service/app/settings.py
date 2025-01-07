@@ -33,7 +33,7 @@ class AppSettings(metaclass=Singleton):
     json_validation_schema_name = "response_schema.json"
     response_schema_name: str = "response_schema.json"
     # Format in which the LLM output will be generated
-    selected_format_config: str = "yaml"
+    selected_format_config: str = "json"
     format_config_paths = {
         "text": {
             "prompt_template_paths": ["common.md", "history_marker.md"],

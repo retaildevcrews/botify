@@ -25,12 +25,21 @@ if question:
         with st.container(height=200):
             st.write(response["answer"])  # Input fields
         with st.container(border=False):
-            st.write("Search Results:")
+            st.write("### Search Results")
             documents = response["search_documents"]
             for document in documents:
+                document_title = document["page_content"]["title"]
+                if not document_title:
+                    continue
+
+                document_chunk_blocks = document["page_content"]["chunk"].split('\n')
+                document_summary = document_chunk_blocks[3].strip()[8:]
+                document_content = document_chunk_blocks[4].strip()[8:]
+
                 output = f"""
-                [{document["page_content"]["short_description"]}]({document["page_content"]["link"]})\n
-                {document["page_content"]["@search.captions"][0]["text"]}\n
+                [{document["page_content"]["title"]}]({document["page_content"]["location"]})\n
+                {document_summary}\n
+                {document_content}\n
                 \n
                 """
                 st.write(output)

@@ -18,7 +18,7 @@ model:
       type: text
 
 inputs:
-  bot_response:
+  answer:
     type: string
   context:
     type: string
@@ -31,8 +31,8 @@ outputs:
 ---
 
 System:
-You are an AI Powered Evaluator. 
-You will be given the definition of an evaluation metric to assess. 
+You are an AI Powered Evaluator.
+You will be given the definition of an evaluation metric to assess.
 Metric to assess: RAG Groundedness
 Your job is to compute a groundedness evaluation score using the provided evaluation instructions below.
 Instructions:
@@ -67,5 +67,5 @@ RESPONSE 3:
 
 YOUR RESPONSE SHOULD ALWAYS BE IN JSON FORMAT LIKE THE EXAMPLES ABOVE
 
-bot_response: {{bot_response}}
+answer: {{answer}}
 context: {{context}}
