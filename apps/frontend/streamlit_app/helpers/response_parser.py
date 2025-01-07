@@ -83,5 +83,5 @@ def parse_response(response):
         search_res.append(link)
         search_res.append(text)
         searchdict[i + 1] = search_res
-    logger.info("Search Results", searchdict)
+    logger.info(f"Search Results: {searchdict}")
     return parsed_response
