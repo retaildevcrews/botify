@@ -44,7 +44,7 @@ class _AsyncCoherenceEvaluator:
             score = llm_output["score"]
             reason = llm_output["reason"]
         except Exception as e:
-            score = np.NaN
+            score = np.nan
             reason = f"Error when running evaluator: {
                 e} LLM Response is: {llm_output}"
         return {"score": score, "reason": reason}
