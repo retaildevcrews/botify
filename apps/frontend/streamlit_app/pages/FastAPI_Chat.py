@@ -16,6 +16,7 @@ configure_page("FastAPI Chat Bot", "🤖")
 logger = get_logger(__name__)
 logger.info("Page configured with title 'FastAPI Chat Bot'.")
 
+
 # Initialize session and user IDs
 session_id, user_id = get_or_create_ids()
 
@@ -35,7 +36,7 @@ def write_payload(payload):
     container = st.empty()
     answer = payload.json()
     if "invoke" in api_url:
-        answer = payload.json()['messages'][-1]
+        answer = payload.json()["messages"][-1]
         result = generate_display_and_audio_response(answer["content"], False)
         container.markdown(result)
         return result
@@ -56,12 +57,12 @@ if user_query:
 
     with st.chat_message("AI"):
         try:
-            response=consume_api(api_url, user_query, session_id, user_id)
+            response = consume_api(api_url, user_query, session_id, user_id)
             ai_response = write_payload(payload=consume_api(api_url, user_query, session_id, user_id))
             logger.info("AI response received and written to stream.")
         except Exception as e:
             logger.error(f"Error consuming API: {e}")
-            st.error("Failed to get a response from the AI." + response)
+            st.error("Failed to get a response from the AI." + response.json())
             ai_response = None
 
     if ai_response:

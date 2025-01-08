@@ -21,7 +21,7 @@ class ModelConfig:
     logit_bias: Dict[int, int] = field(default_factory=dict)
     timeout: float = 30.0
     max_retries: int = 3
-    use_structured_output: bool = False
+    use_structured_output: bool = True
     use_json_format: bool = False
 
 
