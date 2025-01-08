@@ -84,7 +84,7 @@ class RunnableFactory:
         )
         graph.add_edge("identify_disclaimers", "call_model")
         graph.add_edge("call_model", "post_processor")
-        graph.add_edge("stop_for_safety", END)
+        graph.add_edge("stop_for_safety", "post_processor")
         graph.add_edge("post_processor", END)
         graph_runnable = graph.compile()
         return graph_runnable
@@ -195,7 +195,8 @@ class RunnableFactory:
 
     def return_safety_error_message(self, state: dict):
         """Return a safety error message."""
-        state["messages"].append(AIMessage(content=messages.SAFETY_ERROR_MESSAGE))
+        response = self.process_llm_response(messages.SAFETY_ERROR_MESSAGE)
+        state["messages"].append(AIMessage(content=response))
         return state
 
     async def identify_disclaimers(self, state: dict):
@@ -270,8 +271,9 @@ class RunnableFactory:
                     response_content = response_content[1:-1]
                 if output_format == "json":
                     # Parse the cleaned JSON input
-                    data = json.loads(response_content)
-                    if response_content == data:
+                    try:
+                        data = json.loads(response_content)
+                    except:
                         self.logger.warning(
                             f"""LLM returned incorrect format.
                                 Will wrap in json object.

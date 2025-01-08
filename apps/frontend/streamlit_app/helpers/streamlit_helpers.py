@@ -90,10 +90,18 @@ def consume_api(url, user_query, session_id, user_id):
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
+    messages = []
+
+    for message in st.session_state.chat_history:
+        if isinstance(message, AIMessage):
+            messages.append({"role": "ai", "content": message.content})
+        elif isinstance(message, HumanMessage):
+            messages.append({"role": "user", "content": message.content})
+    logger.error("Current contents of chat history prior to sending request is: %s", messages)
 
     payload = {
-        "input": {"messages": [{"role": "user", "content": user_query}]},
-        "config": {"configurable": {"session_id": session_id, "user_id": user_id}}
+        "input": {"messages": messages},
+        "config": {"configurable": {"session_id": session_id, "user_id": user_id}},
     }
 
     logger.info(
@@ -102,7 +110,7 @@ def consume_api(url, user_query, session_id, user_id):
         session_id,
         user_id,
     )
-    logger.debug("Payload: %s", payload)
+    logger.error("Payload: %s", payload)
 
     with requests.post(url, json=payload, headers=headers) as response:
         try:
