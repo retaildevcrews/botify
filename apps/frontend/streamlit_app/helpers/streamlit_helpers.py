@@ -92,11 +92,14 @@ def consume_api(url, user_query, session_id, user_id):
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
     messages = []
 
-    for message in st.session_state.chat_history:
-        if isinstance(message, AIMessage):
-            messages.append({"role": "ai", "content": message.content})
-        elif isinstance(message, HumanMessage):
-            messages.append({"role": "user", "content": message.content})
+    if "chat_history" not in st.session_state:
+        messages.append({"role": "user", "content": user_query})
+    else:
+        for message in st.session_state.chat_history:
+            if isinstance(message, AIMessage):
+                messages.append({"role": "ai", "content": message.content})
+            elif isinstance(message, HumanMessage):
+                messages.append({"role": "user", "content": message.content})
     logger.error("Current contents of chat history prior to sending request is: %s", messages)
 
     payload = {

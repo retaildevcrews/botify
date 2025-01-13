@@ -44,7 +44,7 @@ class RunnableFactory:
             indexes=indexes,
             fields_to_select="id, title, chunk, location",
             vector_query_fields="chunkVector",
-            generate_vector_query_embeddings=True,
+            generate_vector_query_embeddings=False,
             search_fields="",
             id_field="id",
             k=self.app_settings.search_tool_topk,
