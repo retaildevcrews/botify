@@ -1,13 +1,9 @@
 import argparse
-import csv
+import asyncio
 import logging
 import os
-import time
-import asyncio
 
-import pandas as pd
 from evaluation_utils.evaluator_config import EvaluatorConfigList
-from evaluation_utils.formatting_utils import string_to_dict
 from evaluation_utils.runnable_caller import RunnableCaller
 from evaluators import (
     CoherenceEvaluator,
@@ -39,7 +35,7 @@ def call_full_flow(*, question, session_id, user_id, chat_history, **kwargs):
     answer = result["answer"]
     config = result["app_config"]
     config_hash = result["app_config_hash"]
-    documents_list = []#result["search_documents"]
+    documents_list = []  # result["search_documents"]
     called_tools_list = result["called_tools"]
     for tool in called_tools_list:
         called_tools.append(tool["name"])

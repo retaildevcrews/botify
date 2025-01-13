@@ -2,7 +2,6 @@ import json
 import logging
 import os
 import pathlib
-import time
 
 import pandas as pd
 from app.settings import AppSettings
@@ -66,7 +65,7 @@ def run_evaluation(
     # load app settings to highlight issues with environment setup
     try:
         skip_environment_validation = kwargs.get("ignore_environment_validation")
-        if skip_environment_validation == None or not skip_environment_validation:
+        if skip_environment_validation is None or not skip_environment_validation:
             AppSettings()
         path = str(pathlib.Path.cwd() / dataset_path)
         result = evaluate_function(

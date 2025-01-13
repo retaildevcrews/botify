@@ -74,12 +74,10 @@ class RunnableCaller:
         result = self.factory.content_safety_tool.invoke(question)
         return result
 
-    async def call_full_flow(
-        self, question: str, session_id: str, user_id: str, chat_history: str = []
-    ):
+    async def call_full_flow(self, question: str, session_id: str, user_id: str, chat_history: str = []):
         # Inject artificial chat history for multi turn testing
-        messages_from_data = get_history_messages_from_data(chat_history)
-        messages_history_callable = MessageHistoryFromData(session_id, user_id, messages_from_data)
+        # messages_from_data = get_history_messages_from_data(chat_history)
+        # messages_history_callable = MessageHistoryFromData(session_id, user_id, messages_from_data)
         # Create question payload
         question_payload = {"messages": [{"role": "user", "content": question}]}
         configurable_payload = {"configurable": {"session_id": session_id, "user_id": user_id}}
@@ -93,11 +91,8 @@ class RunnableCaller:
             ellapsed_time = end_time - start_time
         try:
             output = parse_full_flow_response(result)
-        except TypeError as e:
-            output["answer"] = (
-                f"Failed to parse response - unparsed result: {
-                result}"
-            )
+        except TypeError:
+            output["answer"] = f"Failed to parse response - unparsed result: {result}"
         output["start_time"] = start_time
         output["end_time"] = end_time
         output["ellapsed_time"] = ellapsed_time
