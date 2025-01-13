@@ -60,6 +60,7 @@ class AppSettings(metaclass=Singleton):
     # only the display message and not entire bot response
     history_limit: int = 10
     search_tool_topk: int = 10
+    search_tool_max_results: int = 10
     search_similarity_field: str = "summary"
     search_tool_reranker_threshold: int = 1
     item_detail_reranker_threshold: int = 1

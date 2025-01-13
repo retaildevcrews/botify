@@ -44,11 +44,18 @@ class RunnableFactory:
             indexes=indexes,
             fields_to_select="id, title, chunk, location",
             vector_query_fields="chunkVector",
+            generate_vector_query_embeddings=False,
+            search_fields="",
+            id_field="id",
             k=self.app_settings.search_tool_topk,
+            max_results=self.app_settings.search_tool_max_results,
             semantic_config="my-semantic-config",
+            answers="extractive|count-3",
+            captions="extractive|highlight-false",
             name="Search-Tool",
             description="Use this tool to search the knowldge base",
             add_answer_scores=True,
+            reranker_threshold=self.app_settings.search_tool_reranker_threshold,
         )
 
         self.content_safety_tool = AzureContentSafety_Tool()

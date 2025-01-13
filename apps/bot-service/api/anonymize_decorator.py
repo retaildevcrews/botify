@@ -35,7 +35,7 @@ def anonymize(func: Callable):
                 logger.info(
                     "Response logged",
                     extra={
-                        "application_logs": {"output": response["answer"]},
+                        "application_logs": {"output": response},
                         "sink": ["file"],
                     },
                 )
