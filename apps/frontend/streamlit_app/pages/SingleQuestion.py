@@ -1,10 +1,8 @@
-import json
 import uuid
 
 import streamlit as st
 from helpers.single_question import process_input
 from helpers.streamlit_helpers import configure_page, get_logger
-from streamlit_app import api_url
 
 configure_page("Q&A Search", "🔍")
 logger = get_logger(__name__)
@@ -32,7 +30,7 @@ if question:
                 if not document_title:
                     continue
 
-                document_chunk_blocks = document["page_content"]["chunk"].split('\n')
+                document_chunk_blocks = document["page_content"]["chunk"].split("\n")
                 document_summary = document_chunk_blocks[3].strip()[8:]
                 document_content = document_chunk_blocks[4].strip()[8:]
 

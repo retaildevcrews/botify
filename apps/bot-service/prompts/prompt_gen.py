@@ -121,7 +121,7 @@ class PromptGen:
         """
         for arg in kwargs:
             arg_value = kwargs[arg]
-            if arg_value == None:
+            if arg_value is None:
                 arg_value = ""
             kwargs[arg] = self.escape_curly_braces(
                 arg_value, open_brace="""{{'{{'}}""", close_brace="""{{'}}'}}"""
@@ -147,7 +147,7 @@ class PromptGen:
                 trimmed_content = content.strip()
                 for arg in kwargs:
                     arg_value = kwargs[arg]
-                    if arg_value == None:
+                    if arg_value is None:
                         arg_value = ""
                     escaped_arg = self.escape_curly_braces(arg_value)
                     trimmed_content = trimmed_content.replace(f"{{{arg}}}", escaped_arg)

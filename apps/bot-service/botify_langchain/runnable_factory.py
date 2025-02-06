@@ -7,7 +7,7 @@ from app.settings import AppSettings
 from botify_langchain.create_react_agent import create_react_agent
 from botify_langchain.tools.topic_detection_tool import TopicDetectionTool
 from common.schemas import ResponseSchema
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_openai import AzureChatOpenAI
 from langgraph.graph import END, START, StateGraph
@@ -280,7 +280,7 @@ class RunnableFactory:
                     # Parse the cleaned JSON input
                     try:
                         data = json.loads(response_content)
-                    except:
+                    except Exception:
                         self.logger.warning(
                             f"""LLM returned incorrect format.
                                 Will wrap in json object.

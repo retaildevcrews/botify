@@ -1,17 +1,17 @@
-from typing import Optional, Tuple
+from typing import ClassVar, Optional, Tuple
 
 from app.settings import AppSettings
 from langchain.tools import BaseTool
 from langchain_core.callbacks import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_openai import AzureChatOpenAI
-from typing import ClassVar
 
 
 class TopicDetectionTool(BaseTool):
     """Tool for detecting banned topics in a query using Azure OpenAI."""
-    name:ClassVar[str] = "Topic Detection Tool"
-    description:ClassVar[str] = "Detects topics in the query using Azure OpenAI."
+
+    name: ClassVar[str] = "Topic Detection Tool"
+    description: ClassVar[str] = "Detects topics in the query using Azure OpenAI."
 
     def make_prompt(self, text_entry: str, topics: list[str]) -> list[dict]:
         return [

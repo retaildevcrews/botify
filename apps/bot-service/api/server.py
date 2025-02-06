@@ -3,17 +3,17 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, List, TypedDict
+from typing import Any, Dict, TypedDict
 
 import _additional_version_info
 import pydantic
 import toml
-from api.anonymize_decorator import Anonymizer, anonymize
+from api.anonymize_decorator import anonymize
 from api.models import Payload
 from api.utils import invoke_wrapper as invoke_runnable
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 from opentelemetry import trace

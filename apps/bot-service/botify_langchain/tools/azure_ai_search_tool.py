@@ -1,18 +1,17 @@
 import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
-from typing import List, Optional, Type
+from typing import ClassVar, List, Optional, Type
 
 from app.settings import AppSettings
 from common.search.azure_ai_search import AzureRAGSearchClient
 from langchain.callbacks.manager import AsyncCallbackManagerForToolRun, CallbackManagerForToolRun
-from pydantic import BaseModel, Field
 from langchain.tools import BaseTool
 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
-from typing import ClassVar
 from openai import AzureOpenAI
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 

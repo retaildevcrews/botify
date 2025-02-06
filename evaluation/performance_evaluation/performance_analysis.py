@@ -35,7 +35,7 @@ async def call_full_flow_perf_data(index, results: list, row, semaphore: asyncio
                     "total_tokens": result["total_tokens"],
                 }
             )
-        except Exception as e:
+        except Exception:
             results.append(
                 {
                     "question": row["question"],

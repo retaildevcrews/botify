@@ -1,4 +1,4 @@
-FROM python:3.12.4-slim as builder
+FROM python:3.12.8-slim as builder
 
 # Set a working directory
 WORKDIR /code
@@ -16,7 +16,7 @@ RUN poetry config virtualenvs.create false && \
     find /usr/local -type f -name '*.pyc' -delete
 
 # Start from a clean, minimal base image
-FROM python:3.12.4-slim
+FROM python:3.12.8-slim
 
 # Set the working directory
 WORKDIR /code

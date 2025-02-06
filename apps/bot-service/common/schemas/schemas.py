@@ -43,4 +43,3 @@ class ResponseSchema:
     def get_response_schema(self):
         if self.selected_format_config == "json" or self.selected_format_config == "json_schema":
             return self.get_response_schema_json_as_string()
-

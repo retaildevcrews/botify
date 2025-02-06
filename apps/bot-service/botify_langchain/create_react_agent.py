@@ -1,5 +1,4 @@
 from typing import Callable, Literal, Optional, Sequence, Type, TypeVar, Union, cast
-import logging
 
 from langchain_core.language_models import BaseChatModel, LanguageModelLike
 from langchain_core.messages import AIMessage, BaseMessage, SystemMessage, ToolMessage
