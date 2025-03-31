@@ -3,6 +3,15 @@ FROM python:3.12.8-slim as builder
 # Set a working directory
 WORKDIR /code
 
+# Install system dependencies required for building Python packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Set env var for blis arch
+ENV BLIS_ARCH=generic
+
 # Install Poetry
 RUN pip install --no-cache-dir poetry==1.8
 
