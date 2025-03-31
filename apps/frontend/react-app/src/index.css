@@ -429,19 +429,21 @@ body.light-theme .chat-messages {
 }
 
 body.light-theme .human-message {
+  color: #333;
   background-color: #e0e6f0; /* Darker background for better contrast */
   box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Deeper shadow */
   border: 1.5px solid #c8d0e0; /* Thicker, darker border */
 }
 
 .ai-message {
-  background-color: #ffffff;
   padding: 10px 14px;
   border-radius: 8px;
   align-self: flex-start;
 }
 
 body.light-theme .ai-message {
+  background-color: #ffffff;
+  color: #333;
   box-shadow: 0 2px 4px rgba(0,0,0,0.2); /* Deeper shadow */
   border: 1.5px solid #d8d8d8; /* Thicker, darker border */
   border-left: 5px solid #ff4b4b; /* Thicker accent border - moved after border */
