@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { BrowserRouter, Switch, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Home from './pages/Home';
 import Chat from './pages/Chat';
 import SingleQuestion from './pages/SingleQuestion';
@@ -118,11 +118,11 @@ const App: React.FC = () => {
             </div>
           </header>
           <main className="main-content">
-            <Switch>
-              <Route exact path="/" component={Home} />
-              <Route path="/chat" component={Chat} />
-              <Route path="/question" component={SingleQuestion} />
-            </Switch>
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/chat" element={<Chat />} />
+              <Route path="/question" element={<SingleQuestion />} />
+            </Routes>
           </main>
           <footer className="footer">
             <div className="version-info">

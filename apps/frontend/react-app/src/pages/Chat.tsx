@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Message, getOrCreateIds, sendChatMessage } from '../helpers/api';
 import { HumanIcon, BotIcon } from '../components/icons';
+import styles from './InputField.module.css';
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,13 +85,13 @@ const Chat: React.FC = () => {
           )}
           <div ref={messagesEndRef} />
         </div>
-        <form onSubmit={handleSubmit} className="input-container">
+        <form onSubmit={handleSubmit} className={styles.inputContainer}>
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message here..."
-            className="input-field"
+            className={styles.inputField}
             disabled={isLoading}
           />
           <button 
