@@ -1,28 +1,34 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { v4 as uuidv4 } from 'uuid';
 
 // Type definitions
 export interface Message {
-  role: 'human' | 'ai';
+  role: 'human' | 'ai' | 'user';
   content: string;
 }
 
 export interface SearchDocument {
-  page_content: {
-    title: string;
-    location: string;
-    chunk: string;
+  page_content?: {
+    title?: string;
+    location?: string;
+    chunk?: string;
   };
 }
 
 export interface SingleQuestionResponse {
   answer: string;
-  search_documents: SearchDocument[];
+  search_documents?: SearchDocument[];
+}
+
+// Define a type for the chat response
+export interface ChatResponse {
+  message: string;
+  // Add other properties that your API returns
 }
 
 // API configuration
 // Get the API URL from window.env (for runtime) or from the proxy
-const API_URL = (window as any).env?.VITE_API_URL || '/api';
+const API_URL = (typeof window !== 'undefined' && (window as any).env?.VITE_API_URL) ?? '/api';
 
 // Helper functions
 export const getOrCreateIds = (): { sessionId: string; userId: string } => {
@@ -46,7 +52,11 @@ export const sendChatMessage = async (
   message: string,
   sessionId: string,
   userId: string
-): Promise<Response> => {
+): Promise<ChatResponse> => {
+  if (!message || !sessionId || !userId) {
+    throw new Error('Missing required parameters: message, sessionId, or userId');
+  }
+
   try {
     const response = await axios.post(`${API_URL}/invoke`, {
       input: {
@@ -66,8 +76,11 @@ export const sendChatMessage = async (
     });
     return response.data;
   } catch (error) {
-    console.error('Error sending chat message:', error);
-    throw error;
+    const errorMessage = error instanceof AxiosError 
+      ? `Error ${error.response?.status ?? ''}: ${error.message}` 
+      : 'An unknown error occurred';
+    console.error('Error sending chat message:', errorMessage);
+    throw new Error('Failed to send message. Please try again.');
   }
 };
 
@@ -76,6 +89,10 @@ export const processSingleQuestion = async (
   sessionId: string,
   userId: string
 ): Promise<SingleQuestionResponse> => {
+  if (!question || !sessionId || !userId) {
+    throw new Error('Missing required parameters: question, sessionId, or userId');
+  }
+
   try {
     const response = await axios.post(`${API_URL}/question`, {
       query: question,
@@ -84,23 +101,31 @@ export const processSingleQuestion = async (
     });
     return response.data;
   } catch (error) {
-    console.error('Error processing single question:', error);
-    throw error;
+    const errorMessage = error instanceof AxiosError 
+      ? `Error ${error.response?.status ?? ''}: ${error.message}` 
+      : 'An unknown error occurred';
+    console.error('Error processing single question:', errorMessage);
+    throw new Error('Failed to process question. Please try again.');
   }
 };
 
 // Function to parse search document chunks
 export const parseSearchDocumentChunk = (chunk: string): { summary: string; content: string } => {
+  if (!chunk) {
+    return { summary: '', content: '' };
+  }
+
   const lines = chunk.split("\n");
   let summary = '';
   let content = '';
   
   // Find lines that contain summary and content (based on Streamlit implementation)
   for (const line of lines) {
-    if (line.trim().startsWith("Summary:")) {
-      summary = line.trim().substring(8);
-    } else if (line.trim().startsWith("Content:")) {
-      content = line.trim().substring(8);
+    const trimmedLine = line.trim();
+    if (trimmedLine.startsWith("Summary:")) {
+      summary = trimmedLine.substring(8).trim();
+    } else if (trimmedLine.startsWith("Content:")) {
+      content = trimmedLine.substring(8).trim();
     }
   }
   
