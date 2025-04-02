@@ -151,61 +151,130 @@ class BotifyChat:
                     self._invoke_response(payload)
                 return
             
-            print(f"{GREEN}Got streaming response, reading...{END}")
+            print(f"{GREEN}Got streaming response, reading chunks...{END}")
             
-            # Manual SSE parsing as a fallback if sseclient has issues
+            # For storing the last complete response to add to conversation history
+            final_response = {}
+            display_progress = ""
+            voice_progress = ""
+            json_content_complete = False
+            chunk_count = 0
+            
+            # Process the streaming response
             try:
                 client = sseclient.SSEClient(response)
-                full_response = ""
                 
                 for event in client.events():
-                    print(f"{YELLOW}DEBUG: Received event: {event.data[:30]}...{END}")
+                    chunk_count += 1
                     
+                    # For DONE signal
                     if event.data == "[DONE]":
-                        print(f"{YELLOW}DEBUG: Received DONE signal{END}")
+                        print(f"{YELLOW}------------------------------{END}")
+                        print(f"{YELLOW}Stream completed ({chunk_count} chunks received){END}")
                         break
                         
+                    # Try to parse as JSON directly
                     try:
-                        data = json.loads(event.data)
-                        if "content" in data:
-                            chunk = data["content"]
-                            print(chunk, end="", flush=True)
-                            full_response += chunk
-                        elif "error" in data:
-                            print(f"{RED}{data['error']}{END}")
-                    except json.JSONDecodeError:
-                        print(f"{RED}Error parsing event data: {event.data}{END}")
+                        # Parse the event data directly (the new format should be valid JSON)
+                        parsed_event = json.loads(event.data)
                         
+                        # Display and voice content should be directly available now
+                        if "displayResponse" in parsed_event:
+                            display_text = parsed_event["displayResponse"]
+                            if display_text != display_progress:
+                                # Print only what's new since last update
+                                if display_progress and display_text.startswith(display_progress):
+                                    print(f"{GREEN}{display_text[len(display_progress):]}{END}", end="", flush=True)
+                                else:
+                                    # Just update the internal state without printing duplicates
+                                    pass
+                                display_progress = display_text
+                                
+                        if "voiceSummary" in parsed_event:
+                            voice_text = parsed_event["voiceSummary"]
+                            voice_progress = voice_text
+                            
+                        # Save the latest complete response for conversation history
+                        final_response = parsed_event
+                        json_content_complete = True
+                        
+                    except json.JSONDecodeError:
+                        # If it's not valid JSON, print as-is
+                        print(f"{YELLOW}[Chunk {chunk_count}] Not valid JSON: {event.data}{END}")
+                    
+                # Print final newline after streaming is done
+                print()
+                    
             except Exception as e:
-                # Fallback manual parsing if SSEClient fails
+                # Fallback to manual parsing if SSEClient fails
                 print(f"{YELLOW}SSEClient failed, using manual parsing: {e}{END}")
-                buffer = ''
-                full_response = ""
                 
                 for line in response.iter_lines(decode_unicode=True):
                     if line:
                         line = line.strip()
                         if line.startswith('data: '):
                             data = line[6:]  # Strip "data: " prefix
+                            chunk_count += 1
+                            
+                            # For DONE signal
                             if data == "[DONE]":
+                                print(f"{YELLOW}------------------------------{END}")
+                                print(f"{YELLOW}Stream completed ({chunk_count} chunks received){END}")
                                 break
-                                
+                            
+                            # Try to parse as JSON
                             try:
-                                parsed = json.loads(data)
-                                if "content" in parsed:
-                                    chunk = parsed["content"]
-                                    print(chunk, end="", flush=True)
-                                    full_response += chunk
+                                parsed_data = json.loads(data)
+                                
+                                # Display and voice content should be directly available now
+                                if "displayResponse" in parsed_data:
+                                    display_text = parsed_data["displayResponse"]
+                                    if display_text != display_progress:
+                                        # Print only what's new since last update
+                                        if display_progress and display_text.startswith(display_progress):
+                                            print(f"{GREEN}{display_text[len(display_progress):]}{END}", end="", flush=True)
+                                        else:
+                                            # Just update the internal state without printing duplicates
+                                            pass
+                                        display_progress = display_text
+                                        
+                                if "voiceSummary" in parsed_data:
+                                    voice_text = parsed_data["voiceSummary"]
+                                    voice_progress = voice_text
+                                    
+                                # Save the latest complete response for conversation history
+                                final_response = parsed_data
+                                json_content_complete = True
+                                
                             except json.JSONDecodeError:
-                                print(f"{RED}Error parsing data: {data}{END}")
+                                print(f"{YELLOW}[Chunk {chunk_count}] Not valid JSON: {data}{END}")
                 
-            print("\n")  # Add a newline after streaming completes
+                # Print final newline after streaming is done
+                print()
             
-            # Add to conversation history
-            if full_response:
-                self.conversation_history.append({"role": "assistant", "content": full_response})
+            # Add the final complete response to conversation history
+            if json_content_complete and "displayResponse" in final_response:
+                print(f"\n{BLUE}Final response summary:{END}")
+                if display_progress != voice_progress:
+                    # Show the complete responses without truncation
+                    print(f"{BLUE}Display response:{END} {display_progress}")
+                    print(f"{BLUE}Voice summary:{END} {voice_progress}")
+                    print(f"{GREEN}Note: Display and voice responses differ{END}")
+                else:
+                    # Show the complete response without truncation
+                    print(f"{display_progress}")
+                
+                # Print the raw JSON response
+                print(f"\n{YELLOW}Raw JSON response:{END}")
+                print(json.dumps(final_response, indent=2))
+                
+                # Add display response to conversation history
+                self.conversation_history.append({
+                    "role": "assistant", 
+                    "content": final_response["displayResponse"]
+                })
             else:
-                print(f"{RED}Warning: No content was received from streaming response{END}")
+                print(f"{RED}Warning: Could not extract a complete response for conversation history{END}")
                 
         except requests.RequestException as e:
             print(f"{RED}Error connecting to Botify service: {e}{END}")
