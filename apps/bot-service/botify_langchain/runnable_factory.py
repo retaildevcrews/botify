@@ -16,16 +16,17 @@ from prompts.prompt_gen import PromptGen
 
 
 class RunnableFactory:
-    def __init__(self, byo_session_history_callable=False):
+    def __init__(self, byo_session_history_callable=False, azure_chat_open_ai_streaming=False, json_output=None):
         self.app_settings = AppSettings(byo_session_history_callable=byo_session_history_callable)
         log_level = self.app_settings.environment_config.log_level
         logging.getLogger().setLevel(log_level)
         self.logger = logging.getLogger(__name__)
         self.promptgen = PromptGen()
-        self.json_output = (
+        self.json_output = json_output if json_output is not None else (
             self.app_settings.model_config.use_json_format
             or self.app_settings.model_config.use_structured_output
         )
+        self.streaming = azure_chat_open_ai_streaming
 
         self.byo_session_history_callable = byo_session_history_callable
 
@@ -233,7 +234,11 @@ class RunnableFactory:
             input_str = input_str.rsplit(end_delimiter, 1)[0]
         return input_str.strip()
 
-    def call_agent_graph(self, azure_chat_open_ai_streaming=False):
+    def call_agent_graph(self, azure_chat_open_ai_streaming=None):
+        # Use the instance variable if no parameter is provided
+        if azure_chat_open_ai_streaming is None:
+            azure_chat_open_ai_streaming = self.streaming
+            
         # Configure the language model
         use_structured_output = self.app_settings.model_config.use_structured_output
         use_json_format = self.app_settings.model_config.use_json_format

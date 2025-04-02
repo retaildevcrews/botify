@@ -7,6 +7,8 @@ package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.10"
+sseclient-py = "^1.8.0"
+requests = "^2.32.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "*"

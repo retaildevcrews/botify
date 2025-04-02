@@ -11,11 +11,12 @@ import toml
 from api.anonymize_decorator import anonymize
 from api.models import Payload
 from api.utils import invoke_wrapper as invoke_runnable
+from api.utils import stream_response
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Body, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse, JSONResponse
 from opentelemetry import trace
 
 # Configure logging
@@ -147,6 +148,169 @@ class AppFactory:
                 result = await invoke_runnable(input_data, config_data, self.runnable_factory)
                 logger.error(f"Result: {result}")
                 return result
+
+        @self.app.post(
+            "/invoke/stream",
+            summary="Stream responses from the chatbot",
+            description="""This endpoint invokes the chatbot with your message and streams the response.
+            
+IMPORTANT: The input must be properly formatted as a message object with a 'role' and 'content' field.
+Valid roles are: 'user', 'assistant', 'system'.
+
+For most cases, use 'role': 'user' for your messages.""",
+            responses={
+                200: {
+                    "description": "Streaming response",
+                    "content": {"text/event-stream": {"example": "data: {\"content\": \"This is a partial response...\"}\n\n"}}
+                },
+                400: {
+                    "description": "Bad Request",
+                    "content": {
+                        "application/json": {
+                            "example": {"detail": "Invalid input format. Input should contain properly formatted messages."}
+                        }
+                    },
+                },
+                401: {
+                    "description": "Unauthorized",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "detail": "Please provide authorization header in the format : 'Bearer <token>'"
+                            }
+                        }
+                    },
+                },
+                500: {
+                    "description": "Internal Server Error",
+                    "content": {
+                        "application/json": {
+                            "example": {"detail": "Error while processing streaming request: <error_message>"}
+                        }
+                    },
+                },
+            },
+            openapi_extra={
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "examples": {
+                                "Simple question": {
+                                    "summary": "Simple question example",
+                                    "value": {
+                                        "input": {
+                                            "messages": [
+                                                {
+                                                    "role": "user",
+                                                    "content": "Hello, can you help me with a question?"
+                                                }
+                                            ]
+                                        },
+                                        "config": {
+                                            "configurable": {
+                                                "session_id": "unique-session-identifier",
+                                                "user_id": "user-identifier"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        )
+        @anonymize
+        async def stream(
+            request: Request,
+            payload: Payload = Body(
+                ...,
+                openapi_examples={
+                    "user_question": {
+                        "summary": "Basic user question",
+                        "description": "A simple question from a user",
+                        "value": {
+                            "input": {
+                                "messages": [
+                                    {
+                                        "role": "user",
+                                        "content": "Hello, can you help me with a question?"
+                                    }
+                                ]
+                            },
+                            "config": {
+                                "configurable": {
+                                    "session_id": "unique-session-identifier",
+                                    "user_id": "user-identifier"
+                                }
+                            }
+                        }
+                    }
+                }
+            )
+        ):
+            with tracer.start_as_current_span("".join(request.url.path)) as request_span:
+                request_span.set_attribute("source_ip", self.get_source_ip(request))
+                try:
+                    body = await request.body()
+                    body = json.loads(body)
+                    input_data = body.get("input")
+                    config_data = body.get("config")
+                    
+                    # Validate that input contains messages
+                    if not input_data or not isinstance(input_data, dict) or "messages" not in input_data:
+                        raise HTTPException(
+                            status_code=400, 
+                            detail="Invalid input format. Input must contain 'messages' array."
+                        )
+                        
+                    # Validate that messages contain correctly formatted objects
+                    messages = input_data.get("messages", [])
+                    if not messages or not isinstance(messages, list):
+                        raise HTTPException(
+                            status_code=400, 
+                            detail="Messages must be a non-empty array."
+                        )
+                    
+                    for i, message in enumerate(messages):
+                        if not isinstance(message, dict) or "role" not in message or "content" not in message:
+                            raise HTTPException(
+                                status_code=400, 
+                                detail=f"Message at index {i} is invalid. Each message must have 'role' and 'content' fields."
+                            )
+                        
+                        if message.get("role") not in ["user", "assistant", "system"]:
+                            raise HTTPException(
+                                status_code=400, 
+                                detail=f"Message at index {i} has invalid role. Role must be one of: 'user', 'assistant', 'system'."
+                            )
+                    
+                    # Create runnable factory with streaming enabled
+                    streaming_factory = RunnableFactory(
+                        azure_chat_open_ai_streaming=True, 
+                        json_output=self.app_settings.model_config.use_json_format or self.app_settings.model_config.use_structured_output
+                    )
+                    
+                    # Return a streaming response
+                    return StreamingResponse(
+                        stream_response(input_data, config_data, streaming_factory),
+                        media_type="text/event-stream"
+                    )
+                except json.JSONDecodeError:
+                    raise HTTPException(status_code=400, detail="Invalid JSON in request body")
+                except ValueError as e:
+                    if "Unexpected message type" in str(e):
+                        raise HTTPException(
+                            status_code=400, 
+                            detail="Invalid message format. Please ensure messages have proper 'role' and 'content' fields."
+                        )
+                    raise HTTPException(status_code=400, detail=str(e))
+                except Exception as e:
+                    logger.error(f"Error processing streaming request: {str(e)}")
+                    return JSONResponse(
+                        status_code=500,
+                        content={"detail": f"Error while processing streaming request: {str(e)}"}
+                    )
 
 
 # Instantiate the settings and factory
