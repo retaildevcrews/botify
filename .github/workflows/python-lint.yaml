@@ -8,9 +8,8 @@ on:
     types: [opened, reopened, synchronize]
     paths:
       - '**.py'
-    paths-ignore:
-      - '**/tests/**'
-      - '**/*test*'
+      - '!**/tests/**'
+      - '!**/*test*'
 
 jobs:
   lint:
