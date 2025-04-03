@@ -140,8 +140,9 @@ def _validate_chat_history(
     error_message = create_error_message(
         message="Found AIMessages with tool_calls that do not have a corresponding ToolMessage. "
         f"Here are the first few of those tool calls: {tool_calls_without_results[:3]}.\n\n"
-        "Every tool call (LLM requesting to call a tool) in the message history MUST have a corresponding ToolMessage "
-        "(result of a tool invocation to return to the LLM) - this is required by most LLM providers.",
+        "Every tool call (LLM requesting to call a tool) in the message history MUST have a "
+        "corresponding ToolMessage (result of a tool invocation to return to the LLM) - "
+        "this is required by most LLM providers.",
         error_code=ErrorCode.INVALID_CHAT_HISTORY,
     )
     raise ValueError(error_message)
