@@ -16,6 +16,7 @@ from botify_langchain.runnable_factory import RunnableFactory
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+from langserve import add_routes
 from opentelemetry import trace
 
 # Configure logging
@@ -145,8 +146,14 @@ class AppFactory:
                 input_data = body.get("input")
                 config_data = body.get("config")
                 result = await invoke_runnable(input_data, config_data, self.runnable_factory)
-                logger.error(f"Result: {result}")
+                logger.debug(f"Result: {result}")
                 return result
+
+        add_routes(
+            self.app,
+            self.runnable_factory.get_runnable(),
+            path="/langserve",
+            )
 
 
 # Instantiate the settings and factory
