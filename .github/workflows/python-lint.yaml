@@ -1,0 +1,33 @@
+name: Lint Python Code
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - '**.py'
+    paths-ignore:
+      - '**/tests/**'
+      - '**/*test*'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+
+    - name: Install poetry
+      uses: abatilo/actions-poetry@v4
+
+    - name: Install the project dependencies
+      run: poetry install
+
+    - name: Run linters
+      run: make -f python.mk lint
