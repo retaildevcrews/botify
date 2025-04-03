@@ -1,0 +1,39 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "location": {
+            "value": "eastus2"
+        },
+        "azureSearchName": {
+            "value": "botify-search-service"
+        },
+        "azureSearchSKU": {
+            "value": "standard"
+        },
+        "azureSearchReplicaCount": {
+            "value": 1
+        },
+        "azureSearchPartitionCount": {
+            "value": 1
+        },
+        "azureSearchHostingMode": {
+            "value": "default"
+        },
+        "cognitiveServiceName": {
+            "value": "botify-cognitive-service"
+        },
+        "cosmosDBAccountName": {
+            "value": "botify-cosmosdb"
+        },
+        "cosmosDBDatabaseName" : {
+            "value": "botifydb"
+        },
+        "cosmosDBContainerName" : {
+            "value": "botifycontainer"
+        },
+        "blobStorageAccountName": {
+            "value": "botifystorage"
+        }
+    }
+}
