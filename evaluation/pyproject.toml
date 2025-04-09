@@ -11,15 +11,15 @@ packages = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
-promptflow="^1.13.0"
-promptflow-azure="^1.13.0"
+python = ">=3.12,<3.13.dev0"
+promptflow="^1.17.2"
+promptflow-azure="^1.17.2"
 "azure.ai.ml"="^1.18.0"
 promptflow-evals="^0.3.1"
 python-dotenv="^1.0.1"
 bs4="^0.0.2"
 checksumdir="^1.2.0"
-mlflow="^2.14.2"
+mlflow="^2.20.3"
 "azure.ai.resources"="^1.0.0b8"
 pyyaml="^6.0.1"
 "keyrings.alt"="^5.0.1"
@@ -30,6 +30,9 @@ azureml-core="1.57.0"
 azureml-mlflow="1.57.0"
 devtools="^0.12.2"
 
+[tool.poetry.group.dev.dependencies]
+jinja2="^3.1.5"
+cryptography="^44.0.1"
 
 [build-system]
 requires = ["poetry-core"]
