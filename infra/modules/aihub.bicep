@@ -29,7 +29,7 @@ module dependencies 'aihub-dependencies.bicep' = {
     tags: mergedTags
   }
 }
-resource existingCognitiveServicesAccount 'Microsoft.CognitiveServices/accounts@2023-10-01-preview' existing = {
+resource existingCognitiveServicesAccount 'Microsoft.CognitiveServices/accounts@2024-05-01-preview' existing = {
   name: existingCognitiveServicesAccountName != ''
     ? existingCognitiveServicesAccountName
     : dependencies.outputs.cognitiveServicesName

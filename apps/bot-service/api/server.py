@@ -1,26 +1,32 @@
 #!/usr/bin/env python
 
+import json
 import logging
 from pathlib import Path
-from typing import Any, List, TypedDict
+from typing import Any, Dict, TypedDict
 
 import _additional_version_info
 import pydantic
 import toml
+from api.anonymize_decorator import anonymize
+from api.models import Payload
+from api.utils import invoke_wrapper as invoke_runnable
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
-from api.pii_utils import Anonymizer
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
-from langserve import add_routes
+from opentelemetry import trace
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
+tracer = trace.get_tracer(__name__)
+
 
 class Config:
     arbitrary_types_allowed = True
+
 
 # Define Input and Output Schemas
 
@@ -41,11 +47,23 @@ class AppFactory:
         self.app = FastAPI(
             title="Botify API",
             version=self.get_version(),
-            description="An API server utilizing LangChain's Runnable interfaces to create a chatbot that uses an index as grounding material for answering questions."
+            description="""An API server utilizing LangChain's Runnable
+            interfaces to create a chatbot that uses an
+            index as grounding material for answering questions.""",
         )
         self.setup_middleware()
         self.setup_routes()
         logging.getLogger().setLevel(self.app_settings.environment_config.log_level)
+
+    def get_source_ip(self, request: Request) -> str:
+        x_forward = request.headers.get("X-Forwarded-For")
+        x_real_ip = request.headers.get("X-Real-IP")
+        x_azure = request.headers.get("X-Azure-ClientIP")
+        x_origin_ip = request.headers.get("X-Origin-IP")
+        http_client_ip = request.headers.get("HTTP_CLIENT_IP")
+        return ",".join(
+            filter(None, [x_forward, x_real_ip, x_azure, x_origin_ip, http_client_ip, request.client.host])
+        )
 
     def get_version(self) -> str:
         # Load the pyproject.toml file
@@ -53,8 +71,7 @@ class AppFactory:
         pyproject_file_path = current_file_path.parent.parent / "pyproject.toml"
         pyproject = toml.load(pyproject_file_path)
 
-        version = pyproject.get("tool", {}).get(
-            "poetry", {}).get("version", "Version not found")
+        version = pyproject.get("tool", {}).get("poetry", {}).get("version", "Version not found")
         if _additional_version_info.__short_sha__ and _additional_version_info.__build_timestamp__:
             version += f"-{_additional_version_info.__short_sha__}-{
                 _additional_version_info.__build_timestamp__}"
@@ -81,29 +98,55 @@ class AppFactory:
             """Redirect to the API documentation."""
             return RedirectResponse("/docs")
 
-        # Instantiate the anonymizer
-        dependencies: List[Depends] = []
-        if self.app_settings.environment_config.anonymize_input:
-            anonymizer = Anonymizer()
-            dependencies.append(Depends(anonymizer.set_body))
-
         if self.app_settings.add_memory:
             # Add API route for the agent
-            runnable = self.runnable_factory.get_runnable().with_types(
-                input_type=Input, output_type=Output
-            )
+            self.runnable_factory.get_runnable().with_types(input_type=Input, output_type=Output)
         else:
-            runnable = self.runnable_factory.get_runnable(include_history=False).with_types(
+            self.runnable_factory.get_runnable(include_history=False).with_types(
                 input_type=Input, output_type=Output
             )
-        # Add API route for the agent
-        add_routes(
-            self.app,
-            runnable,
-            path="/agent",
-            dependencies=dependencies,
-            enabled_endpoints=["invoke", "stream_events", "playground"],
+
+        @self.app.post(
+            "/invoke",
+            response_model=Dict[str, Any],
+            summary="Invoke the runnable",
+            description="This endpoint invokes the runnable with the provided input and configuration.",
+            responses={
+                200: {
+                    "description": "Successful invocation",
+                    "content": {"application/json": {"example": {"result": "The result of the runnable"}}},
+                },
+                401: {
+                    "description": "Unauthorized",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "detail": "Please provide authorization header in the format : 'Bearer <token>'"
+                            }
+                        }
+                    },
+                },
+                500: {
+                    "description": "Internal Server Error",
+                    "content": {
+                        "application/json": {
+                            "example": {"detail": "Error while decoding token: <error_message>"}
+                        }
+                    },
+                },
+            },
         )
+        @anonymize
+        async def invoke(request: Request, payload: Payload):
+            with tracer.start_as_current_span("".join(request.url.path)) as request_span:
+                request_span.set_attribute("source_ip", self.get_source_ip(request))
+                body = await request.body()
+                body = json.loads(body)
+                input_data = body.get("input")
+                config_data = body.get("config")
+                result = await invoke_runnable(input_data, config_data, self.runnable_factory)
+                logger.error(f"Result: {result}")
+                return result
 
 
 # Instantiate the settings and factory

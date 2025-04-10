@@ -1,7 +1,6 @@
 import os
 import unittest
 
-import pandas as pd
 from evaluators.coherence import CoherenceEvaluator
 from promptflow.core import AzureOpenAIModelConfiguration
 from promptflow.evals.evaluate import evaluate

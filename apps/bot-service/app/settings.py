@@ -4,6 +4,7 @@ from typing import Dict, Optional
 
 import pydantic
 from app.environment_config import EnvironmentConfig
+from common import Singleton
 from pydantic import RootModel
 
 
@@ -14,18 +15,19 @@ class Config:
 @pydantic.dataclasses.dataclass(config=Config)
 class ModelConfig:
     menu_search_tool_topk: int = 10
-    max_tokens: int = 800
+    max_tokens: int = 550
     temperature: float = 0.1
     top_p: float = 0.5
     logit_bias: Dict[int, int] = field(default_factory=dict)
-    use_structured_output: bool = False
-    use_json_format: bool = True
+    timeout: float = 30.0
+    max_retries: int = 3
+    use_structured_output: bool = True
+    use_json_format: bool = False
 
 
 @pydantic.dataclasses.dataclass(config=Config)
-class AppSettings:
-    environment_config: Optional[EnvironmentConfig] = field(
-        default=None)  # Useful in unit tests
+class AppSettings(metaclass=Singleton):
+    environment_config: Optional[EnvironmentConfig] = field(default=None)  # Useful in unit tests
 
     # The name of the schema file that will be used to validate the final JSON output that the bot generates
     json_validation_schema_name = "response_schema.json"
@@ -33,6 +35,9 @@ class AppSettings:
     # Format in which the LLM output will be generated
     selected_format_config: str = "json"
     format_config_paths = {
+        "text": {
+            "prompt_template_paths": ["common.md", "history_marker.md"],
+        },
         "json_schema": {
             "prompt_template_paths": ["common.md", "structured_output.md", "history_marker.md"],
             "response_schema_name": "response_schema.json",
@@ -40,19 +45,29 @@ class AppSettings:
         "json": {
             "prompt_template_paths": ["common.md", "json_output.md", "history_marker.md"],
             "response_schema_name": "response_schema.json",
-        }
+        },
+        "yaml": {
+            "prompt_template_paths": ["common.md", "yaml_output.md", "history_marker.md"],
+        },
     }
     prompt_template_paths = format_config_paths[selected_format_config]["prompt_template_paths"]
-    response_schema_name = format_config_paths[selected_format_config]["response_schema_name"]
+
+    response_schema_name = format_config_paths[selected_format_config].get("response_schema_name", "")
 
     # Default model configuration can be seen in the ModelConfig class
     model_config: ModelConfig = field(default_factory=ModelConfig)
-    # When this is set to true, the agent will attempt to store only the display message and not entire bot response
-    optimize_history: bool = True
+    # When this is set to true, the agent will attempt to store:
+    # only the display message and not entire bot response
+    history_limit: int = 10
     search_tool_topk: int = 10
+    search_tool_max_results: int = 10
     search_similarity_field: str = "summary"
     search_tool_reranker_threshold: int = 1
     item_detail_reranker_threshold: int = 1
+    max_turn_count: int = 30
+    invoke_retry_count: int = 3
+    invoke_question_character_limit: int = 1000
+    topic_model_max_completion_tokens = 100
     # Adds memory to the agent so that it can engage in multi-turn conversations
     add_memory: bool = True
     load_environment_config: bool = True
@@ -80,6 +95,7 @@ class AppSettings:
 
     # Used to turn on or off content safety checks - config is in environment_config
     content_safety_enabled: bool = True
+    content_safety_threshold: int = 2
     # Use this section to turn on or off banned topic checks,
     # this is a custom tool that uses LLM to classify the topic of the question
     banned_topics: list[str] = field(
@@ -108,6 +124,5 @@ class AppSettings:
         return json
 
     def get_config_hash(self):
-        hash_value = hashlib.sha224(
-            self.get_config().encode("utf-16")).hexdigest()
+        hash_value = hashlib.sha224(self.get_config().encode("utf-16")).hexdigest()
         return hash_value

@@ -5,7 +5,6 @@
 import os
 
 import numpy as np
-
 from promptflow._utils.async_utils import async_run_allowing_running_loop
 from promptflow.core import AsyncPrompty, AzureOpenAIModelConfiguration
 
@@ -23,31 +22,29 @@ class _AsyncCoherenceEvaluator:
         if model_config.api_version is None:
             model_config.api_version = "2024-02-15-preview"
 
-        prompty_model_config = {
-            "configuration": model_config, "parameters": {"extra_headers": {}}}
+        prompty_model_config = {"configuration": model_config, "parameters": {"extra_headers": {}}}
 
         # Handle "RuntimeError: Event loop is closed" from httpx AsyncClient
         # https://github.com/encode/httpx/discussions/2959
-        prompty_model_config["parameters"]["extra_headers"].update(
-            {"Connection": "close"})
+        prompty_model_config["parameters"]["extra_headers"].update({"Connection": "close"})
 
         if USER_AGENT and isinstance(model_config, AzureOpenAIModelConfiguration):
-            prompty_model_config["parameters"]["extra_headers"].update(
-                {"x-ms-useragent": USER_AGENT})
+            prompty_model_config["parameters"]["extra_headers"].update({"x-ms-useragent": USER_AGENT})
 
         current_dir = os.path.dirname(__file__)
         prompty_path = os.path.join(current_dir, self.PROMPTY_FILE)
-        self._flow = AsyncPrompty.load(
-            source=prompty_path, model=prompty_model_config)
+        self._flow = AsyncPrompty.load(source=prompty_path, model=prompty_model_config)
 
     async def __call__(self, *, question: str, answer: str, **kwargs):
         try:
             # Run the evaluation flow
-            llm_output = await self._flow(question=question, answer=answer, timeout=self.LLM_CALL_TIMEOUT, **kwargs)
-            score = llm_output['score']
-            reason = llm_output['reason']
+            llm_output = await self._flow(
+                question=question, answer=answer, timeout=self.LLM_CALL_TIMEOUT, **kwargs
+            )
+            score = llm_output["score"]
+            reason = llm_output["reason"]
         except Exception as e:
-            score = np.NaN
+            score = np.nan
             reason = f"Error when running evaluator: {
                 e} LLM Response is: {llm_output}"
         return {"score": score, "reason": reason}
@@ -92,7 +89,9 @@ class CoherenceEvaluator:
         :return: The coherence score.
         :rtype: Dict[str, float]
         """
-        return async_run_allowing_running_loop(self._async_evaluator, question=question, answer=answer, **kwargs)
+        return async_run_allowing_running_loop(
+            self._async_evaluator, question=question, answer=answer, **kwargs
+        )
 
     def _to_async(self):
         return self._async_evaluator

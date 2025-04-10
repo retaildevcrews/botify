@@ -1,0 +1,37 @@
+[tool.poetry]
+name = "Botify"
+authors = []
+description = "Generative AI chatbot that leverages Azure Cloud Services, Microsoft Open-Source, and other Open-Source technologies to create a question/answer bot."
+version = "1.0.0"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "*"
+black = {extras = ["jupyter"], version = "*"}
+isort = "*"
+flake8 = "*"
+pytest-cov = "*"
+
+[tool.black]
+line_length = 110
+exclude = '''.*test_.*'''
+
+[tool.isort]
+# vertical hanging indent
+multi_line_output = 3
+skip_glob = ["*/tests/*"]
+
+# Includes a trailing comma on multi line imports that include parentheses
+include_trailing_comma = true
+
+line_length = 110
+
+[tool.coverage.run]
+omit = [".*", "*/site-packages/*", "tests/*"]
+
+[tool.coverage.report]
+omit = ["tests/*"]
+fail_under = 70

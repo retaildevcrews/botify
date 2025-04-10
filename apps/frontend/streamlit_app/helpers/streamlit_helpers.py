@@ -1,4 +1,3 @@
-import json
 import re
 import uuid
 
@@ -12,6 +11,7 @@ from streamlit_app import api_key, api_url_version
 
 def get_logger(name):
     from streamlit.logger import get_logger
+
     return get_logger(name)
 
 
@@ -37,13 +37,15 @@ def configure_page(title, icon):
 def set_page_config(title, icon):
 
     frontend_version, backend_version = get_versions()
-    st.set_page_config(page_title=title,
-                       page_icon=icon,
-                       layout="wide",
-                       menu_items={
-                           'about': f'''**Front-End Version:** {frontend_version}\n\n**Back-End Version:** {backend_version}'''
-                       }
-                       )
+    st.set_page_config(
+        page_title=title,
+        page_icon=icon,
+        layout="wide",
+        menu_items={
+            "about": f"""**Front-End Version:** {frontend_version}\n\n
+                         **Back-End Version:** {backend_version}"""
+        },
+    )
 
 
 def get_versions():
@@ -51,12 +53,16 @@ def get_versions():
     pyproject = toml.load("pyproject.toml")
 
     # Extract the version, short_sha, and build_timestamp
-    version = pyproject.get("tool", {}).get(
-        "poetry", {}).get("version", "Version not found")
+    version = pyproject.get("tool", {}).get("poetry", {}).get("version", "Version not found")
 
     if _additional_version_info.__short_sha__ and _additional_version_info.__build_timestamp__:
-        version = version + "-" + _additional_version_info.__short_sha__ + \
-            "-" + _additional_version_info.__build_timestamp__
+        version = (
+            version
+            + "-"
+            + _additional_version_info.__short_sha__
+            + "-"
+            + _additional_version_info.__build_timestamp__
+        )
 
     backend_version = _private_get_api_version(api_url_version)
     return version, backend_version
@@ -66,11 +72,9 @@ def get_or_create_ids():
     """Generate or retrieve session and user IDs."""
     if "session_id" not in st.session_state:
         st.session_state["session_id"] = str(uuid.uuid4())
-        logger.info("Created new session_id: %s",
-                    st.session_state["session_id"])
+        logger.info("Created new session_id: %s", st.session_state["session_id"])
     else:
-        logger.info("Found existing session_id: %s",
-                    st.session_state["session_id"])
+        logger.info("Found existing session_id: %s", st.session_state["session_id"])
 
     if "user_id" not in st.session_state:
         st.session_state["user_id"] = str(uuid.uuid4())
@@ -86,8 +90,22 @@ def consume_api(url, user_query, session_id, user_id):
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
-    config = {"configurable": {"session_id": session_id, "user_id": user_id}}
-    payload = {"input": {"question": user_query}, "config": config}
+    messages = []
+
+    if "chat_history" not in st.session_state:
+        messages.append({"role": "user", "content": user_query})
+    else:
+        for message in st.session_state.chat_history:
+            if isinstance(message, AIMessage):
+                messages.append({"role": "ai", "content": message.content})
+            elif isinstance(message, HumanMessage):
+                messages.append({"role": "user", "content": message.content})
+    logger.error("Current contents of chat history prior to sending request is: %s", messages)
+
+    payload = {
+        "input": {"messages": messages},
+        "config": {"configurable": {"session_id": session_id, "user_id": user_id}},
+    }
 
     logger.info(
         "Sending API request to %s with session_id: %s and user_id: %s",
@@ -95,59 +113,21 @@ def consume_api(url, user_query, session_id, user_id):
         session_id,
         user_id,
     )
-    logger.debug("Payload: %s", payload)
+    logger.error("Payload: %s", payload)
 
-    with requests.post(url, json=payload, headers=headers, stream=True) as response:
+    with requests.post(url, json=payload, headers=headers) as response:
         try:
             # Raises an HTTPError if the response is not 200.
             response.raise_for_status()
             logger.info("Received streaming response from API.")
-            for line in response.iter_lines():
-                if line:  # Check if the line is not empty.
-                    decoded_line = line.decode("utf-8")
-                    logger.debug("Received line: %s", decoded_line)
-                    if decoded_line.startswith("data: "):
-                        # Extract JSON data following 'data: '.
-                        json_data = decoded_line[len("data: "):]
-                        try:
-                            data = json.loads(json_data)
-                            if "event" in data:
-                                event_type = data["event"]
-                                logger.debug("Event type: %s", event_type)
-                                if event_type == "on_chat_model_stream":
-                                    content = data["data"]["chunk"]["content"]
-                                    if content:  # Ensure content is not None or empty.
-                                        # Yield content with paragraph breaks.
-                                        yield content
-                                elif event_type == "on_tool_start" or event_type == "on_tool_end":
-                                    pass
-                            elif "content" in data:
-                                # Yield immediate content with added Markdown for line breaks.
-                                yield f"{data['content']}\n\n"
-                            elif "steps" in data:
-                                yield f"{data['steps']}\n\n"
-                            elif "output" in data:
-                                yield f"{data['output']}\n\n"
-                        except json.JSONDecodeError as e:
-                            logger.error("JSON decoding error: %s", e)
-                            yield f"JSON decoding error: {e}\n\n"
-                    # Decoding if using invoke endpoint
-                    elif decoded_line.startswith("{\"output\":"):
-                        json_data = json.loads(decoded_line)
-                        yield f"{json_data['output']['output']}\n\n"
-                    elif decoded_line.startswith("event: "):
-                        pass
-                    elif ": ping" in decoded_line:
-                        pass
-                    else:
-                        # Adding line breaks for plain text lines.
-                        yield f"{decoded_line}\n\n"
+
+            return response
         except requests.exceptions.HTTPError as err:
             logger.error("HTTP Error: %s", err)
-            yield f"HTTP Error: {err}\n\n"
+            return response
         except Exception as e:
             logger.error("An error occurred: %s", e)
-            yield f"An error occurred: {e}\n\n"
+            return "error"
 
 
 def _private_get_api_version(url):
@@ -156,10 +136,7 @@ def _private_get_api_version(url):
     if api_key:
         headers["Ocp-Apim-Subscription-Key"] = f"{api_key}"
 
-    logger.info(
-        "Sending API request to %s",
-        url
-    )
+    logger.info("Sending API request to %s", url)
     logger.debug("url: %s", url)
     with requests.get(url, headers=headers) as response:
         try:
@@ -173,8 +150,7 @@ def _private_get_api_version(url):
             logger.error("HTTP Error while retrieving API version: %s", err)
             return None
         except Exception as e:
-            logger.error(
-                "An error occurred while retrieving API version: %s", e)
+            logger.error("An error occurred while retrieving API version: %s", e)
             return None
 
 
@@ -217,6 +193,5 @@ def extract_voice_summary_and_text(input_string):
         text = match.group(2)
         return voice_summary, text
     else:
-        logger.warning(
-            "No match found for pattern with input: %s", repr(input_string))
+        logger.warning("No match found for pattern with input: %s", repr(input_string))
         return None, None

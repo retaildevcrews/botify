@@ -6,6 +6,8 @@ The intent of your document to guide users in deploying the necessary Azure reso
 2. Cognitive Services
 3. CosmosDB
 4. Storage account
+5. Azure Open AI
+6. Azure AI Content Safety
 
 Note: (Pre-requisite) You need to have an Azure OpenAI service already created
 

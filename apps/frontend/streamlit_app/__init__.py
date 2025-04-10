@@ -10,9 +10,8 @@ def get_env_var(var_name, default_value=None, required=True):
 
 
 # Set environment variables for LangChain
-# Using invoke instead of stream_events as it's currenly blocked by opentelemetry issue: https://github.com/traceloop/openllmetry/issues/1101
 api_base_url = get_env_var("FAST_API_SERVER", required=True)
-api_url = f"{api_base_url}/agent/invoke"
+api_url = f"{api_base_url}/invoke"
 
 api_url_version = f"{api_base_url}/version"
 
@@ -31,9 +30,7 @@ openai_api_key = get_env_var("AZURE_OPENAI_API_KEY", required=True)
 speech_engine = get_env_var("SPEECH_ENGINE", required=True).lower()
 
 if speech_engine not in ["azure", "openai"]:
-    raise EnvironmentError(
-        "Environment variable 'SPEECH_ENGINE' must be either 'azure' or 'openai'."
-    )
+    raise EnvironmentError("Environment variable 'SPEECH_ENGINE' must be either 'azure' or 'openai'.")
 
 if speech_engine == "azure":
     azure_speech_key = get_env_var("AZURE_SPEECH_KEY", required=True)
@@ -49,7 +46,5 @@ elif speech_engine == "openai":
     azure_speech_region = None
     azure_speech_voice_name = None
     whisper_model_name = get_env_var("AZURE_OPENAI_WHISPER_MODEL_NAME", required=True)
-    tts_voice_name = get_env_var(
-        "AZURE_OPENAI_TTS_VOICE_NAME", default_value="nova", required=False
-    )
+    tts_voice_name = get_env_var("AZURE_OPENAI_TTS_VOICE_NAME", default_value="nova", required=False)
     tts_model_name = get_env_var("AZURE_OPENAI_TTS_MODEL_NAME", required=True)
