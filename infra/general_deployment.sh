@@ -40,11 +40,7 @@ COGNITIVE_SERVICES_KEY=$(az cognitiveservices account keys list --name "${COGNIT
 CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv)
 CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv)
 
-echo "--------------------------"
-echo -e "Output: ${AZURE_BLOB_STORAGE_CONNECTION_STRING}"
-echo "--------------------------"
-
-cat <<EOF > ../apps/credentials/.env
+cat <<EOF > ../apps/credentials.env
 # Don't mess with this unless you really know what you are doing
 AZURE_SEARCH_API_VERSION="2024-05-01-preview"
 AZURE_OPENAI_API_VERSION="2024-08-01-preview"
