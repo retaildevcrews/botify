@@ -60,6 +60,16 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   }
 }
 
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'app-insights'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
+  }
+}
+
 resource appServicePlan 'Microsoft.Web/serverfarms@2021-03-01' = {
   name: appPlanName
   location: location
@@ -68,6 +78,15 @@ resource appServicePlan 'Microsoft.Web/serverfarms@2021-03-01' = {
     capacity: 1
   }
 }
+/*
+resource appInsightsAccessRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(appServicePlan.id, 'MonitoringReader') 
+  scope: appInsights
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4d97b98b-1d4f-4787-a291-c67834d212e7')
+    principalId: appServicePlan.identity.principalId
+  }
+}*/
 
 resource diagnosticLogs 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = {
   name: appServicePlan.name
@@ -192,6 +211,8 @@ resource contentsafetyaccount 'Microsoft.CognitiveServices/accounts@2024-10-01' 
   }
 }
 
+
+
 resource cosmosDBAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
   name: cosmosDBAccountName
   location: location
@@ -283,6 +304,7 @@ output azureSearchEndpoint string = 'https://${azureSearchName}.search.windows.n
 
 output appPlanName string = appPlanName
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspace
+output appInsightsConnectionString string = appInsights.properties.ConnectionString
 
 output cosmosDBDatabaseName string = cosmosDBDatabaseName
 output cosmosDBAccountEndpoint string = cosmosDBAccount.properties.documentEndpoint

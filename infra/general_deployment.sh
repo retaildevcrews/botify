@@ -39,6 +39,8 @@ COGNITIVE_SERVICES_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" -
 COGNITIVE_SERVICES_KEY=$(az cognitiveservices account keys list --name "${COGNITIVE_SERVICES_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1')
 CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv)
 CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv)
+APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv)
+
 
 cat <<EOF > ../apps/credentials.env
 # Don't mess with this unless you really know what you are doing
@@ -77,7 +79,7 @@ LOG_LEVEL=INFO
 
 CONTENT_SAFETY_ENDPOINT="${CONTENT_SAFETY_ENDPOINT}"
 CONTENT_SAFETY_KEY="${CONTENT_SAFETY_KEY}"
-APPLICATIONINSIGHTS_CONNECTION_STRING="<app insights conn>"
+APPLICATIONINSIGHTS_CONNECTION_STRING="${APPLICATIONINSIGHTS_CONNECTION_STRING}"
 OPEN_TELEMETRY_COLLECTOR_ENDPOINT="<collector endpoint with port>" # Telemetry disabled if not set. Set to "http://otelcol:4318" for local telemetry with docker compose
 
 CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Determines if pulling the configuration from the environment or from Azure KeyVault.Default is ENV
