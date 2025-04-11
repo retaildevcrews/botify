@@ -82,7 +82,7 @@ CONTENT_SAFETY_KEY="${CONTENT_SAFETY_KEY}"
 APPLICATIONINSIGHTS_CONNECTION_STRING="${APPLICATIONINSIGHTS_CONNECTION_STRING}"
 OPEN_TELEMETRY_COLLECTOR_ENDPOINT="<collector endpoint with port>" # Telemetry disabled if not set. Set to "http://otelcol:4318" for local telemetry with docker compose
 
-CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Determines if pulling the configuration from the environment or from Azure KeyVault.Default is ENV
+CONFIG_SOURCE='ENV_VAR' # Determines if pulling the configuration from the environment or from Azure KeyVault.Default is ENV
 
 # Only needed if CONFIG_SOURCE is set to KEY_VAULT
 AZURE_KEY_VAULT_URL='<Azure Keyvault URL>'
