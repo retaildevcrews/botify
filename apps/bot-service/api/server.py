@@ -120,9 +120,7 @@ class AppFactory:
                     "description": "Unauthorized",
                     "content": {
                         "application/json": {
-                            "example": {
-                                "detail": "Please provide authorization header in the format : 'Bearer <token>'"
-                            }
+                            "example": {"detail": "Please provide authorization header as: 'Bearer <token>'"}
                         }
                     },
                 },
