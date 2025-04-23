@@ -81,9 +81,43 @@ param modeldeploymentname string = 'gpt-4o'
 
 param appPlanName string = 'asp-${uniqueString(resourceGroup().id)}'
 param logAnalyticsWorkspace string = 'la-${uniqueString(resourceGroup().id)}'
+param keyvaultName string = 'kv-${uniqueString(resourceGroup().id)}'
 
 var cognitiveServiceSKU = 'S0'
 var appPlanSkuName = 'S1'
+
+resource symbolicname 'Microsoft.KeyVault/vaults@2024-12-01-preview' = {
+  name: keyvaultName
+  location: location
+  properties: {
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    tenantId: subscription().tenantId
+    createMode: 'default'
+    publicNetworkAccess: 'Enabled' 
+    accessPolicies: [
+      {
+        tenantId: subscription().tenantId
+        objectId: subscription().id
+        permissions: {
+          keys: [
+            'get'
+            'list'
+            'create'
+          ]
+          secrets: [
+            'get'
+            'list'
+            'set'
+          ]
+        }
+      }
+    ]
+  }
+}
+
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsWorkspace

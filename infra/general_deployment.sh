@@ -3,12 +3,37 @@
 RESOURCE_GROUP_NAME="rg-botify"
 LOCATION="eastus2"
 DEPLOYMENT_NAME="botify-dev"
+SUBSCRIPTION_ID="/subscriptions/$(az account show --query id -o tsv)"
+
+echo "--------------------------"
+echo -e "Creating service principal for botify-dev"
+echo "--------------------------"
+
+SERVICE_PRINCIPAL_CREDENTIALS=$(az ad sp create-for-rbac --name botify-dev --role Contributor --scopes $SUBSCRIPTION_ID)
+SERVICE_PRINCIPAL_APP_ID=$(echo "$SERVICE_PRINCIPAL_CREDENTIALS" | jq -r '.appId')
+SERVICE_PRINCIPAL_TENANT_ID=$(echo "$SERVICE_PRINCIPAL_CREDENTIALS" | jq -r '.tenant')
+SERVICE_PRINCIPAL_PASSWORD=$(echo "$SERVICE_PRINCIPAL_CREDENTIALS" | jq -r '.password')
+
+
+# Check if there is an open session in Azure CLI
+if az account show > /dev/null 2>&1; then
+    echo "An active Azure CLI session was detected. Logging out..."
+    az logout
+else
+    echo "No active Azure CLI session detected."
+fi
+
+echo "--------------------------"
+echo -e "Logging in to Azure CLI using the service principal"
+echo "--------------------------"
+# Log in to Azure CLI using the service principal
+az login --service-principal --username ${SERVICE_PRINCIPAL_APP_ID} --password ${SERVICE_PRINCIPAL_PASSWORD} --tenant ${SERVICE_PRINCIPAL_TENANT_ID}
 
 # Create the resource group
 az group create --name $RESOURCE_GROUP_NAME --location $LOCATION
 
 echo "--------------------------"
-echo -e "Creating resource group: ${RESOURCE_GROUP_NAME} in location: ${LOCATION}"
+echo -e "Resource group: ${RESOURCE_GROUP_NAME} created in location: ${LOCATION}"
 echo "--------------------------"
 
 # Create required resources
@@ -101,3 +126,4 @@ EOF
 echo "--------------------------"
 echo -e "Environment file created with the outputs of the deployment"
 echo "--------------------------"
+
