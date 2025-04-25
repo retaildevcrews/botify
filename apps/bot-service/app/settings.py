@@ -4,7 +4,6 @@ from typing import Dict, Optional
 
 import pydantic
 from app.environment_config import EnvironmentConfig
-from common import Singleton
 from pydantic import RootModel
 
 
@@ -26,7 +25,7 @@ class ModelConfig:
 
 
 @pydantic.dataclasses.dataclass(config=Config)
-class AppSettings(metaclass=Singleton):
+class AppSettings():
     environment_config: Optional[EnvironmentConfig] = field(default=None)  # Useful in unit tests
 
     # The name of the schema file that will be used to validate the final JSON output that the bot generates

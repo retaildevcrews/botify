@@ -45,7 +45,6 @@ def anonymize(func: Callable):
                 )
         except Exception as e:
             logger.exception(f"Error occurred while anonymizing input: {e}")
-            # question = body["input"].get("messages")[-1]["content"]
             return JSONResponse(
                 status_code=HTTPStatus.OK.value,
                 content=GENERIC_ERROR_MESSAGE,
