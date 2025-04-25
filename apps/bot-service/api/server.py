@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, Dict, TypedDict
+from typing import Any, AsyncIterator, Dict, TypedDict
 
 import _additional_version_info
 import pydantic
@@ -15,7 +15,11 @@ from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, StreamingResponse
+try:
+    from sse_starlette import EventSourceResponse
+except ImportError:
+    EventSourceResponse = Any
 from opentelemetry import trace
 
 # Configure logging
@@ -38,6 +42,13 @@ class Input(TypedDict):
 @pydantic.dataclasses.dataclass(config=Config)
 class Output:
     output: Any
+
+
+def _strip_internal_keys(metadata: Dict[str, Any]) -> Dict[str, Any]:
+    """Strip out internal metadata keys that should not be sent to the client.
+    These keys are defined to be any key that starts with "__".
+    """
+    return {k: v for k, v in metadata.items() if not k.startswith("__")}
 
 
 class AppFactory:
@@ -145,6 +156,50 @@ class AppFactory:
                 result = await invoke_runnable(input_data, config_data, self.runnable_factory)
                 logger.error(f"Result: {result}")
                 return result
+
+        @self.app.post(
+            "/agent/stream_events",
+            response_model=Output,
+            summary="Invoke the runnable using add_routes",
+            description="This endpoint invokes the runnable with the provided input and configuration using add_routes.",
+            responses={
+                200: {
+                    "description": "Successful invocation",
+                    "content": {
+                        "application/json": {
+                            "example": {
+                                "result": "The result of the runnable"
+                            }
+                        }
+                    }
+                },
+            }
+        )
+        @anonymize
+        async def stream_events(request: Request, payload: Payload):
+            async def event_stream():
+                body = await request.body()
+                body = json.loads(body)
+                input_data = body.get("input")
+                config_data = body.get("config")
+                async for event in self.runnable_factory.get_runnable().astream_events(input_data, config_data, version="v2", include_types="chat_model"):
+                    # Unpack AIMessageChunk if present
+                    event_type=event.get('event')
+                    logger.debug("Event: %s", str(event))
+                    data=event.get('data', {})
+                    metadata=event.get("metadata")
+                    logger.debug("Metadata: %s", str(metadata))
+                    if metadata:
+                        node=metadata.get('langgraph_node')
+                        logger.debug("langgraph_node: %s", node)
+                    chunk=data.get('chunk')
+
+                    if chunk:
+                        content=chunk.content
+                        if event_type == "on_chat_model_stream" and content and node and node=="call_model":
+                            logger.debug(f"Event that chunk came from: {event}")
+                            yield content
+            return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
 # Instantiate the settings and factory
