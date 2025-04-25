@@ -150,19 +150,13 @@ class AppFactory:
             "/agent/stream_events",
             response_model=Output,
             summary="Invoke the runnable using add_routes",
-            description="This endpoint invokes the runnable with the provided input and configuration using add_routes.",
+            description="This endpoint invokes the runnable with provided input and config via add_routes.",
             responses={
                 200: {
                     "description": "Successful invocation",
-                    "content": {
-                        "application/json": {
-                            "example": {
-                                "result": "The result of the runnable"
-                            }
-                        }
-                    }
+                    "content": {"application/json": {"example": {"result": "The result of the runnable"}}},
                 },
-            }
+            },
         )
         @anonymize
         async def stream_events(request: Request, payload: Payload):
@@ -171,23 +165,26 @@ class AppFactory:
                 body = json.loads(body)
                 input_data = body.get("input")
                 config_data = body.get("config")
-                async for event in self.runnable_factory.get_runnable().astream_events(input_data, config_data, version="v2", include_types="chat_model"):
+                async for event in self.runnable_factory.get_runnable().astream_events(
+                    input_data, config_data, version="v2", include_types="chat_model"
+                ):
                     # Unpack AIMessageChunk if present
-                    event_type=event.get('event')
+                    event_type = event.get("event")
                     logger.debug("Event: %s", str(event))
-                    data=event.get('data', {})
-                    metadata=event.get("metadata")
+                    data = event.get("data", {})
+                    metadata = event.get("metadata")
                     logger.debug("Metadata: %s", str(metadata))
                     if metadata:
-                        node=metadata.get('langgraph_node')
+                        node = metadata.get("langgraph_node")
                         logger.debug("langgraph_node: %s", node)
-                    chunk=data.get('chunk')
+                    chunk = data.get("chunk")
 
                     if chunk:
-                        content=chunk.content
-                        if event_type == "on_chat_model_stream" and content and node and node=="call_model":
+                        content = chunk.content
+                        if event_type == "on_chat_model_stream" and content and node and node == "call_model":
                             logger.debug(f"Event that chunk came from: {event}")
                             yield content
+
             return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 
