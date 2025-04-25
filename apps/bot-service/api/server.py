@@ -3,7 +3,7 @@
 import json
 import logging
 from pathlib import Path
-from typing import Any, AsyncIterator, Dict, TypedDict
+from typing import Any, Dict, TypedDict
 
 import _additional_version_info
 import pydantic
@@ -16,10 +16,6 @@ from botify_langchain.runnable_factory import RunnableFactory
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
-try:
-    from sse_starlette import EventSourceResponse
-except ImportError:
-    EventSourceResponse = Any
 from opentelemetry import trace
 
 # Configure logging
@@ -42,13 +38,6 @@ class Input(TypedDict):
 @pydantic.dataclasses.dataclass(config=Config)
 class Output:
     output: Any
-
-
-def _strip_internal_keys(metadata: Dict[str, Any]) -> Dict[str, Any]:
-    """Strip out internal metadata keys that should not be sent to the client.
-    These keys are defined to be any key that starts with "__".
-    """
-    return {k: v for k, v in metadata.items() if not k.startswith("__")}
 
 
 class AppFactory:
