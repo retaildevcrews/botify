@@ -1,7 +1,11 @@
 import logging
 
-from app.messages import GENERIC_ERROR_MESSAGE, CHARACTER_LIMIT_ERROR_MESSAGE, MAX_TURNS_EXCEEDED_ERROR_MESSAGE
 from app.exceptions import InputTooLongError, MaxTurnsExceededError
+from app.messages import (
+    CHARACTER_LIMIT_ERROR_MESSAGE,
+    GENERIC_ERROR_MESSAGE,
+    MAX_TURNS_EXCEEDED_ERROR_MESSAGE,
+)
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 

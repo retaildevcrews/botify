@@ -25,7 +25,7 @@ class ModelConfig:
 
 
 @pydantic.dataclasses.dataclass(config=Config)
-class AppSettings():
+class AppSettings:
     environment_config: Optional[EnvironmentConfig] = field(default=None)  # Useful in unit tests
 
     # The name of the schema file that will be used to validate the final JSON output that the bot generates
