@@ -1,0 +1,168 @@
+/* App.css */
+
+:root {
+  --dark-background-color: #2c2c2c;
+  --light-background-color: #f0f0f0;
+  --accent-color: #1190b4;
+  --dark-text-color: lightgrey;
+  --light-text-color: #676767;
+  --accent-text: white;
+  --dark-messages-container: #2c2c2c;
+  --light-messages-container: #f0f0f0;
+  --dark-chat-response-background: #3a3a3a;
+  --light-chat-response-background: #e6e6e6;
+
+
+  /* Set default colors to light mode */
+  --background-color: var(--light-background-color);
+  --text-color: var(--light-text-color);
+  --messages-container: var(--light-messages-container);
+  --chat-response-background: var(--light-chat-response-background);
+
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background-color); /* Slightly lighter than chat container */
+  color: var(--text-color); /* Light text */
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}
+
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  background-color: var(--background-color); /* Match body background */
+  color: var(--dark-text-color); /* Light text */
+}
+
+.logo {
+  height: 6em;
+  padding: 1.5em;
+  will-change: filter;
+  transition: filter 300ms;
+}
+.logo:hover {
+  filter: drop-shadow(0 0 2em var(--accent-color));
+}
+.logo.react:hover {
+  filter: drop-shadow(0 0 2em var(--accent-color));
+}
+
+@keyframes logo-spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  a:nth-of-type(2) .logo {
+    animation: logo-spin infinite 20s linear;
+  }
+}
+
+.card {
+  padding: 2em;
+}
+
+.read-the-docs {
+  color: #888;
+}
+
+/* Styling for the header and toggle switch */
+.header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background-color: var(--accent-color);
+  color: var(--accent-text);
+  font-size: 1.25rem;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+
+
+.toggle-container {
+  display: flex;
+  align-items: center;
+  margin-right: 32px;
+}
+
+.toggle-label {
+  margin-right: 8px;
+  font-size: 0.9rem;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 20px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: 0.4s;
+  border-radius: 20px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(14px);
+}
+.drawer h2 {
+  color: var(--text-color);
+}
+
+.close-icon {
+  color: var(--text-color);
+}
+
+.action-bar button {
+  color: var(--text-color);
+}

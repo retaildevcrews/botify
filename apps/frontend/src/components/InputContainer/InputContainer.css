@@ -1,0 +1,54 @@
+.input-container {
+  display: flex;
+  flex-direction: column;
+  height: 135px;
+  min-height: 135px;
+  max-height: 135px;
+  width: 95%;
+  margin: 0;
+  background-color: var(--background-color);
+  border: 2px solid var(--accent-color);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
+.input-container textarea {
+  flex: none;
+  height: 85px; /* Adjusted height for textarea */
+  border: none;
+  outline: none;
+  font-size: 16px;
+  padding: 5px; /* Reduced padding */
+  background-color: var(--background-color);
+  color: var(--text-color);
+  resize: none; /* Disable resizing */
+  margin: 5px; /* Add margin to prevent corners from bleeding */
+}
+
+.input-container textarea::placeholder {
+  color: var(--text-color);
+}
+
+.action-bar {
+  display: flex;
+  justify-content: space-between; /* Align buttons far left and far right */
+  align-items: center;
+  height: 20px; /* Reduced height by 10px */
+  padding: 0 5px; /* Reduced padding */
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+.action-bar button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-bar button i {
+  font-size: 20px;
+  color: #555;
+}

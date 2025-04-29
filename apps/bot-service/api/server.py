@@ -147,7 +147,7 @@ class AppFactory:
                 return result
 
         @self.app.post(
-            "/agent/stream_events",
+            "/stream_events",
             response_model=Output,
             summary="Invoke the runnable using add_routes",
             description="This endpoint invokes the runnable with provided input and config via add_routes.",
@@ -181,7 +181,7 @@ class AppFactory:
 
                     if chunk:
                         content = chunk.content
-                        if event_type == "on_chat_model_stream" and content and node and node == "call_model":
+                        if event_type == "on_chat_model_stream" and content and node and node == "agent":
                             logger.debug(f"Event that chunk came from: {event}")
                             yield content
 
