@@ -1,6 +1,11 @@
 import logging
 
-from app.messages import GENERIC_ERROR_MESSAGE
+from app.exceptions import InputTooLongError, MaxTurnsExceededError
+from app.messages import (
+    CHARACTER_LIMIT_ERROR_MESSAGE,
+    GENERIC_ERROR_MESSAGE,
+    MAX_TURNS_EXCEEDED_ERROR_MESSAGE,
+)
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 
@@ -17,6 +22,10 @@ async def invoke_wrapper(input_data, config_data, runnable_factory: RunnableFact
         return result
     except Exception as e:
         logger.exception(f"Error invoking runnable: {e}")
+        if isinstance(e, InputTooLongError):
+            return CHARACTER_LIMIT_ERROR_MESSAGE
+        if isinstance(e, MaxTurnsExceededError):
+            return MAX_TURNS_EXCEEDED_ERROR_MESSAGE
         if not isinstance(e, ValueError):
             result = (
                 await invoke_wrapper(input_data, config_data, runnable_factory, retry_count + 1)

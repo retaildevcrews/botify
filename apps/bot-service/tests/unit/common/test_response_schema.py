@@ -13,7 +13,8 @@ class TestStringMethods(unittest.TestCase):
             response_schema_name="response_schema.json",
         )
         schema = ResponseSchema().get_response_schema_json_as_string()
-        expected_schema = """{"$schema":"http://json-schema.org/draft-07/schema#","title":" Rag Example Recommendation Response","type":"object","required":["voiceSummary","displayResponse"],"properties":{"voiceSummary":{"type":"string","description":"A brief summary of the response, intended for voice output."},"displayResponse":{"type":"string","description":"A more detailed message intended for display on screen, this can contain formatted text, this will be used in the chat interface."}}}"""
+        expected_schema = """{"$schema":"http://json-schema.org/draft-07/schema#","type":"object","title":" Rag Example Recommendation Response","required":["voiceSummary","displayResponse"],"properties":{"voiceSummary":{"type":"string","description":"A brief summary of the response, intended for voice output."},"displayResponse":{"type":"string","description":"A more detailed message intended for display on screen, this can contain formatted text, this will be used in the chat interface."}}}"""
+        print(schema)
         self.assertEqual(expected_schema, schema)
 
 
