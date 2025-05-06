@@ -1,0 +1,32 @@
+name: Run bot-service unit tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, reopened, synchronize]
+    paths:
+      - 'apps/bot-service/**.py'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+
+    - name: Install poetry
+      uses: abatilo/actions-poetry@v4
+
+    - name: Install bot-service dependencies
+      run: poetry install --directory=apps/bot-service
+
+    - name: Source poetry environment and run unit tests
+      run: |
+        source $(poetry env info --path --directory apps/bot-service)/bin/activate
+        python -m unittest discover -s apps/bot-service/tests/unit -t apps/bot-service/tests

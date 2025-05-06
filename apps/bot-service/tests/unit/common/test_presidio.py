@@ -1,7 +1,5 @@
 import unittest
 
-from presidio_analyzer import AnalyzerEngine
-from presidio_anonymizer import AnonymizerEngine
 from pydantic import SecretStr
 from common.presidio.anonymizer import Anonymizer, Deanonymizer
 from app.settings import EnvironmentConfig, AppSettings

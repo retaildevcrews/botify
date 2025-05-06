@@ -45,7 +45,6 @@ def anonymize(func: Callable):
                 )
         except Exception as e:
             logger.exception(f"Error occurred while anonymizing input: {e}")
-            # question = body["input"].get("messages")[-1]["content"]
             return JSONResponse(
                 status_code=HTTPStatus.OK.value,
                 content=GENERIC_ERROR_MESSAGE,
@@ -72,8 +71,10 @@ class Anonymizer(metaclass=Singleton):
         text: redacted_value and redacted_value thanks
         items:
         [
-            {'start': 19, 'end': 33, 'entity_type': 'EMAIL_ADDRESS', 'text': 'redacted_value', 'operator': 'custom'},
-            {'start': 0, 'end': 14, 'entity_type': 'PHONE_NUMBER', 'text': 'redacted_value', 'operator': 'custom'}
+            {'start': 19, 'end': 33, 'entity_type': 'EMAIL_ADDRESS',
+            'text': 'redacted_value', 'operator': 'custom'},
+            {'start': 0, 'end': 14, 'entity_type': 'PHONE_NUMBER',
+            'text': 'redacted_value', 'operator': 'custom'}
         ]"""
         logger.debug("Anonymizing request")
         # Check if 'input' and 'question' fields are present
