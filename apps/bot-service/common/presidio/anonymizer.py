@@ -46,7 +46,8 @@ class Anonymizer:
         analyzed_text = self.pii_analyzer.analyze(text, entities=self.pii_entities, language="en")
         return analyzed_text
 
-    def anonymize_text(self, input_text, analyzed_text):
+    def anonymize_text(self, input_text):
+        analyzed_text = self.analyze_text(input_text)
         anonymized_text = self.pii_anonymizer.anonymize(input_text, analyzed_text, operators=self.operators)
         return anonymized_text
 

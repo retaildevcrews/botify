@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import Mock, AsyncMock
-from api.pii_utils import invoke
-from app.messages import GENERIC_ERROR_MESSAGE_JSON, CHARACTER_LIMIT_ERROR_MESSAGE_JSON
+from api.utils import invoke_wrapper as invoke
+from app.messages import GENERIC_ERROR_MESSAGE, CHARACTER_LIMIT_ERROR_MESSAGE
 from app.exceptions import InputTooLongError
 from app.settings import AppSettings
 
@@ -30,7 +30,7 @@ class TestInvokeHelper(unittest.IsolatedAsyncioTestCase):
 
         result = await invoke(input_data, config_data, mock_runnable_factory)
 
-        self.assertEqual(result, {"output": CHARACTER_LIMIT_ERROR_MESSAGE_JSON})
+        self.assertEqual(result, CHARACTER_LIMIT_ERROR_MESSAGE)
         mock_runnable.ainvoke.assert_called_once_with(input_data, config_data)
 
     async def test_invoke_generic_error(self):
@@ -43,7 +43,7 @@ class TestInvokeHelper(unittest.IsolatedAsyncioTestCase):
 
         result = await invoke(input_data, config_data, mock_runnable_factory)
 
-        self.assertEqual(result, {"output": GENERIC_ERROR_MESSAGE_JSON})
+        self.assertEqual(result, GENERIC_ERROR_MESSAGE)
         retry_count = AppSettings().invoke_retry_count
         self.assertEqual(mock_runnable.ainvoke.call_count, retry_count + 1)
 

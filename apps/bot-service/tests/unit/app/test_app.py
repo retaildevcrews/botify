@@ -1,6 +1,7 @@
 import os
 import unittest
 
+from app.messages import GENERIC_ERROR_MESSAGE
 from app.settings import AppSettings, EnvironmentConfig
 from fastapi.testclient import TestClient
 from langchain_core.runnables import Runnable, RunnableLambda
@@ -48,12 +49,14 @@ class TestApp(unittest.TestCase):
     def test_anonymizer_is_called(self):
         client = TestClient(app)
         config = {"configurable": {"session_id": "session_id", "user_id": "user_id"}}
-        payload = {"input": {"question": "hello there my phone number is 512-111-1111"}, "config": config}
+        payload = {"input": {"messages": [
+            {"role": "user", "content": "hello there my phone number is 512-111-1111"}]}, "config": config}
 
-        response = client.post("/agent/invoke", json=payload)
+        response = client.post("/invoke", json=payload)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn("hello there my phone number is redacted_value", response.text)
+        self.assertIn(' '.join(GENERIC_ERROR_MESSAGE.split()[:2]), response.text)
+
 
 
 if __name__ == "__main__":
