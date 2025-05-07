@@ -5,7 +5,6 @@ LOCATION="eastus2"
 DEPLOYMENT_NAME="botify-dev"
 SUBSCRIPTION_ID="/subscriptions/$(az account show --query id -o tsv | tr -d '\r')"
 
-set -x
 echo "--------------------------"
 echo -e "Creating service principal for botify-dev"
 echo "--------------------------"
@@ -43,4 +42,3 @@ az deployment sub create -n $DEPLOYMENT_NAME -f azuredeploy.bicep -c -p main.par
 echo "--------------------------"
 echo -e "Resources created in resource group: ${RESOURCE_GROUP_NAME}"
 echo "--------------------------"
-

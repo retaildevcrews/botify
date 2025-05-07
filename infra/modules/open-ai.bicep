@@ -13,6 +13,9 @@ resource openAIService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
     name: cognitiveServiceSKU
   }
   kind: 'AIServices'
+  properties: {
+    publicNetworkAccess: 'Enabled'
+  }
 }
 
 resource azopenaideployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {

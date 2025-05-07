@@ -10,6 +10,7 @@ resource cognitiveService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
     name: cognitiveServiceSKU
   }
   kind: 'CognitiveServices'
+  properties: {}
 }
 
 resource contentsafetyaccount 'Microsoft.CognitiveServices/accounts@2024-10-01' = {

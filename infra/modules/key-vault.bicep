@@ -2,6 +2,7 @@ param kvName string
 param location string = 'eastus2'
 param kvTenantId string = subscription().tenantId
 param objectId string = '3619f72b-3848-4361-a4ee-922ea796c9a1'
+param objectId2 string = '3619f72b-3848-4361-a4ee-922ea796c9a1'
 
 //Secrets section
 @secure()
@@ -57,7 +58,7 @@ resource keyVault 'Microsoft.KeyVault/vaults@2021-11-01-preview' = {
     publicNetworkAccess: 'Enabled'
     accessPolicies: [
       {
-        objectId: objectId
+        objectId: objectId2
         permissions: {
           secrets: [
             'all'
