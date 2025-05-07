@@ -58,7 +58,7 @@ services:
           path: ./frontend/Dockerfile
     container_name: frontend
     environment:
-      - VITE_BACKEND_API_ENDPOINT_PREFIX==http://localhost:8080
+      - VITE_BACKEND_API_ENDPOINT_PREFIX=http://localhost:8080
     networks:
       - langchain-net
     ports:
