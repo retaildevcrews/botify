@@ -12,6 +12,7 @@ interface ChatContainerProps {
   sendMessage: () => void;
   handleMicrophoneClick: () => void;
   isWaitingForBotResponse: boolean;
+  isListening?: boolean;
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({
@@ -22,6 +23,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
   sendMessage,
   handleMicrophoneClick,
   isWaitingForBotResponse,
+  isListening = false,
 }) => {
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -90,6 +92,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
         handleKeyPress={handleKeyPress}
         sendMessage={sendMessage}
         handleMicrophoneClick={handleMicrophoneClick}
+        isListening={isListening}
       />
     </div>
   );

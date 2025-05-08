@@ -1,4 +1,4 @@
-import { InputMessage, Message } from '../App';
+import { InputMessage, Message } from '../types';
 import { makeStreamingJsonRequest } from "http-streaming-request";
 
 const backendApiPrefix = import.meta.env.VITE_BACKEND_API_ENDPOINT_PREFIX;

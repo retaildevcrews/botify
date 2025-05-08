@@ -25,6 +25,7 @@ Create a `.env` file in the `frontend` directory with the following content:
 
 ```text
 VITE_BACKEND_API_ENDPOINT_PREFIX=http://localhost:8080
+VITE_TOKEN_SERVICE_PREFIX=http://localhost:8081
 ```
 
 - Change the URL if your backend is running elsewhere.
@@ -53,7 +54,7 @@ This will start the Vite development server. By default, the app will be availab
 
 ## Notes
 
-- Make sure your backend (bot-service) is running and accessible at the URL specified in `VITE_BACKEND_API_ENDPOINT_PREFIX`.
+- Make sure your backend (bot-service) and token-service are running and accessible at the URLs respectively in `VITE_BACKEND_API_ENDPOINT_PREFIX` and `VITE_TOKEN_SERVICE_PREFIX`.
 - For Docker-based development, see the root `docker-compose.yaml`.
 
 ---

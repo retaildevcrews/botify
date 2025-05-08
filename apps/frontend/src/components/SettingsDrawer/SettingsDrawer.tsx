@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './SettingsDrawer.css';
 import ToggleSwitch from '../ToggleSwitch/ToggleSwitch';
+import { useAppContext } from '../../context/AppContext';
 
-interface SettingsDrawerProps {
-  useStreaming: boolean;
-  setUseStreaming: (value: boolean) => void;
-}
-
-const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ useStreaming, setUseStreaming }) => {
+const SettingsDrawer: React.FC = () => {
+  const { useStreaming, setUseStreaming } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('darkMode');

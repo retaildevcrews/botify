@@ -10,11 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "http-streaming-request": "2.2.0",
+    "jwt-decode": "4.0.0",
+    "microsoft-cognitiveservices-speech-sdk": "^1.43.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "react-router-dom":"^7.5.0",
     "react-markdown":"^8.0.6",
-    "http-streaming-request": "2.2.0"
+    "react-router-dom":"^7.5.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
