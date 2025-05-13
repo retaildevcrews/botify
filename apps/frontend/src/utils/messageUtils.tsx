@@ -1,9 +1,14 @@
-export const playSpeechResponse = async (response: any, speechService: any) => {
+export const playSpeechResponse = async (response: any, speechService: any, useTextToSpeech: boolean) => {
+  if (!useTextToSpeech) {
+    console.log('Text to Speech is disabled, skipping audio playback');
+    return;
+  }
+
   try {
     const voiceSummary = speechService.extractVoiceSummaryFromResponse(response);
     if (voiceSummary) {
       await speechService.synthesizeSpeech(voiceSummary);
-    } else if (response.inputMessage.content) {
+    } else if (response.inputMessage.content && typeof response.content === 'string') {
       await speechService.synthesizeSpeech(response.inputMessage.content);
     }
   } catch (error) {

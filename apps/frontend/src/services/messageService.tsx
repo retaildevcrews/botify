@@ -10,7 +10,8 @@ export const processUserInput = async (
     updateOrAddBotMessage,
     resetWaitingStates,
     setWaitingForBot
-  }: any
+  }: any,
+  useTextToSpeech: boolean = false
 ) => {
   if (!userInput.trim()) return;
 
@@ -33,7 +34,7 @@ export const processUserInput = async (
         updateOrAddBotMessage(response.inputMessage.content || '');
 
         // Play speech response
-        await playSpeechResponse(response, speechService);
+        await playSpeechResponse(response, speechService, useTextToSpeech);
       }
       resetWaitingStates();
     } else {
