@@ -1,5 +1,4 @@
 import logging
-import os
 import requests
 import threading
 import time
@@ -9,14 +8,11 @@ from fastapi.responses import RedirectResponse
 
 import _additional_version_info
 import toml
-from api import (
+from app import (
     allowed_origins,
-    api_scope,
-    credential,
     log_level,
     local_mode,
-    speech_region,
-    speech_key,
+    url_prefix
 )
 
 if local_mode:
@@ -28,7 +24,6 @@ else:
     from azure.identity import DefaultAzureCredential
     from app import (
         api_scope,
-        speech_service_scope,
         speech_endpoint,
         speech_resource_id
     )

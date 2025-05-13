@@ -10,7 +10,7 @@ interface AppContextType {
 const defaultContextValue: AppContextType = {
   useStreaming: false,
   setUseStreaming: () => {},
-  useTextToSpeech: true,
+  useTextToSpeech: false,
   setUseTextToSpeech: () => {}
 };
 
