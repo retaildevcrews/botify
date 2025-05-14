@@ -5,6 +5,7 @@ export interface InputMessage {
 
 export interface Message {
   inputMessage: InputMessage;
+  voiceSummary?: string; // Optional field for text-to-speech
   timestamp: string;
 }
 

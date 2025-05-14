@@ -1,32 +1,20 @@
 import logging
-import requests
 import threading
 import time
+
+import _additional_version_info
+import requests
+import toml
+from app import allowed_origins, local_mode, log_level, speech_service_scope, url_prefix
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
-import _additional_version_info
-import toml
-from app import (
-    allowed_origins,
-    log_level,
-    local_mode,
-    url_prefix
-)
-
 if local_mode:
-    from app import (
-        speech_region,
-        speech_key
-    )
+    from app import speech_key, speech_region
 else:
+    from app import api_scope, speech_endpoint, speech_resource_id
     from azure.identity import DefaultAzureCredential
-    from app import (
-        api_scope,
-        speech_endpoint,
-        speech_resource_id
-    )
 
 # Set root logger level before other imports
 logging.getLogger().setLevel(log_level)
@@ -102,8 +90,8 @@ def refreshSpeechToken() -> None:
             else:
                 credential = DefaultAzureCredential()
                 token = credential.get_token(speech_service_scope)
-                speech_token = f'aad#{speech_resource_id}#{token.token}'
-        except:
+                speech_token = f"aad#{speech_resource_id}#{token.token}"
+        except Exception:
             logger.error("Failed to refresh speech token")
         finally:
             logger.info("Sleeping for 9 minutes...")
@@ -120,8 +108,8 @@ async def redirect_root_to_docs():
 def get_speech_token(response: Response):
     if speech_token is None:
         raise HTTPException(status_code=500, detail="Failed to get speech token")
-    if 'speech_endpoint' in globals() and speech_endpoint:
-        response.headers['SpeechEndpoint'] = speech_endpoint
+    if "speech_endpoint" in globals() and speech_endpoint:
+        response.headers["SpeechEndpoint"] = speech_endpoint
     return {"speech_token": speech_token}
 
 
