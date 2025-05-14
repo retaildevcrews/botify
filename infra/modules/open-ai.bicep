@@ -35,3 +35,5 @@ resource azopenaideployment 'Microsoft.CognitiveServices/accounts/deployments@20
 }
 
 output azureOpenAIEndpoint string = openAIService.properties.endpoint
+output contentSafetyKey string = openAIService.listKeys().key1
+// output contentSafetyEndpoint string = openAIService.properties.endpoints.contentSafety

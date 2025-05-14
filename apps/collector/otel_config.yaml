@@ -6,7 +6,8 @@ receivers:
         endpoint: 0.0.0.0:4318
 exporters:
   azuremonitor:
-    connection_string: ${env:APPLICATIONINSIGHTS_CONNECTION_STRING}
+   #connection_string: 'InstrumentationKey=22518acb-d35d-485f-8b2b-4ab75ad923b7;IngestionEndpoint=https://eastus2-3.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus2.livediagnostics.monitor.azure.com/;ApplicationId=72b3c126-18bd-40cb-b5f9-174c0fcb5ea4'
+    connection_string: '${env:APPLICATIONINSIGHTS_CONNECTION_STRING}'
 
 processors:
   filter/cosmos404:

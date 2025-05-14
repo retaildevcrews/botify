@@ -15,9 +15,6 @@ param cognitiveServiceName string = 'cognitive-service-${uniqueString(subscripti
 @description('The name of the Azure Open AI service')
 param openaiServiceAccountName string = 'openai-${uniqueString(subscription().id)}'
 
-@description('The name of the Content Safety service')
-param contentsafetyName string = 'content-safety-${uniqueString(subscription().id)}'
-
 @description('The model being deployed')
 param model string = 'gpt-4'
 
@@ -117,8 +114,8 @@ module keyVault 'modules/key-vault.bicep' = {
     azureSearchAdminKeySecret: azureSearch.outputs.azureSearchAdminKey
     cognitiveServiceNameSecret: cognitiveServiceName
     cognitiveServiceKeySecret: cognitiveServiceModule.outputs.cognitiveServiceKey
-    contentSafetyEndpointSecret: cognitiveServiceModule.outputs.contentSafetyEndpoint
-    contentSafetyKeySecret: cognitiveServiceModule.outputs.contentSafetyKey
+    contentSafetyEndpointSecret: openAIServiceModule.outputs.azureOpenAIEndpoint
+    contentSafetyKeySecret: openAIServiceModule.outputs.contentSafetyKey
     cosmosDBAccountNameSecret: cosmosDBModule.outputs.cosmosDBAccountName
     cosmosDBContainerNameSecret: cosmosDBModule.outputs.cosmosDBContainerName
     cosmosDBConnectionStringSecret: cosmosDBModule.outputs.cosmosDBConnectionString
@@ -172,7 +169,6 @@ module cognitiveServiceModule 'modules/cognitive-services.bicep' = {
     cognitiveServiceName: cognitiveServiceName
     location: location
     cognitiveServiceSKU: cognitiveServiceSKU
-    contentsafetyName: contentsafetyName
   }
 }
 
