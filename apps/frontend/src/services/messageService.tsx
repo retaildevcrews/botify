@@ -9,9 +9,10 @@ export const processUserInput = async (
     addUserMessage,
     updateOrAddBotMessage,
     resetWaitingStates,
-    setWaitingForBot
+    setWaitingForBot,
+    setStreamComplete
   }: any,
-  useTextToSpeech: boolean = false
+  useTextToSpeech: boolean = false,
 ) => {
   if (!userInput.trim()) return;
 
@@ -38,6 +39,8 @@ export const processUserInput = async (
       }
       resetWaitingStates();
     } else {
+      setStreamComplete(false);
+
       // Streaming mode
       await sendMessageToBot(
         allMessages,
@@ -51,6 +54,10 @@ export const processUserInput = async (
             updateOrAddBotMessage
           );
         },
+        // Stream end handler
+        () => {
+          setStreamComplete(true);
+        }
       );
     }
   } catch (error) {

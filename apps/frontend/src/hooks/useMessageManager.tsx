@@ -4,6 +4,7 @@ import { InputMessage, Message } from '../types';
 export function useMessageManager() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isWaitingForBotResponse, setIsWaitingForBotResponse] = useState(false);
+  const [isStreamComplete, setIsStreamComplete] = useState(false);
   const botMessageCreatedRef = useRef(false);
 
   const addUserMessage = (content: string) => {
@@ -72,6 +73,10 @@ export function useMessageManager() {
     botMessageCreatedRef.current = false;
   };
 
+  const setStreamComplete = (value: boolean = false) => {
+    setIsStreamComplete(value);
+  };
+
   return {
     messages,
     isWaitingForBotResponse,
@@ -81,5 +86,7 @@ export function useMessageManager() {
     updateOrAddBotMessage,
     resetWaitingStates,
     setWaitingForBot,
+    isStreamComplete,
+    setStreamComplete
   };
 }

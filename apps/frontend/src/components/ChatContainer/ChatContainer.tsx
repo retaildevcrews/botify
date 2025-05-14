@@ -24,6 +24,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
   handleMicrophoneClick,
   isWaitingForBotResponse,
   isListening = false,
+  isStreamComplete = false
 }) => {
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -35,6 +36,13 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
   }, [messages.length, lastMessageContent, isWaitingForBotResponse]);
+
+  // Determine if we're waiting for the first response or streaming an existing one
+  const isWaitingForFirstResponse = isWaitingForBotResponse &&
+    (messages.length === 0 || messages[messages.length - 1].inputMessage.role === 'user');
+
+  const isStreamingResponse = isWaitingForBotResponse && !isStreamComplete &&
+    messages.length > 0 && messages[messages.length - 1].inputMessage.role === 'ai';
 
   return (
     <div className="chat-container">
@@ -48,8 +56,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
             } else if (displayContent.includes('[object Object]')) {
               displayContent = displayContent.replace(/\[object Object\]/g, '');
             }
-            // Show animation below displayResponse if this is the last bot message and streaming is still in progress
-            const isLastBotMsg = index === messages.length - 1 && msg.inputMessage.role === 'ai' && isWaitingForBotResponse;
+
+            // Only show the waiting indicator inside the last AI message if we're streaming it
+            const isLastBotMsg = index === messages.length - 1 &&
+                                msg.inputMessage.role === 'ai' &&
+                                isStreamingResponse;
+
             return (
               <div
                 key={index}
@@ -75,7 +87,8 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
               </div>
             );
           })}
-          {isWaitingForBotResponse && (
+          {/* Only show the standalone indicator when waiting for first response */}
+          {isWaitingForFirstResponse && (
             <div className="bot-message waiting-indicator">
               <span></span>
               <span></span>

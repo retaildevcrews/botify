@@ -19,7 +19,9 @@ const AppContent = () => {
     addUserMessage,
     updateOrAddBotMessage,
     resetWaitingStates,
-    setWaitingForBot
+    setWaitingForBot,
+    isStreamComplete,
+    setStreamComplete
   } = messageManager;
 
   const sendMessage = () => {
@@ -128,6 +130,7 @@ const AppContent = () => {
         handleMicrophoneClick={handleMicrophoneClick}
         isWaitingForBotResponse={isWaitingForBotResponse}
         isListening={isListening}
+        isStreamComplete={isStreamComplete}
       />
     </div>
   );
