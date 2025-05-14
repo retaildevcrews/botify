@@ -1,6 +1,0 @@
-[browser]
-gatherUsageStats = false
-
-[logger]
-level = "info"
-messageFormat = '{"timestamp": "%(asctime)s.%(msecs)05dZ", "logLevel": "%(levelname)s", "loggerName": "%(name)s", "message": "%(message)s"}'

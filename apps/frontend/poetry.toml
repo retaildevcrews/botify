@@ -1,5 +1,0 @@
-[virtualenvs]
-create = false
-
-[installer]
-parallel = true

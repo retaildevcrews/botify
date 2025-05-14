@@ -13,7 +13,12 @@
       "package": "jinja2-cli"
     },
     "ghcr.io/devcontainers-contrib/features/bin:1": {}, // for any binary release installation
-    "ghcr.io/devcontainers-contrib/features/neovim-apt-get:1": {}
+    "ghcr.io/devcontainers-contrib/features/neovim-apt-get:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "installYarn": true,
+      "installPnpm": true
+    }
   },
   // "hostRequirements": {
   //  "cpus": 4,

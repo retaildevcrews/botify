@@ -57,9 +57,8 @@ services:
         - action: rebuild
           path: ./frontend/Dockerfile
     container_name: frontend
-    env_file: credentials.env
     environment:
-      - FAST_API_SERVER=http://bot-service:8080
+      - VITE_BACKEND_API_ENDPOINT_PREFIX=http://localhost:8080
     networks:
       - langchain-net
     ports:
