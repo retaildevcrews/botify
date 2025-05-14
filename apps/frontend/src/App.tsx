@@ -8,16 +8,6 @@ import { useMessageManager } from './hooks/useMessageManager';
 import { AppProvider, useAppContext } from './context/AppContext';
 
 const AppContent = () => {
-  // const [messages, setMessages] = useState<Message[]>([]);
-  // const [input, setInput] = useState('');
-  // const [useStreaming, setUseStreaming] = useState(() => {
-  //   const stored = localStorage.getItem('useStreaming');
-  //   return stored ? JSON.parse(stored) : false;
-  // });
-  // const [isWaitingForBotResponse, setIsWaitingForBotResponse] = useState(false);
-  // // Use this ref to track if we've created a bot message for streaming
-  // const botMessageCreatedRef = useRef(false);
-
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const { useStreaming, useTextToSpeech } = useAppContext();

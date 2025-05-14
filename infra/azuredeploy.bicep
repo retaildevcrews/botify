@@ -1,6 +1,36 @@
 @description('Optional, defaults to resource group location. The location of the resources.')
 param location string = resourceGroup().location
 
+@description('Optional. The name of our application. It has to be unique. Type a name followed by your resource group name. (<name>-<resourceGroupName>)')
+param cognitiveServiceName string = 'cognitive-service-${uniqueString(resourceGroup().id)}'
+
+@description('The name of the Azure Open AI service')
+param openaiServiceAccountName string = 'openai-${uniqueString(resourceGroup().id)}'
+
+@description('The name of the Content Safety service')
+param contentsafetyName string = 'content-safety-${uniqueString(resourceGroup().id)}'
+
+@description('The model being deployed')
+param model string = 'gpt-4'
+
+@description('Version of the model being deployed')
+param modelversion string = 'turbo-2024-04-09'
+
+@description('Capacity for specific model used')
+param capacity int = 8
+
+@description('Optional. Cosmos DB account name, max length 44 characters, lowercase')
+param cosmosDBAccountName string = 'cosmosdb-account-${uniqueString(resourceGroup().id)}'
+
+@description('Optional. The name for the CosmosDB database')
+param cosmosDBDatabaseName string = 'cosmosdb-db-${uniqueString(resourceGroup().id)}'
+
+@description('Optional. The name for the CosmosDB database container')
+param cosmosDBContainerName string = 'cosmosdb-container-${uniqueString(resourceGroup().id)}'
+
+@description('Optional. The name of the Blob Storage account')
+param blobStorageAccountName string = 'blobstorage${uniqueString(resourceGroup().id)}'
+
 @description('Optional. Service name must only contain lowercase letters, digits or dashes, cannot use dash as the first two or last one characters, cannot contain consecutive dashes, and is limited between 2 and 60 characters in length.')
 @minLength(2)
 @maxLength(60)
@@ -41,9 +71,18 @@ param azureSearchPartitionCount int = 1
 ])
 param azureSearchHostingMode string = 'default'
 
+@description('Name of the Azure Open AI deployment')
+@allowed([
+  'gpt-4o-mini'
+  'gpt-4o'
+  'o1-mini'
+])
+param modeldeploymentname string = 'gpt-4o'
+
 param appPlanName string = 'asp-${uniqueString(resourceGroup().id)}'
 param logAnalyticsWorkspace string = 'la-${uniqueString(resourceGroup().id)}'
 
+var cognitiveServiceSKU = 'S0'
 var appPlanSkuName = 'S1'
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
@@ -57,6 +96,16 @@ resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
     features: {
       enableLogAccessUsingOnlyResourcePermissions: true
     }
+  }
+}
+
+resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: 'app-insights'
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalytics.id
   }
 }
 
@@ -82,46 +131,6 @@ resource diagnosticLogs 'Microsoft.Insights/diagnosticSettings@2021-05-01-previe
     ]
   }
 }
-
-@description('Optional. The name of our application. It has to be unique. Type a name followed by your resource group name. (<name>-<resourceGroupName>)')
-param cognitiveServiceName string = 'cognitive-service-${uniqueString(resourceGroup().id)}'
-
-@description('The name of the Azure Open AI service')
-param openaiServiceAccountName string = 'openai-${uniqueString(resourceGroup().id)}'
-
-@description('The name of the Content Safety service')
-param contentsafetyName string = 'content-safety-${uniqueString(resourceGroup().id)}'
-
-@description('Name of the Azure Open AI deployment')
-@allowed([
-  'gpt-4o-mini'
-  'gpt-4o'
-  'o1-mini'
-])
-param modeldeploymentname string = 'gpt-4o'
-
-@description('The model being deployed')
-param model string = 'gpt-4'
-
-@description('Version of the model being deployed')
-param modelversion string = 'turbo-2024-04-09'
-
-@description('Capacity for specific model used')
-param capacity int = 8
-
-@description('Optional. Cosmos DB account name, max length 44 characters, lowercase')
-param cosmosDBAccountName string = 'cosmosdb-account-${uniqueString(resourceGroup().id)}'
-
-@description('Optional. The name for the CosmosDB database')
-param cosmosDBDatabaseName string = 'cosmosdb-db-${uniqueString(resourceGroup().id)}'
-
-@description('Optional. The name for the CosmosDB database container')
-param cosmosDBContainerName string = 'cosmosdb-container-${uniqueString(resourceGroup().id)}'
-
-@description('Optional. The name of the Blob Storage account')
-param blobStorageAccountName string = 'blobstorage${uniqueString(resourceGroup().id)}'
-
-var cognitiveServiceSKU = 'S0'
 
 resource azureSearch 'Microsoft.Search/searchServices@2021-04-01-Preview' = {
   name: azureSearchName
@@ -266,8 +275,10 @@ resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/co
 output blobStorageAccountName string = blobStorageAccountName
 output blobConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${blobStorageAccountName};AccountKey=${blobStorageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 output azureOpenAIModelName string = azopenaideployment.properties.model.name
-output azureOpenAIAccountName string = openaiServiceAccountName
 output azureOpenAIEndpoint string = openAIService.properties.endpoint
+
+output azureOpenAIAccountName string = openaiServiceAccountName
+
 output azureSearchAdminKey string = azureSearch.listAdminKeys().primaryKey
 
 output cognitiveServiceName string = cognitiveServiceName
@@ -283,6 +294,7 @@ output azureSearchEndpoint string = 'https://${azureSearchName}.search.windows.n
 
 output appPlanName string = appPlanName
 output logAnalyticsWorkspaceName string = logAnalyticsWorkspace
+output appInsightsConnectionString string = appInsights.properties.ConnectionString
 
 output cosmosDBDatabaseName string = cosmosDBDatabaseName
 output cosmosDBAccountEndpoint string = cosmosDBAccount.properties.documentEndpoint
