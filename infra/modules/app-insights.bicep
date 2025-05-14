@@ -1,0 +1,29 @@
+param location string = resourceGroup().location
+param appInsightsName string
+param logAnalyticsName string
+
+resource logAnalyticsWorkspace 'Microsoft.OperationalInsights/workspaces@2021-06-01' = {
+  name: logAnalyticsName
+  location: location
+  properties: {
+    sku: {
+      name: 'PerGB2018'
+    }
+  }
+}
+
+resource applicationInsights 'Microsoft.Insights/components@2020-02-02' = {
+  name: appInsightsName
+  location: location
+  kind: 'web'
+  properties: {
+    Application_Type: 'web'
+    WorkspaceResourceId: logAnalyticsWorkspace.id
+  }
+}
+
+output connectionString string = applicationInsights.properties.ConnectionString
+output workspaceName string = logAnalyticsWorkspace.name
+output workspaceId string = logAnalyticsWorkspace.id
+output insightsName string = applicationInsights.name
+output appInsightsId string = applicationInsights.id
