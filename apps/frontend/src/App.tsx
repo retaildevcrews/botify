@@ -10,7 +10,7 @@ import { AppProvider, useAppContext } from './context/AppContext';
 const AppContent = () => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const { useStreaming, useTextToSpeech } = useAppContext();
+  const { useStreaming, useTextToSpeech, sessionId } = useAppContext();
   const messageManager = useMessageManager();
 
   const {
@@ -38,7 +38,8 @@ const AppContent = () => {
       currentInput,
       useStreaming,
       messageManager,
-      useTextToSpeech
+      useTextToSpeech,
+      sessionId
     ).catch(error => {
       console.error('Error processing message:', error);
     });
@@ -64,7 +65,8 @@ const AppContent = () => {
         currentInput,
         useStreaming,
         messageManager,
-        useTextToSpeech
+        useTextToSpeech,
+        sessionId
       ).catch(error => {
         console.error('Error processing message:', error);
       });
@@ -79,7 +81,8 @@ const AppContent = () => {
       transcriptText,
       useStreaming,
       messageManager,
-      useTextToSpeech
+      useTextToSpeech,
+      sessionId
     );
   };
 

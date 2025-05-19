@@ -13,6 +13,7 @@ export const processUserInput = async (
     setStreamComplete
   }: any,
   useTextToSpeech: boolean = false,
+  sessionId: string
 ) => {
   if (!userInput.trim()) return;
 
@@ -23,7 +24,6 @@ export const processUserInput = async (
   setWaitingForBot();
 
   try {
-    const sessionId = "session-id-placeholder";
     const userId = "user-id-placeholder";
     const speechService = await import('./speechService');
 

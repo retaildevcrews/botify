@@ -1,17 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { v4 as uuidv4 } from 'uuid';
 
 interface AppContextType {
   useStreaming: boolean;
   setUseStreaming: (value: boolean) => void;
   useTextToSpeech: boolean;
   setUseTextToSpeech: (value: boolean) => void;
+  sessionId: string;
 }
 
 const defaultContextValue: AppContextType = {
   useStreaming: false,
   setUseStreaming: () => {},
   useTextToSpeech: false,
-  setUseTextToSpeech: () => {}
+  setUseTextToSpeech: () => {},
+  sessionId: ''
 };
 
 export const AppContext = createContext<AppContextType>(defaultContextValue);
@@ -31,6 +34,9 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children }:
     return stored ? JSON.parse(stored) : true;
   });
 
+  // Generate a unique session ID when the app loads
+  const [sessionId] = useState(() => uuidv4());
+
   useEffect(() => {
     localStorage.setItem('useStreaming', JSON.stringify(useStreaming));
     console.log(`Streaming mode toggled: ${useStreaming}`);
@@ -46,7 +52,8 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children }:
       useStreaming,
       setUseStreaming,
       useTextToSpeech,
-      setUseTextToSpeech
+      setUseTextToSpeech,
+      sessionId
     }}>
       {children}
     </AppContext.Provider>
