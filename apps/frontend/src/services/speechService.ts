@@ -15,7 +15,7 @@ let speechRegion: string;
 let speechConfig: speechsdk.SpeechConfig;
 
 // Function to fetch and set up the speech token
-const fetchSpeechToken = async (): Promise<void> => {
+const fetchSpeechToken = async (): Promise<boolean> => {
   try {
     const response = await fetch(`${tokenServicePrefix}/speech`, {method: 'POST'});
     const tokenData = await response.json();
@@ -27,14 +27,19 @@ const fetchSpeechToken = async (): Promise<void> => {
     speechConfig.speechSynthesisVoiceName = speechVoiceName;
 
     console.log('Speech token refreshed successfully');
+    return true;
   } catch (error) {
     console.error('Failed to fetch speech token:', error);
-    throw error;
+    return false;
   }
 };
 
-// Initial token fetch
-await fetchSpeechToken();
+// Initial token fetch - don't throw if it fails
+try {
+  await fetchSpeechToken();
+} catch (error) {
+  console.error('Initial token fetch failed, but app will continue:', error);
+}
 
 // Define speech recognition functions
 let activeRecognizer: speechsdk.SpeechRecognizer | null = null;
@@ -100,57 +105,68 @@ export const startSpeechRecognition = async (): Promise<string> => {
 };
 
 // Define text-to-speech function with token refresh capability
-export const synthesizeSpeech = async (text: string): Promise<void> => {
-  if (!text) {
-    return Promise.reject('No text provided for speech synthesis');
+export const synthesizeSpeech = async (text: string, speechEnabled = true): Promise<void> => {
+  // Skip speech synthesis if it's disabled
+  if (!speechEnabled) {
+    console.log('Speech synthesis skipped: Speech is disabled in settings');
+    return Promise.resolve();
   }
 
-  // Extract voice summary if it's contained in JSON response
-  let speechText = text;
-  try {
-    const jsonData = JSON.parse(text);
-    if (jsonData && jsonData.voiceSummary) {
-      speechText = jsonData.voiceSummary;
-    }
-  } catch {
-    // Not JSON, use the original text
-    console.log('Using original text for speech synthesis');
+  if (!text) {
+    console.warn('No text provided for speech synthesis');
+    return Promise.resolve(); // Resolve instead of reject to avoid disrupting the app
   }
+
+  // Check if speech config is available (token fetch may have failed earlier)
+  if (!speechConfig) {
+    console.warn('Speech synthesis skipped: Speech configuration not available');
+    return Promise.resolve();
+  }
+
+  // Use text directly without trying to parse it as JSON
+  // The extractVoiceSummaryFromResponse function should have already
+  // extracted the voice summary text before calling this function
+  let speechText = text;
 
   // Function to perform speech synthesis with current token
   const performSpeechSynthesis = (): Promise<void> => {
     return new Promise((resolve, reject) => {
-      // Setup speech synthesizer
-      const synthesizer = new speechsdk.SpeechSynthesizer(speechConfig);
+      try {
+        // Setup speech synthesizer
+        const synthesizer = new speechsdk.SpeechSynthesizer(speechConfig);
 
-      // Start speech synthesis
-      synthesizer.speakTextAsync(
-        speechText,
-        (result) => {
-          if (result.reason === speechsdk.ResultReason.SynthesizingAudioCompleted) {
-            console.log('Speech synthesis completed');
-            resolve();
-          } else {
-            console.log(`Speech synthesis failed: ${result.errorDetails}`);
-            reject(`Speech synthesis failed: ${result.errorDetails}`);
-          }
-          synthesizer.close();
-        },
-        (err) => {
-          console.log(`Speech synthesis error: ${err}`);
+        // Start speech synthesis
+        synthesizer.speakTextAsync(
+          speechText,
+          (result) => {
+            if (result.reason === speechsdk.ResultReason.SynthesizingAudioCompleted) {
+              console.log('Speech synthesis completed');
+              resolve();
+            } else {
+              console.log(`Speech synthesis failed: ${result.errorDetails}`);
+              reject(`Speech synthesis failed: ${result.errorDetails}`);
+            }
+            synthesizer.close();
+          },
+          (err) => {
+            console.log(`Speech synthesis error: ${err}`);
 
-          // Check if error is related to authentication
-          if (err.toString().includes('Authentication failed') ||
-              err.toString().includes('Authorization failed') ||
-              err.toString().includes('HTTP Authentication failed')) {
-            console.log('Token authentication error detected');
-            reject({ authError: true, message: err });
-          } else {
-            reject(`Speech synthesis error: ${err}`);
+            // Check if error is related to authentication
+            if (err.toString().includes('Authentication failed') ||
+                err.toString().includes('Authorization failed') ||
+                err.toString().includes('HTTP Authentication failed')) {
+              console.log('Token authentication error detected');
+              reject({ authError: true, message: err });
+            } else {
+              reject(`Speech synthesis error: ${err}`);
+            }
+            synthesizer.close();
           }
-          synthesizer.close();
-        }
-      );
+        );
+      } catch (err) {
+        console.error('Error setting up speech synthesizer:', err);
+        resolve(); // Resolve anyway to prevent the app from breaking
+      }
     });
   };
 
@@ -163,15 +179,22 @@ export const synthesizeSpeech = async (text: string): Promise<void> => {
       console.log('Attempting to refresh speech token and retry...');
       try {
         // Refresh token and try again
-        await fetchSpeechToken();
-        return await performSpeechSynthesis();
+        const tokenRefreshed = await fetchSpeechToken();
+        if (tokenRefreshed) {
+          return await performSpeechSynthesis();
+        } else {
+          console.warn('Speech synthesis skipped: Could not refresh token');
+          return;
+        }
       } catch (refreshError) {
         console.error('Failed to refresh token:', refreshError);
-        throw new Error('Failed to refresh speech token');
+        // Don't throw, just log the error and continue
+        return;
       }
     } else {
-      // For other errors, just throw them
-      throw error;
+      // For other errors, just log them
+      console.error('Speech synthesis error (continuing with text only):', error);
+      return;
     }
   }
 };
