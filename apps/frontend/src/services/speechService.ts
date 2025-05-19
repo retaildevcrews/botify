@@ -204,29 +204,26 @@ export const extractVoiceSummaryFromResponse = (response: unknown): string | nul
   if (!response) return null;
 
   try {
-    if (typeof response === 'string') {
-      try {
-        const parsedResponse = JSON.parse(response) as Record<string, unknown>;
-        return (parsedResponse.voiceSummary as string) || null;
-      } catch {
-        return null;
-      }
-    } else if (typeof response === 'object' && response !== null) {
-      const typedResponse = response as Record<string, unknown>;
-      if (typedResponse.voiceSummary && typeof typedResponse.voiceSummary === 'string') {
-        return typedResponse.voiceSummary;
-      } else if (typedResponse.output && typeof typedResponse.output === 'object' && typedResponse.output !== null) {
-        const output = typedResponse.output as Record<string, unknown>;
-        if (output.voiceSummary && typeof output.voiceSummary === 'string') {
-          return output.voiceSummary;
-        }
-      }
+    // Convert string response to object if needed
+    const responseObj = typeof response === 'string'
+      ? JSON.parse(response)
+      : response;
+
+    // Look for voiceSummary at root level
+    if (responseObj?.voiceSummary && typeof responseObj.voiceSummary === 'string') {
+      return responseObj.voiceSummary;
     }
+
+    // Look for voiceSummary in output property
+    if (responseObj?.output?.voiceSummary && typeof responseObj.output.voiceSummary === 'string') {
+      return responseObj.output.voiceSummary;
+    }
+
+    return null;
   } catch {
     console.error('Error extracting voice summary');
+    return null;
   }
-
-  return null;
 }
 
 // Export the token refresh function so it can be called directly if needed

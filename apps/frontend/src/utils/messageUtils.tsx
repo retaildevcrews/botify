@@ -10,6 +10,8 @@ export const playSpeechResponse = async (response: any, speechService: any, useT
       await speechService.synthesizeSpeech(voiceSummary);
     } else if (response.inputMessage.content && typeof response.content === 'string') {
       await speechService.synthesizeSpeech(response.inputMessage.content);
+    } else if (response.output?.displayResponse) {
+      await speechService.synthesizeSpeech(response.output.displayResponse);
     }
   } catch (error) {
     console.error('Error playing voice response:', error);
