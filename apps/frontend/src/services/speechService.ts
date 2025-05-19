@@ -226,5 +226,52 @@ export const extractVoiceSummaryFromResponse = (response: unknown): string | nul
   }
 }
 
+// Auto-listen function that starts recording and stops after 5 seconds if no speech is detected
+export const autoStartListening = async (timeoutMs = 5000): Promise<string | null> => {
+  if (!speechConfig) {
+    console.warn('Auto-listening skipped: Speech configuration not available');
+    return null;
+  }
+
+  return new Promise(async (resolve) => {
+    // Setup audio config and recognizer
+    const audioConfig = speechsdk.AudioConfig.fromDefaultMicrophoneInput();
+    const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
+    activeRecognizer = recognizer;
+
+    console.log('Auto-listening started...');
+
+    // Set timeout for no speech detection
+    const timeout = setTimeout(() => {
+      if (activeRecognizer) {
+        console.log('No speech detected after timeout, stopping auto-listen');
+        activeRecognizer.close();
+        activeRecognizer = null;
+        resolve(null);
+      }
+    }, timeoutMs);
+
+    // Process recognition results
+    recognizer.recognizeOnceAsync((result) => {
+      clearTimeout(timeout);
+      activeRecognizer = null;
+
+      if (result.reason === speechsdk.ResultReason.RecognizedSpeech) {
+        console.log(`AUTO-RECOGNIZE: ${result.text}`);
+        resolve(result.text);
+      } else {
+        // Log specific error details only in detailed debug scenarios
+        if (result.reason !== speechsdk.ResultReason.NoMatch) {
+          console.log(`AUTO-ERROR: Speech recognition failed. Reason: ${result.reason}`);
+        }
+        resolve(null);
+      }
+    });
+  }).catch(error => {
+    console.error('Error in auto speech recognition:', error);
+    return null;
+  });
+};
+
 // Export the token refresh function so it can be called directly if needed
 export const refreshSpeechToken = fetchSpeechToken;

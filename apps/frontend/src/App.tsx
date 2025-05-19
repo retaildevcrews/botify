@@ -10,7 +10,7 @@ import { AppProvider, useAppContext } from './context/AppContext';
 const AppContent = () => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
-  const { useStreaming, useTextToSpeech, sessionId } = useAppContext();
+  const { useStreaming, useTextToSpeech, setUseTextToSpeech, sessionId } = useAppContext();
   const messageManager = useMessageManager();
 
   const {
@@ -81,7 +81,7 @@ const AppContent = () => {
       transcriptText,
       useStreaming,
       messageManager,
-      useTextToSpeech,
+      true, // Force speech enabled for microphone input
       sessionId
     );
   };
@@ -104,14 +104,27 @@ const AppContent = () => {
       setIsListening(true);
       console.log('Starting speech recognition...');
 
-      const transcript = await speechService.startSpeechRecognition();
+      // Automatically enable speech when using microphone input
+      if (!useTextToSpeech) {
+        console.log('Enabling speech synthesis due to microphone usage');
+        setUseTextToSpeech(true);
+      }
 
-      if (transcript?.trim()) {
-        await processSpeechResult(transcript.trim());
+      try {
+        const transcript = await speechService.startSpeechRecognition();
+        // Turn off listening state immediately after speech recognition completes
+        setIsListening(false);
+
+        if (transcript?.trim()) {
+          // Process the transcript without keeping the microphone in listening state
+          await processSpeechResult(transcript.trim());
+        }
+      } catch (error) {
+        console.error('Speech recognition failed:', error);
+        setIsListening(false);
       }
     } catch (error) {
-      console.error('Speech recognition failed:', error);
-    } finally {
+      console.error('Error in microphone handling:', error);
       setIsListening(false);
     }
   };

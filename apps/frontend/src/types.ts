@@ -9,6 +9,12 @@ export interface Message {
   timestamp: string;
 }
 
+export interface StreamingResponse {
+  displayResponse?: string;
+  voiceSummary?: string;
+  [key: string]: unknown;
+}
+
 export interface Input {
   messages: InputMessage[];
 }
