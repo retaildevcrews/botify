@@ -128,7 +128,27 @@ export const processUserInput = async (
         async (json: StreamingResponse | null) => {
           setStreamComplete(true);
 
-          
+          // Create a function to process speech detected after streaming
+          const processUserSpeech = async (transcript: string) => {
+            if (transcript.trim()) {
+              console.log('Processing auto-detected speech from streaming mode:', transcript);
+
+              // Process the auto-detected speech as a new user message
+              await processUserInput(
+                transcript,
+                useStreaming,
+                {
+                  addUserMessage,
+                  updateOrAddBotMessage,
+                  resetWaitingStates,
+                  setWaitingForBot,
+                },
+                useTextToSpeech,
+                sessionId,
+                setIsListening
+              );
+            }
+          };
 
           await handleStreamingComplete(
             json,
