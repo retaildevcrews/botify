@@ -14,7 +14,7 @@ export const processUserInput = async (
   }: any,
   useTextToSpeech: boolean = false,
   sessionId: string,
-  setIsListening?: (isListening: boolean) => void
+  setIsListening: (isListening: boolean) => void
 ) => {
   if (!userInput.trim()) return;
 
@@ -47,19 +47,15 @@ export const processUserInput = async (
         // Only start auto-listening if speech is enabled
         if (useTextToSpeech) {
           // Only after speech has finished, set the listening state to true
-          if (setIsListening) {
-            console.log('Setting microphone to listening state for auto-listening');
-            setIsListening(true);
-          }
+          console.log('Setting microphone to listening state for auto-listening');
+          setIsListening?.(true);
 
           // Start auto-listening and wait for result
           autoDetectedSpeech = await speechService.autoStartListening(5000);
 
           // Reset listening state after auto-listening completes
-          if (setIsListening) {
-            console.log('Auto-listening complete, resetting microphone state');
-            setIsListening(false);
-          }
+          console.log('Auto-listening complete, resetting microphone state');
+          setIsListening?.(false);
 
           // If speech was detected, process it
           if (autoDetectedSpeech && autoDetectedSpeech.trim()) {
@@ -102,7 +98,8 @@ export const processUserInput = async (
               setWaitingForBot,
             },
             useTextToSpeech,
-            sessionId
+            sessionId,
+            setIsListening
           );
           return; // Exit to avoid duplicate resetWaitingStates call
         }
@@ -142,6 +139,7 @@ export const processUserInput = async (
                   updateOrAddBotMessage,
                   resetWaitingStates,
                   setWaitingForBot,
+                  setStreamComplete
                 },
                 useTextToSpeech,
                 sessionId,

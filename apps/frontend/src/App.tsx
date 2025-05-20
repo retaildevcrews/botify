@@ -39,7 +39,8 @@ const AppContent = () => {
       useStreaming,
       messageManager,
       useTextToSpeech,
-      sessionId
+      sessionId,
+      setIsListening
     ).catch(error => {
       console.error('Error processing message:', error);
     });
@@ -66,7 +67,8 @@ const AppContent = () => {
         useStreaming,
         messageManager,
         useTextToSpeech,
-        sessionId
+        sessionId,
+        setIsListening
       ).catch(error => {
         console.error('Error processing message:', error);
       });
@@ -82,7 +84,8 @@ const AppContent = () => {
       useStreaming,
       messageManager,
       true, // Force speech enabled for microphone input
-      sessionId
+      sessionId,
+      setIsListening
     );
   };
 

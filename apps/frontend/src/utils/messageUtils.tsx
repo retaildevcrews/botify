@@ -67,18 +67,12 @@ export const handleStreamingComplete = async (
           await new Promise(resolve => setTimeout(resolve, estimatedDurationMs));
           console.log('Speech playback should now be complete, activating microphone');
 
-          // Set listening state to true if the function is provided
-          if (setIsListening) {
-            setIsListening(true);
-          }
+          setIsListening?.(true);
 
           // Start auto-listening and wait for result
           const autoDetectedSpeech = await speechService.autoStartListening(5000);
 
-          // Reset listening state
-          if (setIsListening) {
-            setIsListening(false);
-          }
+          setIsListening?.(false);
 
           // Process detected speech if any
           if (autoDetectedSpeech && autoDetectedSpeech.trim() && processUserSpeech) {
