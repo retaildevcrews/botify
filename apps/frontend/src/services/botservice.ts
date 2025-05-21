@@ -1,4 +1,4 @@
-import { InputMessage, Message } from '../App';
+import { InputMessage, Message } from '../types';
 import { makeStreamingJsonRequest } from "http-streaming-request";
 
 const backendApiPrefix = import.meta.env.VITE_BACKEND_API_ENDPOINT_PREFIX;
@@ -73,13 +73,13 @@ export const sendMessageToBot = async (
 
       const data = await response.json();
       const botResponse = JSON.parse(data.messages?.[data.messages.length - 1].content);
-      const displayResponse = botResponse?.displayResponse;
 
       return {
         inputMessage: {
           role: 'ai',
-          content: displayResponse
+          content: botResponse?.displayResponse,
         },
+        voiceSummary: botResponse?.voiceSummary,
         timestamp: new Date().toISOString()
       };
     }

@@ -1,13 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './SettingsDrawer.css';
 import ToggleSwitch from '../ToggleSwitch/ToggleSwitch';
+import { useAppContext } from '../../context/AppContext';
 
-interface SettingsDrawerProps {
-  useStreaming: boolean;
-  setUseStreaming: (value: boolean) => void;
-}
-
-const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ useStreaming, setUseStreaming }) => {
+const SettingsDrawer: React.FC = () => {
+  const { useStreaming, setUseStreaming, useTextToSpeech, setUseTextToSpeech } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
     const stored = localStorage.getItem('darkMode');
@@ -80,6 +77,15 @@ const SettingsDrawer: React.FC<SettingsDrawerProps> = ({ useStreaming, setUseStr
                 label=""
                 checked={darkMode}
                 onChange={toggleDarkMode}
+              />
+            </div>
+            <div className="settings-item">
+              <span className="setting-name">Text to Speech</span>
+              <ToggleSwitch
+                id="text-to-speech-toggle"
+                label=""
+                checked={useTextToSpeech}
+                onChange={setUseTextToSpeech}
               />
             </div>
           </div>
