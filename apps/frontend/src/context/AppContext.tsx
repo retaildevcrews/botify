@@ -39,12 +39,10 @@ export const AppProvider: React.FC<{children: React.ReactNode}> = ({ children }:
 
   useEffect(() => {
     localStorage.setItem('useStreaming', JSON.stringify(useStreaming));
-    console.log(`Streaming mode toggled: ${useStreaming}`);
   }, [useStreaming]);
 
   useEffect(() => {
     localStorage.setItem('useTextToSpeech', JSON.stringify(useTextToSpeech));
-    console.log(`Text to Speech toggled: ${useTextToSpeech}`);
   }, [useTextToSpeech]);
 
   return (

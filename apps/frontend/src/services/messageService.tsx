@@ -35,32 +35,17 @@ export const processUserInput = async (
         // Add the bot message with content (this was missing)
         updateOrAddBotMessage(response.inputMessage.content || '');
 
-        // First play the speech response without setting the listening state
-        // This way the microphone doesn't show as listening while the AI is speaking
-        await playSpeechResponse(response, speechService, useTextToSpeech);
-
         // After speech synthesis is complete, reset the waiting states
         resetWaitingStates();
 
-        let autoDetectedSpeech: string | null = null;
+        // First play the speech response without setting the listening state
+        // This way the microphone doesn't show as listening while the AI is speaking
+        const autoDetectedSpeech = await playSpeechResponse(response, speechService, useTextToSpeech, setIsListening);
 
         // Only start auto-listening if speech is enabled
         if (useTextToSpeech) {
-          // Only after speech has finished, set the listening state to true
-          console.log('Setting microphone to listening state for auto-listening');
-          setIsListening?.(true);
-
-          // Start auto-listening and wait for result
-          autoDetectedSpeech = await speechService.autoStartListening(5000);
-
-          // Reset listening state after auto-listening completes
-          console.log('Auto-listening complete, resetting microphone state');
-          setIsListening?.(false);
-
           // If speech was detected, process it
           if (autoDetectedSpeech && autoDetectedSpeech.trim()) {
-            console.log('Auto-detected speech input:', autoDetectedSpeech);
-
             // Process the auto-detected speech as a new user message
             await processUserInput(
               autoDetectedSpeech,
@@ -84,9 +69,8 @@ export const processUserInput = async (
 
         // If we got auto-detected speech after the AI response, process it as a new user input
         if (autoDetectedSpeech && autoDetectedSpeech.trim()) {
-          console.log('Auto-detected speech input:', autoDetectedSpeech);
-          // Reset states before processing the new input to avoid UI confusion
           resetWaitingStates();
+
           // Process the auto-detected speech as a new user message
           await processUserInput(
             autoDetectedSpeech,
@@ -128,8 +112,6 @@ export const processUserInput = async (
           // Create a function to process speech detected after streaming
           const processUserSpeech = async (transcript: string) => {
             if (transcript.trim()) {
-              console.log('Processing auto-detected speech from streaming mode:', transcript);
-
               // Process the auto-detected speech as a new user message
               await processUserInput(
                 transcript,
