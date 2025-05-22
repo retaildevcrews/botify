@@ -1,0 +1,10 @@
+fastapi
+aiohttp
+uvicorn
+toml
+pydantic
+opentelemetry-api
+langchain-openai
+azure-ai-contentfilter
+langchain-core
+langgraph

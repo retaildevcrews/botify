@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Botify Realtime API Test Client</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container { margin-bottom: 20px; }
+        #status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .connecting { background-color: #fff3cd; color: #856404; }
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ced4da;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #f5c6cb;
+        }
+        .warning-message {
+            background-color: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ffeeba;
+        }
+        .info-message {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #bee5eb;
+        }
+        .controls { margin: 20px 0; }
+        button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover { background-color: #0069d9; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .message-user { color: #0066cc; }
+        .message-assistant { color: #006600; }
+        .message-system { color: #666; font-style: italic; }
+        #audioControls { display: flex; gap: 10px; align-items: center; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <h1>Botify Realtime API Test Client</h1>
+
+    <div class="container">
+        <div id="connectionSettings">
+            <h3>Connection Settings</h3>
+            <form id="serverConfigForm">
+                <div style="display: flex; margin-bottom: 10px; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label for="host">Host:</label>
+                        <input type="text" id="host" value="localhost" style="width: 100%; padding: 6px;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label for="port">Port:</label>
+                        <input type="number" id="port" value="8080" style="width: 100%; padding: 6px;">
+                    </div>
+                </div>
+                <div style="display: flex; margin-bottom: 10px;">
+                    <div style="flex: 1;">
+                        <label for="path">Path:</label>
+                        <input type="text" id="path" value="/realtime" style="width: 100%; padding: 6px;">
+                    </div>
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label>WebSocket URL:</label>
+                    <div id="wsUrlDisplay" style="padding: 6px; background: #f0f0f0; border-radius: 4px;">ws://localhost:8080/realtime</div>
+                </div>
+            </form>
+        </div>
+
+        <div id="status" class="disconnected">Disconnected</div>
+
+        <div class="controls">
+            <button id="connectBtn">Connect</button>
+            <button id="disconnectBtn" disabled>Disconnect</button>
+            <button id="healthCheckBtn">Check Server Status</button>
+        </div>
+
+        <div id="audioControls">
+            <button id="startRecording" disabled>Start Recording</button>
+            <button id="stopRecording" disabled>Stop Recording</button>
+            <div id="recordingIndicator" class="hidden">🔴 Recording...</div>
+        </div>
+
+        <h3>Messages</h3>
+        <div id="messages"></div>
+    </div>    <script>
+        const statusDiv = document.getElementById('status');
+        const messagesDiv = document.getElementById('messages');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const startRecordingBtn = document.getElementById('startRecording');
+        const stopRecordingBtn = document.getElementById('stopRecording');
+        const recordingIndicator = document.getElementById('recordingIndicator');
+
+        // Server configuration elements
+        const hostInput = document.getElementById('host');
+        const portInput = document.getElementById('port');
+        const pathInput = document.getElementById('path');
+        const wsUrlDisplay = document.getElementById('wsUrlDisplay');
+
+        // Update WebSocket URL display when configuration changes
+        function updateWsUrlDisplay() {
+            const host = hostInput.value || 'localhost';
+            const port = portInput.value || '8080';
+            const path = pathInput.value || '/realtime';
+            wsUrlDisplay.textContent = `ws://${host}:${port}${path}`;
+        }
+
+        // Add event listeners to update URL display
+        hostInput.addEventListener('input', updateWsUrlDisplay);
+        portInput.addEventListener('input', updateWsUrlDisplay);
+        pathInput.addEventListener('input', updateWsUrlDisplay);
+
+        // Initialize URL display
+        updateWsUrlDisplay();
+
+        // WebSocket and audio settings
+        // Allow configuring the server URL from the query string, e.g. ?server=ws://localhost:8080
+        const urlParams = new URLSearchParams(window.location.search);
+
+        // Populate form fields from URL params if available
+        if (urlParams.get('host')) {
+            hostInput.value = urlParams.get('host');
+        }
+        if (urlParams.get('port')) {
+            portInput.value = urlParams.get('port');
+        }
+        if (urlParams.get('path')) {
+            pathInput.value = urlParams.get('path');
+        }
+
+        // Update URL display after setting from params
+        updateWsUrlDisplay();
+
+        let socket;
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+        let connectionRetries = 0;
+        const MAX_RETRIES = 3;
+
+        // Connect to WebSocket server
+        connectBtn.addEventListener('click', connectWebSocket);
+        disconnectBtn.addEventListener('click', disconnectWebSocket);
+        startRecordingBtn.addEventListener('click', startRecording);
+        stopRecordingBtn.addEventListener('click', stopRecording);
+
+        // Add health check functionality
+        const healthCheckBtn = document.getElementById('healthCheckBtn');
+        if (healthCheckBtn) {
+            healthCheckBtn.addEventListener('click', checkServerStatus);
+        }
+
+        // Check server status on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                await checkServerStatus();
+            } catch (e) {
+                console.error("Error checking server status:", e);
+            }
+        });
+
+        async function checkServerStatus() {
+            const host = hostInput.value || 'localhost';
+            const port = portInput.value || '8080';
+
+            try {
+                const response = await fetch(`http://${host}:${port}/realtime-status`);
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Check for WebSocket support
+                    if (!data.websocket_support.has_websocket_support) {
+                        logMessage('System', 'WARNING: Server does not have WebSocket support. Connection will fail.', 'warning');
+                        logMessage('System', 'The server needs the websockets library installed.', 'warning');
+                    } else {
+                        logMessage('System', `Server has WebSocket support (${data.websocket_support.libraries_available.join(', ')})`, 'info');
+                    }
+
+                    // Check for environment variables
+                    if (!data.environment_config.all_required_vars_set) {
+                        logMessage('System', `Missing environment variables: ${data.environment_config.missing_vars.join(', ')}`, 'warning');
+                    }
+
+                    // Check turn detection type
+                    const turnDetectionType = data.environment_config.turn_detection_type;
+                    if (turnDetectionType === 'server_vad') {
+                        logMessage('System', 'Using basic voice activity detection (server_vad)', 'info');
+                        logMessage('System', 'NOTE: End-of-utterance detection is not available with this configuration.', 'info');
+                    } else if (turnDetectionType === 'cascaded') {
+                        logMessage('System', 'Using advanced cascaded pipeline with end-of-utterance detection', 'info');
+                    }
+
+                    return data;
+                } else {
+                    logMessage('System', `Server status check failed: ${response.status} ${response.statusText}`, 'warning');
+                    return null;
+                }
+            } catch (e) {
+                logMessage('System', `Error checking server status: ${e.message}`, 'error');
+                logMessage('System', 'Verify that the server is running at the configured host and port.', 'warning');
+                return null;
+            }
+        }
+
+        function connectWebSocket() {
+            statusDiv.className = 'connecting';
+            statusDiv.textContent = 'Connecting...';
+
+            // Build WebSocket URL from configuration
+            const host = hostInput.value || 'localhost';
+            const port = portInput.value || '8080';
+            const path = pathInput.value || '/realtime';
+            const serverUrl = `ws://${host}:${port}${path}`;
+
+            // Log connection attempt
+            logMessage('System', `Connecting to: ${serverUrl}`);
+
+            try {
+                socket = new WebSocket(serverUrl);
+
+                // Add connection timeout
+                const connectionTimeout = setTimeout(() => {
+                    if (socket.readyState !== WebSocket.OPEN) {
+                        logMessage('System', 'Connection timeout - server not responding');
+                        socket.close();
+                    }
+                }, 5000);
+
+                socket.onopen = () => {
+                    clearTimeout(connectionTimeout);
+                    connectionRetries = 0;
+                    statusDiv.className = 'connected';
+                    statusDiv.textContent = 'Connected';
+                    connectBtn.disabled = true;
+                    disconnectBtn.disabled = false;
+                    startRecordingBtn.disabled = false;
+                    logMessage('System', 'Connected to server');
+                };
+
+                socket.onmessage = (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        processMessage(message);
+                    } catch (e) {
+                        logMessage('System', `Error parsing message: ${e.message}`);
+                        console.error('Error parsing message:', e, event.data);
+                        // If it's not JSON, display it as plain text
+                        if (typeof event.data === 'string') {
+                            logMessage('System', `Raw message: ${event.data.substring(0, 100)}${event.data.length > 100 ? '...' : ''}`);
+                        }
+                    }
+                };
+
+                socket.onclose = (event) => {
+                    clearTimeout(connectionTimeout);
+                    statusDiv.className = 'disconnected';
+                    statusDiv.textContent = 'Disconnected';
+                    connectBtn.disabled = false;
+                    disconnectBtn.disabled = true;
+                    startRecordingBtn.disabled = true;
+                    stopRecordingBtn.disabled = true;
+                    recordingIndicator.classList.add('hidden');
+
+                    // Show close code and reason
+                    const reason = event.reason ? ` (${event.reason})` : '';
+                    logMessage('System', `Disconnected from server: code ${event.code}${reason}`);
+
+                    if (mediaRecorder && isRecording) {
+                        mediaRecorder.stop();
+                        isRecording = false;
+                    }
+
+                    // Auto-retry connection if it was an abnormal closure
+                    if (event.code !== 1000 && event.code !== 1001 && connectionRetries < MAX_RETRIES) {
+                        connectionRetries++;
+                        const retryDelay = 2000 * connectionRetries; // Exponential backoff
+                        logMessage('System', `Retrying connection in ${retryDelay/1000} seconds... (Attempt ${connectionRetries}/${MAX_RETRIES})`);
+                        setTimeout(connectWebSocket, retryDelay);
+                    }
+                };                socket.onerror = (error) => {
+                    console.error('WebSocket error:', error);
+                    logMessage('System', `WebSocket error: ${error.type}`, 'error');
+                    logMessage('System', `Common causes: Server not running, wrong URL, or network issues`, 'warning');
+
+                    // Advanced diagnostics
+                    logMessage('System', `Diagnostic: Checking if server has websockets support...`, 'info');
+
+                    // Try to make a regular HTTP request to server to check status
+                    fetch(`http://${host}:${port}/realtime-status`)
+                        .then(response => {
+                            if (response.ok) {
+                                return response.json();
+                            } else {
+                                logMessage('System', `Server is running but returned status ${response.status}. Check server logs.`, 'warning');
+                                return null;
+                            }
+                        })
+                        .then(data => {
+                            if (data) {
+                                if (!data.websocket_support.has_websocket_support) {
+                                    logMessage('System', `Server is missing WebSocket library. Install 'websockets' package in the container.`, 'error');
+                                    logMessage('System', `You can rebuild the container with WebSocket support using the rebuild_service.sh script.`, 'info');
+                                } else if (data.environment_config.turn_detection_type === 'server_vad') {
+                                    logMessage('System', `Using 'server_vad' for turn detection. If you get 'End of utterance detection' errors, change to 'cascaded'.`, 'warning');
+                                }
+                            }
+                        })
+                        .catch(e => {
+                            logMessage('System', `Could not connect to server via HTTP either. Server may be down or inaccessible.`, 'error');
+                            logMessage('System', `Error: ${e.message}`, 'error');
+                            logMessage('System', `Check if the server is running and accessible at ${host}:${port}`, 'info');
+                        });
+                };
+            } catch (error) {
+                statusDiv.className = 'disconnected';
+                statusDiv.textContent = 'Connection Error';
+                logMessage('System', `Connection error: ${error.message}`);
+                console.error('Connection error:', error);
+            }
+        }
+
+        function disconnectWebSocket() {
+            if (socket) {
+                socket.close();
+            }
+        }        async function startRecording() {
+            try {
+                // Request access to the microphone with specific constraints for better compatibility
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,  // Mono
+                        sampleRate: 16000 // 16kHz sample rate
+                    }
+                });
+
+                const audioContext = new AudioContext({
+                    sampleRate: 16000 // 16kHz sample rate
+                });
+                const source = audioContext.createMediaStreamSource(stream);
+                const processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                source.connect(processor);
+                processor.connect(audioContext.destination);
+
+                // Create a MediaRecorder with specific mime type
+                const options = { mimeType: 'audio/webm;codecs=pcm' };
+                try {
+                    mediaRecorder = new MediaRecorder(stream, options);
+                } catch (e) {
+                    // Fallback if the specified mime type isn't supported
+                    console.log('MediaRecorder with specified options not supported, using default');
+                    mediaRecorder = new MediaRecorder(stream);
+                }
+
+                audioChunks = [];
+
+                mediaRecorder.addEventListener('dataavailable', event => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+
+                        // Convert audio chunk to base64 and send to server
+                        const fileReader = new FileReader();
+                        fileReader.onload = function() {
+                            try {
+                                const base64Data = fileReader.result.split(',')[1];
+                                const message = {
+                                    type: 'input_audio_buffer.append',
+                                    data: base64Data
+                                };
+
+                                if (socket && socket.readyState === WebSocket.OPEN) {
+                                    socket.send(JSON.stringify(message));
+                                    console.log('Sent audio chunk, size:', event.data.size);
+                                } else {
+                                    console.warn('WebSocket not open, cannot send audio data');
+                                }
+                            } catch (error) {
+                                console.error('Error preparing or sending audio data:', error);
+                                logMessage('System', `Error sending audio: ${error.message}`);
+                            }
+                        };
+                        fileReader.onerror = function(error) {
+                            console.error('FileReader error:', error);
+                            logMessage('System', 'Error reading audio data');
+                        };
+                        fileReader.readAsDataURL(event.data);
+                    }
+                });
+
+                mediaRecorder.addEventListener('stop', () => {
+                    stopRecordingBtn.disabled = true;
+                    startRecordingBtn.disabled = false;
+                    recordingIndicator.classList.add('hidden');
+
+                    // Release microphone
+                    stream.getTracks().forEach(track => track.stop());
+
+                    // Disconnect audio processing
+                    try {
+                        processor.disconnect();
+                        source.disconnect();
+                        audioContext.close();
+                    } catch (e) {
+                        console.warn('Error cleaning up audio context:', e);
+                    }
+                });
+
+                // Start recording
+                mediaRecorder.start(100);  // Capture in 100ms chunks
+                isRecording = true;
+                startRecordingBtn.disabled = true;
+                stopRecordingBtn.disabled = false;
+                recordingIndicator.classList.remove('hidden');
+
+                logMessage('System', 'Started recording');
+            } catch (error) {
+                logMessage('System', `Error accessing microphone: ${error.message}`);
+                console.error('Error accessing microphone:', error);
+            }
+        }
+
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                logMessage('System', 'Stopped recording');
+            }
+        }        function processMessage(message) {
+            console.log('Received message:', message);
+
+            // Add timestamp to all message types for debugging
+            const timestamp = new Date().toISOString().substring(11, 23); // HH:MM:SS.sss format
+
+            switch (message.type) {
+                case 'conversation.item.input_audio_transcription.completed':
+                    if (message.transcript) {
+                        logMessage('User', message.transcript);
+                    } else {
+                        logMessage('System', 'Received empty transcription');
+                    }
+                    break;
+
+                case 'response.audio_transcript.delta':
+                    // Handle streaming response
+                    const existingMsg = document.querySelector('.message-assistant.current');
+                    if (existingMsg) {
+                        existingMsg.textContent += message.delta;
+                    } else {
+                        const p = document.createElement('p');
+                        p.className = 'message-assistant current';
+                        p.textContent = message.delta;
+                        messagesDiv.appendChild(p);
+                        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+                    }
+                    break;
+
+                case 'response.audio_transcript.done':
+                    // Complete the response
+                    const currentMsg = document.querySelector('.message-assistant.current');
+                    if (currentMsg) {
+                        currentMsg.classList.remove('current');
+                    }
+                    break;
+
+                case 'response.audio_bytes':
+                    // This is audio data - could play it or save for download
+                    console.log('Received audio response data');
+                    break;
+
+                case 'error':
+                    logMessage('System', `API Error: ${JSON.stringify(message.error)}`);
+                    break;
+
+                case 'response.output_item.done':
+                    if (message.item && message.item.type === 'function_call') {
+                        logMessage('System', `Tool call: ${message.item.name}`);
+                    }
+                    break;
+
+                case 'tool_result.update':
+                    if (message.call_id) {
+                        let resultText = 'Tool result received';
+                        try {
+                            const result = JSON.parse(message.result);
+                            if (result.error) {
+                                resultText = `Tool error: ${result.error}`;
+                            } else {
+                                resultText = `Tool result: ${message.result.substring(0, 100)}${message.result.length > 100 ? '...' : ''}`;
+                            }
+                        } catch (e) {
+                            resultText = `Tool result: ${message.result}`;
+                        }
+                        logMessage('System', resultText);
+                    }
+                    break;
+
+                default:
+                    // Log message type for debugging
+                    console.log(`Message type [${message.type}]:`, message);
+            }
+        }
+
+        function logMessage(sender, text, level = 'default') {
+            const p = document.createElement('p');
+            p.className = `message-${sender.toLowerCase()}`;
+
+            // Apply styling based on message level
+            if (level === 'error') {
+                p.className += ' error-message';
+            } else if (level === 'warning') {
+                p.className += ' warning-message';
+            } else if (level === 'info') {
+                p.className += ' info-message';
+            }
+
+            p.textContent = `${sender}: ${text}`;
+            messagesDiv.appendChild(p);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+    </script>
+</body>
+</html>

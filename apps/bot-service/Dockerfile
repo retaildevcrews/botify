@@ -1,4 +1,5 @@
 FROM python:3.12-slim AS builder
+RUN apt-get update && apt-get install -y build-essential
 
 # Set a working directory
 WORKDIR /code
@@ -26,10 +27,10 @@ COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/pytho
 COPY --from=builder /usr/local/bin/opentelemetry* /usr/local/bin/
 
 # Download the spaCy English language model for Presidio image redactor.
-# Install the uvicorn server.
+# Install the uvicorn server with websockets support.
 # Install Open Telemetry auto-instrumentation dependencies.
 RUN python -m spacy download en_core_web_sm && \
-    pip install --no-deps --ignore-installed --no-cache-dir uvicorn && \
+    pip install --no-deps --ignore-installed --no-cache-dir uvicorn websockets && \
     opentelemetry-bootstrap -a install
 
 ENV OTEL_PYTHON_LOGGING_AUTO_INSTRUMENTATION_ENABLED=true
