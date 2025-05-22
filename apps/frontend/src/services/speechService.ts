@@ -14,6 +14,64 @@ let speechToken: string;
 let speechRegion: string;
 let speechConfig: speechsdk.SpeechConfig;
 
+// Helper functions for common operations
+const handleAutoListenTimeout = (timeoutMs: number, recognizer: speechsdk.SpeechRecognizer, resolve: (value: string | null) => void): NodeJS.Timeout => {
+  return setTimeout(() => {
+    if (activeRecognizer === recognizer) {
+      const currentRecognizer = activeRecognizer;
+      activeRecognizer = null;
+      currentRecognizer.close();
+      resolve(null);
+    }
+  }, timeoutMs);
+};
+
+const cleanupAutoListenSession = (recognizer: any): void => {
+  const autoListenData = recognizer.__autoListenData;
+  if (autoListenData && autoListenData.timeout) {
+    clearTimeout(autoListenData.timeout);
+  }
+};
+
+// Unified error handler for speech recognition
+const handleRecognitionError = (result: speechsdk.SpeechRecognitionResult): string => {
+  let errorMessage = 'Speech recognition failed';
+
+  if (result.reason === speechsdk.ResultReason.Canceled) {
+    const cancellationDetails = speechsdk.CancellationDetails.fromResult(result);
+
+    if (cancellationDetails.reason === speechsdk.CancellationReason.Error) {
+      errorMessage = `Recognition error: ${cancellationDetails.errorDetails}`;
+    }
+  } else {
+    console.log(`ERROR: Speech not recognized. Reason: ${result.reason}`);
+  }
+
+  return errorMessage;
+};
+
+// Token management functions
+const isTokenExpired = (): boolean => {
+  try {
+    if (!speechToken) return true;
+
+    const decoded = jwtDecode(speechToken) as { exp: number, region: string };
+    const expirationTime = decoded.exp * 1000; // Convert to milliseconds
+    return Date.now() >= expirationTime;
+  } catch {
+    // If we can't decode the token, assume it's expired
+    return true;
+  }
+};
+
+const ensureValidToken = async (): Promise<boolean> => {
+  // Check if token exists and is not expired
+  if (!speechToken || isTokenExpired()) {
+    return await fetchSpeechToken();
+  }
+  return true;
+};
+
 // Function to fetch and set up the speech token
 const fetchSpeechToken = async (): Promise<boolean> => {
   try {
@@ -26,7 +84,6 @@ const fetchSpeechToken = async (): Promise<boolean> => {
     speechConfig = speechsdk.SpeechConfig.fromAuthorizationToken(speechToken, speechRegion);
     speechConfig.speechSynthesisVoiceName = speechVoiceName;
 
-    console.log('Speech token refreshed successfully');
     return true;
   } catch (error) {
     console.error('Failed to fetch speech token:', error);
@@ -48,13 +105,24 @@ let activeRecognizer: speechsdk.SpeechRecognizer | null = null;
 export const stopSpeechRecognition = (): Promise<string | null> => {
   return new Promise((resolve) => {
     if (activeRecognizer) {
-      console.log('Stopping speech recognition...');
+      const currentRecognizer = activeRecognizer;
 
-      // We can't directly get partial results from recognizeOnceAsync
-      // But we can stop and close the recognizer to force it to return any partial results
-      activeRecognizer.close();
+      // Check if this is an auto-listen session that needs special cleanup
+      const autoListenData = (currentRecognizer as any).__autoListenData;
+      if (autoListenData && autoListenData.isAutoListen) {
+        // Use the helper function to clean up the timeout
+        cleanupAutoListenSession(currentRecognizer);
+
+        // Notify the auto-listen promise that we've stopped manually
+        if (autoListenData.resolveFn) {
+          // Resolve the autoStartListening promise with null to indicate manual stop
+          autoListenData.resolveFn(null);
+        }
+      }
+
+      // Close the recognizer and clear the reference
+      currentRecognizer.close();
       activeRecognizer = null;
-      console.log('Recognition stopped');
 
       // Since we can't reliably get the partial result, resolve with an empty string
       // The app will handle this case appropriately
@@ -75,26 +143,15 @@ export const startSpeechRecognition = async (): Promise<string> => {
       // Store active recognizer so it can be stopped later
       activeRecognizer = recognizer;
 
-      // Start listening
-      console.log('Listening...');
-
       // Process speech recognition results
       recognizer.recognizeOnceAsync((result) => {
         activeRecognizer = null; // Clear the reference after completion
         if (result.reason === speechsdk.ResultReason.RecognizedSpeech) {
-          console.log(`RECOGNIZED: ${result.text}`);
           resolve(result.text);
         } else {
-          console.log(`ERROR: Speech not recognized. Reason: ${result.reason}`);
-          if (result.reason === speechsdk.ResultReason.Canceled) {
-            const cancellationDetails = speechsdk.CancellationDetails.fromResult(result);
-            console.log(`CANCELED: Reason=${cancellationDetails.reason}`);
-            if (cancellationDetails.reason === speechsdk.CancellationReason.Error) {
-              console.log(`CANCELED: ErrorCode=${cancellationDetails.ErrorCode}`);
-              console.log(`CANCELED: ErrorDetails=${cancellationDetails.errorDetails}`);
-            }
-          }
-          reject('Speech recognition failed');
+          // Use the unified error handler
+          const errorMessage = handleRecognitionError(result);
+          reject(errorMessage);
         }
       });
     } catch (error) {
@@ -105,28 +162,20 @@ export const startSpeechRecognition = async (): Promise<string> => {
 };
 
 // Define text-to-speech function with token refresh capability
-export const synthesizeSpeech = async (text: string, speechEnabled = true): Promise<void> => {
-  // Skip speech synthesis if it's disabled
-  if (!speechEnabled) {
-    console.log('Speech synthesis skipped: Speech is disabled in settings');
+export const synthesizeSpeech = async (text: string, useTextToSpeech = true): Promise<void> => {
+  // Skip speech synthesis if conditions aren't met
+  if (!useTextToSpeech || !text || !speechConfig) {
+    const reason = !useTextToSpeech ? 'Speech is disabled in settings' :
+                  !text ? 'No text provided' : 'Speech configuration not available';
+    console.log(`Speech synthesis skipped: ${reason}`);
     return Promise.resolve();
   }
 
-  if (!text) {
-    console.warn('No text provided for speech synthesis');
-    return Promise.resolve(); // Resolve instead of reject to avoid disrupting the app
-  }
-
-  // Check if speech config is available (token fetch may have failed earlier)
-  if (!speechConfig) {
-    console.warn('Speech synthesis skipped: Speech configuration not available');
-    return Promise.resolve();
-  }
+  // Ensure we have a valid token before attempting synthesis
+  await ensureValidToken();
 
   // Use text directly without trying to parse it as JSON
-  // The extractVoiceSummaryFromResponse function should have already
-  // extracted the voice summary text before calling this function
-  let speechText = text;
+  const speechText = text;
 
   // Function to perform speech synthesis with current token
   const performSpeechSynthesis = (): Promise<void> => {
@@ -140,7 +189,6 @@ export const synthesizeSpeech = async (text: string, speechEnabled = true): Prom
           speechText,
           (result) => {
             if (result.reason === speechsdk.ResultReason.SynthesizingAudioCompleted) {
-              console.log('Speech synthesis completed');
               resolve();
             } else {
               console.log(`Speech synthesis failed: ${result.errorDetails}`);
@@ -179,23 +227,20 @@ export const synthesizeSpeech = async (text: string, speechEnabled = true): Prom
       console.log('Attempting to refresh speech token and retry...');
       try {
         // Refresh token and try again
-        const tokenRefreshed = await fetchSpeechToken();
-        if (tokenRefreshed) {
+        if (await fetchSpeechToken()) {
           return await performSpeechSynthesis();
         } else {
           console.warn('Speech synthesis skipped: Could not refresh token');
-          return;
         }
       } catch (refreshError) {
         console.error('Failed to refresh token:', refreshError);
-        // Don't throw, just log the error and continue
-        return;
       }
     } else {
       // For other errors, just log them
       console.error('Speech synthesis error (continuing with text only):', error);
-      return;
     }
+    // Don't throw, just return to prevent disrupting the app
+    return;
   }
 };
 
@@ -233,31 +278,46 @@ export const autoStartListening = async (timeoutMs = 5000): Promise<string | nul
     return null;
   }
 
+  // Track the current auto-listen session with a unique identifier
+  let autoListenResolveFn: ((value: string | null) => void) | null = null;
+  let autoListenTimeout: NodeJS.Timeout | null = null;
+
   return new Promise(async (resolve) => {
+    // Store the resolve function so we can call it when stopSpeechRecognition is called
+    autoListenResolveFn = resolve;
+
     // Setup audio config and recognizer
     const audioConfig = speechsdk.AudioConfig.fromDefaultMicrophoneInput();
     const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
+
+    // Store active recognizer with additional metadata for auto-listen
     activeRecognizer = recognizer;
 
-    console.log('Auto-listening started...');
+    // Store additional metadata on the recognizer object for cleanup
+    (recognizer as any).__autoListenData = {
+      resolveFn: autoListenResolveFn,
+      timeout: null,
+      isAutoListen: true
+    };
 
-    // Set timeout for no speech detection
-    const timeout = setTimeout(() => {
-      if (activeRecognizer) {
-        console.log('No speech detected after timeout, stopping auto-listen');
-        activeRecognizer.close();
-        activeRecognizer = null;
-        resolve(null);
-      }
-    }, timeoutMs);
+    // Set timeout for no speech detection using the helper function
+    autoListenTimeout = handleAutoListenTimeout(timeoutMs, recognizer, resolve);
+
+    // Store timeout reference for cleanup
+    (recognizer as any).__autoListenData.timeout = autoListenTimeout;
 
     // Process recognition results
     recognizer.recognizeOnceAsync((result) => {
-      clearTimeout(timeout);
-      activeRecognizer = null;
+      // Get the timeout from the recognizer's metadata before clearing
+      const metadata = (recognizer as any).__autoListenData;
+      metadata?.timeout && clearTimeout(metadata.timeout);
+
+      // Clear active recognizer only if it's still this one
+      if (activeRecognizer === recognizer) {
+        activeRecognizer = null;
+      }
 
       if (result.reason === speechsdk.ResultReason.RecognizedSpeech) {
-        console.log(`AUTO-RECOGNIZE: ${result.text}`);
         resolve(result.text);
       } else {
         // Log specific error details only in detailed debug scenarios

@@ -94,7 +94,6 @@ const AppContent = () => {
       const speechService = await import('./services/speechService');
 
       if (isListening) {
-        console.log('Stopping speech recognition...');
         const partialTranscript = await speechService.stopSpeechRecognition();
         setIsListening(false);
 
@@ -105,11 +104,9 @@ const AppContent = () => {
       }
 
       setIsListening(true);
-      console.log('Starting speech recognition...');
 
       // Automatically enable speech when using microphone input
       if (!useTextToSpeech) {
-        console.log('Enabling speech synthesis due to microphone usage');
         setUseTextToSpeech(true);
       }
 
