@@ -17,6 +17,7 @@ from botify_langchain.runnable_factory import RunnableFactory
 from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi.websockets import WebSocketDisconnect
 from opentelemetry import trace
 
@@ -90,6 +91,11 @@ class AppFactory:
             expose_headers=["*"],
         )
 
+        # Mount the test directory as static files
+        test_dir = Path(__file__).parent.parent / "test"
+        if test_dir.exists():
+            self.app.mount("/test", StaticFiles(directory=str(test_dir)), name="test")
+
     def setup_routes(self):
         @self.app.get("/version")
         def get_version():
@@ -133,7 +139,7 @@ class AppFactory:
                 "websocket_endpoint": "/realtime",
                 "protocol": "WebSocket",
                 "description": "Endpoint for realtime voice interactions with the Azure OpenAI Realtime API",
-                "message_format": {"type": "input_audio_buffer.append", "data": "base64 encoded audio data"},
+                "message_format": {"type": "input_audio_buffer.append", "audio": "base64 encoded audio data"},
                 "response_format": {
                     "transcription": "The transcribed text from the user's audio",
                     "assistant_response": "The assistant's response based on the knowledge base",
@@ -313,7 +319,7 @@ class AppFactory:
                 "description": "WebSocket endpoint for real-time voice interactions",
                 "connection": {"url": "ws://hostname:port/realtime", "protocols": ["websocket"]},
                 "client_messages": [
-                    {"type": "input_audio_buffer.append", "data": "base64-encoded audio data"}
+                    {"type": "input_audio_buffer.append", "audio": "base64-encoded audio data"}
                 ],
                 "server_messages": [
                     {"type": "conversation.item.input_audio_transcription.completed", "transcript": "transcribed user speech"},

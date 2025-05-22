@@ -14,24 +14,29 @@ fi
 CURRENT_VALUE=$(grep "AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE" "$CREDENTIALS_FILE" | cut -d '=' -f2 | tr -d '"')
 
 echo "Current turn detection type: ${CURRENT_VALUE:-not set}"
+echo "Available turn detection types:"
+echo "  - server_vad (basic, no end-of-utterance support)"
+echo "  - azure_semantic_vad (recommended, with end-of-utterance support)"
+echo "  - azure_semantic_vad_en (English only, with end-of-utterance support)"
+echo "  - server_sd (simple silence detection)"
+echo "  - azure_semantic_vad_multilingual (multilingual support)"
+echo "  - none (no turn detection)"
 
 # Prompt for change
-read -p "Would you like to change the turn detection type to 'cascaded' to enable end-of-utterance detection? (y/n): " CHOICE
+read -p "Would you like to change the turn detection type to 'azure_semantic_vad' to enable end-of-utterance detection? (y/n): " CHOICE
 
 if [ "$CHOICE" = "y" ] || [ "$CHOICE" = "Y" ]; then
     # Make a backup of the file
-    cp "$CREDENTIALS_FILE" "${CREDENTIALS_FILE}.backup"
-
-    # Check if the variable exists in the file
+    cp "$CREDENTIALS_FILE" "${CREDENTIALS_FILE}.backup"    # Check if the variable exists in the file
     if grep -q "AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE" "$CREDENTIALS_FILE"; then
         # Update existing variable
-        sed -i 's/AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE="[^"]*"/AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE="cascaded"/' "$CREDENTIALS_FILE"
+        sed -i 's/AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE="[^"]*"/AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE="azure_semantic_vad"/' "$CREDENTIALS_FILE"
     else
         # Add the variable if it doesn't exist
-        echo 'AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE="cascaded"' >> "$CREDENTIALS_FILE"
+        echo 'AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE="azure_semantic_vad"' >> "$CREDENTIALS_FILE"
     fi
 
-    echo "Updated $CREDENTIALS_FILE with AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE=\"cascaded\""
+    echo "Updated $CREDENTIALS_FILE with AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE=\"azure_semantic_vad\""
     echo "A backup was created at ${CREDENTIALS_FILE}.backup"
 
     # Prompt to restart services

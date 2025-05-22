@@ -39,10 +39,8 @@ REALTIME_SESSION_CONFIG_AZURE = {
         "turn_detection": {
             "type": os.getenv("AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE", "server_vad"),
             "threshold": float(os.getenv("AZURE_SPEECH_SERVICES_VAD_THRESHOLD", 0.2)),
-            "prefix_padding_ms": 200,
             "silence_duration_ms": int(os.getenv("AZURE_SPEECH_SERVICES_VAD_SILENCE_DURATION_MS", 500)),
-            "remove_filler_words": False
-            # End of utterance detection removed as it's only supported for cascaded pipelines
+            # Remove other parameters that might not be compatible with azure_semantic_vad
         },
         "tools": [],  # Will be populated based on available tools
         "tool_choice": "auto"
@@ -147,18 +145,29 @@ class BotifyRealtime:
         if engine == "azure":
             config = REALTIME_SESSION_CONFIG_AZURE.copy()
 
-            # Check if we're using a cascaded pipeline, and add end-of-utterance detection if so
+            # Get the current turn detection type
             turn_detection_type = os.getenv("AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE", "server_vad")
-            if turn_detection_type == "cascaded":
-                # Add end-of-utterance detection for cascaded pipelines only
-                config["session"]["turn_detection"]["end_of_utterance_detection"] = {
-                    "model": "semantic_detection_v1",
-                    "threshold": 0.1,
-                    "timeout": 4
+            logger.info(f"Using {turn_detection_type} pipeline for turn detection")
+
+            # Customize configuration based on turn detection type
+            if turn_detection_type == "azure_semantic_vad":
+                # For azure_semantic_vad, only include the parameters it supports
+                config["session"]["turn_detection"] = {
+                    "type": turn_detection_type,
+                    "threshold": float(os.getenv("AZURE_SPEECH_SERVICES_VAD_THRESHOLD", 0.2)),
+                    "silence_duration_ms": int(os.getenv("AZURE_SPEECH_SERVICES_VAD_SILENCE_DURATION_MS", 500))
                 }
-                logger.info("Using cascaded pipeline with end-of-utterance detection")
-            else:
-                logger.info(f"Using {turn_detection_type} pipeline without end-of-utterance detection")
+                # Make sure Azure-specific noise reduction is included since we're using azure_semantic_vad
+                if "input_audio_noise_reduction" not in config["session"]:
+                    config["session"]["input_audio_noise_reduction"] = {
+                        "type": "azure_deep_noise_suppression"
+                    }
+                logger.info("Using simplified configuration for azure_semantic_vad")
+            elif turn_detection_type == "server_vad":
+                # For server_vad, ensure we don't have end-of-utterance detection
+                if "end_of_utterance_detection" in config["session"]["turn_detection"]:
+                    del config["session"]["turn_detection"]["end_of_utterance_detection"]
+                logger.info("Using standard configuration for server_vad")
         else:
             config = REALTIME_SESSION_CONFIG_OPENAI.copy()
 
@@ -193,8 +202,18 @@ class BotifyRealtime:
 
         config["session"]["tools"] = tool_configs
 
-        await self.ws_openai.send_json(config)
-        logger.info(f"Sent session configuration to Realtime API for engine {engine}")
+        # Log the configuration for debugging
+        debug_config = config.copy()
+        if "session" in debug_config and "instructions" in debug_config["session"]:
+            debug_config["session"]["instructions"] = "[INSTRUCTIONS TRUNCATED]"  # Don't log the full instructions
+        logger.info(f"Sending session configuration: {json.dumps(debug_config)}")
+
+        try:
+            await self.ws_openai.send_json(config)
+            logger.info(f"Sent session configuration to Realtime API for engine {engine}")
+        except Exception as e:
+            logger.error(f"Error sending session configuration: {str(e)}")
+            raise
 
     async def _forward_messages(self, websocket: WebSocket):
         with tracer.start_as_current_span("realtime_forward_messages"):
@@ -295,9 +314,68 @@ class BotifyRealtime:
             while self.client_connected:
                 try:
                     message = await websocket.receive_text()
+                    logger.info(f"Received message of length: {len(message)}")
                     message_data = json.loads(message)
-                    if message_data.get("type") == "input_audio_buffer.append":
+
+                    # Log the message type
+                    message_type = message_data.get("type", "unknown")
+                    logger.info(f"Received message type: {message_type}")
+
+                    # Set a new turn ID when receiving audio data
+                    if message_type == "input_audio_buffer.append":
                         self.current_turn_id = str(uuid.uuid4())
+                        logger.info(f"Created new turn ID: {self.current_turn_id}")
+
+                        # Check if audio exists directly in the message (new format)
+                        if "audio" in message_data:
+                            audio_length = len(message_data.get("audio", ""))
+                            logger.info(f"Audio data present in root, length: {audio_length}")
+                        # For backward compatibility, also check in data field (old format)
+                        elif "data" in message_data:
+                            data_field = message_data.get("data")
+                            logger.info(f"Data field found, type: {type(data_field)}")
+
+                            # Validate the audio data format
+                            if isinstance(data_field, str):
+                                # Old format with string data, move to root level
+                                logger.info("Converting string data in 'data' field to root 'audio' field")
+                                message_data["audio"] = data_field
+                                del message_data["data"]
+                            elif isinstance(data_field, dict) and "audio" in data_field:
+                                # Old format with nested audio, move to root level
+                                logger.info("Moving audio from nested data object to root level")
+                                message_data["audio"] = data_field["audio"]
+                                del message_data["data"]
+                            else:
+                                logger.error(f"Invalid data format: {type(data_field)}")
+                                await websocket.send_json({
+                                    "type": "error",
+                                    "error": {
+                                        "message": f"Invalid data format. Expected 'audio' field at root level or in 'data' object.",
+                                        "code": "client_error"
+                                    }
+                                })
+                                continue
+                        else:
+                            logger.error("Missing 'audio' field in message")
+                            await websocket.send_json({
+                                "type": "error",
+                                "error": {
+                                    "message": "Invalid message format: missing 'audio' field",
+                                    "code": "client_error"
+                                }
+                            })
+                            continue
+
+                        # Log what we're sending to OpenAI
+                        if "audio" in message_data:
+                            audio_length = len(message_data["audio"])
+                            logger.info(f"Sending audio data to OpenAI, length: {audio_length}")
+                        else:
+                            logger.error("No audio data found after processing")
+                            continue
+                    # Send the message to OpenAI
+                    logger.info("Forwarding message to OpenAI")
                     await self.ws_openai.send_json(message_data)
                 except WebSocketDisconnect:
                     self.client_connected = False
@@ -325,10 +403,39 @@ class BotifyRealtime:
                             error_details = message.get('error', 'Unknown error details')
                             logger.error(f"OpenAI Realtime API error: {error_details}")
 
-                            # Extract a user-friendly error message
+                            # Extract a user-friendly error message and log more details
                             error_message = "Unknown error occurred"
                             if isinstance(error_details, dict):
                                 error_message = error_details.get('message', 'Unknown error occurred')
+                                error_type = error_details.get('type', 'unknown_error')
+                                error_code = error_details.get('code', 'unknown_code')
+                                error_param = error_details.get('param', 'none')
+                                error_id = error_details.get('event_id', 'none')
+                                logger.error(f"Error details - Type: {error_type}, Code: {error_code}, Param: {error_param}, Event ID: {error_id}")
+
+                                # Log additional details for internal server errors which may be configuration-related
+                                if error_code == "internal_error" or error_type == "server_error":
+                                    logger.error("Internal server error detected - this might be due to configuration issues")
+                                    logger.info(f"Current turn detection type: {os.getenv('AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE', 'server_vad')}")
+
+                                    # Try to recover by sending new configuration
+                                    try:
+                                        logger.info("Attempting to recover from internal server error by updating session config")
+                                        # Simplify the configuration to most basic form
+                                        simplified_config = {
+                                            "type": "session.update",
+                                            "session": {
+                                                "turn_detection": {
+                                                    "type": "server_vad",
+                                                    "threshold": 0.2,
+                                                    "silence_duration_ms": 500
+                                                }
+                                            }
+                                        }
+                                        await self.ws_openai.send_json(simplified_config)
+                                        logger.info("Sent simplified configuration after error")
+                                    except Exception as e:
+                                        logger.error(f"Failed to send recovery configuration: {str(e)}")
                             elif isinstance(error_details, str):
                                 error_message = error_details
 
@@ -346,7 +453,7 @@ class BotifyRealtime:
                             if isinstance(error_details, dict) and error_details.get("type") == "invalid_request_error":
                                 error_param = error_details.get("param")
                                 if "End of utterance detection is only supported for cascaded pipelines" in error_message:
-                                    fix_message = "To fix this issue, set AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE=cascaded in your environment variables, or remove end_of_utterance_detection from your configuration."
+                                    fix_message = "The Azure OpenAI Realtime API doesn't support end-of-utterance detection with the current turn detection type. Restarting the server to disable end-of-utterance detection."
                                     logger.info(fix_message)
                                     await websocket.send_json({
                                         "type": "error",
@@ -355,6 +462,10 @@ class BotifyRealtime:
                                             "code": "configuration_error"
                                         }
                                     })
+
+                                    # We need to restart our connection without end-of-utterance detection
+                                    await websocket.close(code=1012, reason="Restarting connection with updated configuration")
+                                    return
 
                             continue  # Skip further processing for error messages
 

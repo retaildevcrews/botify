@@ -73,6 +73,9 @@
 </head>
 <body>
     <h1>Botify Realtime API Test Client</h1>
+    <div style="background-color: #d4edda; color: #155724; padding: 10px; border-radius: 5px; margin-bottom: 15px; border: 1px solid #c3e6cb;">
+        <strong>Updated May 22, 2025:</strong> This client now uses the new message format required by the Azure OpenAI Realtime API.
+    </div>
 
     <div class="container">
         <div id="connectionSettings">
@@ -117,6 +120,37 @@
 
         <h3>Messages</h3>
         <div id="messages"></div>
+
+        <!-- Message format information -->
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border: 1px solid #ddd;">
+            <h4 style="margin-top: 0;">Message Format Information</h4>
+            <p>This client uses the following format for sending audio data:</p>
+            <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto;">
+{
+  "type": "input_audio_buffer.append",
+  "audio": "base64EncodedAudioData"
+}
+            </pre>
+            <p><strong>Note:</strong> The previous format with audio nested inside a "data" object is no longer supported.</p>
+            <p>For more information, see the <a href="FORMAT_UPDATE.md" target="_blank">Format Update Documentation</a>.</p>
+        </div>
+
+        <!-- Troubleshooting Information -->
+        <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border: 1px solid #ddd;">
+            <h4 style="margin-top: 0;">Troubleshooting WebSocket Connections</h4>
+            <p>If you encounter issues with the WebSocket connection, check the following:</p>
+            <ul>
+                <li><strong>Internal Server Error</strong>: This usually indicates a configuration issue with turn detection. The server will attempt to recover automatically.</li>
+                <li><strong>Configuration Error</strong>: Check the server environment variables, especially those related to turn detection configuration:</li>
+                <ul>
+                    <li>For <code>azure_semantic_vad</code> turn detection, make sure the appropriate noise reduction is configured</li>
+                    <li>For <code>server_vad</code>, check that the threshold and silence duration parameters are properly set</li>
+                </ul>
+                <li><strong>Connection Refused</strong>: Make sure the server is running and accessible at the specified host and port</li>
+                <li><strong>Empty Responses</strong>: Verify that your microphone is working and that audio is being captured properly</li>
+            </ul>
+            <p>For more detailed troubleshooting, please refer to the <a href="TROUBLESHOOTING.md" target="_blank">Troubleshooting Guide</a>.</p>
+        </div>
     </div>    <script>
         const statusDiv = document.getElementById('status');
         const messagesDiv = document.getElementById('messages');
@@ -398,10 +432,17 @@
                         fileReader.onload = function() {
                             try {
                                 const base64Data = fileReader.result.split(',')[1];
+
+                                // IMPORTANT: This is the correct format for Azure OpenAI Realtime API
+                                // The audio field must be at the root level, not nested in a data object
                                 const message = {
                                     type: 'input_audio_buffer.append',
-                                    data: base64Data
+                                    audio: base64Data
                                 };
+
+                                // Debug the message before sending
+                                console.log('Preparing to send message:', JSON.stringify(message).substring(0, 100) + '...');
+                                logMessage('System', `Sending audio data (${base64Data.length} bytes)`);
 
                                 if (socket && socket.readyState === WebSocket.OPEN) {
                                     socket.send(JSON.stringify(message));
@@ -503,7 +544,45 @@
                     break;
 
                 case 'error':
-                    logMessage('System', `API Error: ${JSON.stringify(message.error)}`);
+                    // Extract and format the error information for better user experience
+                    const errorObj = message.error || {};
+                    const errorMsg = errorObj.message || "Unknown error";
+                    const errorCode = errorObj.code || "unknown";
+                    const errorType = errorObj.type || "unknown_error";
+                    const errorParam = errorObj.param || "none";
+                    const errorId = errorObj.event_id || "none";
+
+                    // Log the error with proper formatting
+                    logMessage('System', `API Error: ${errorMsg}`, 'error');
+
+                    // Log additional error details
+                    logMessage('System', `Error details - Type: ${errorType}, Code: ${errorCode}, Param: ${errorParam}, Event ID: ${errorId}`, 'error');
+
+                    // Add more details for specific error types
+                    if (errorCode === 'internal_error' || errorType === 'server_error') {
+                        logMessage('System', 'This is a server-side error. The system is attempting to recover automatically.', 'warning');
+                        logMessage('System', 'The connection will remain open while recovery is attempted.', 'info');
+                    } else if (errorCode === 'client_error') {
+                        logMessage('System', 'There was a problem with the message format. Please check the audio format requirements.', 'warning');
+                    } else if (errorCode === 'configuration_error' || errorMsg.includes('configuration')) {
+                        logMessage('System', 'Server configuration error. The connection may need to be restarted with different settings.', 'warning');
+
+                        // Show specific guidance based on error param
+                        if (errorParam.includes('turn_detection') || errorMsg.includes('turn detection')) {
+                            logMessage('System', 'The current turn detection configuration is not compatible. Try changing to a different type in the server settings.', 'info');
+                        }
+
+                        // Suggest reconnecting after a brief delay
+                        setTimeout(() => {
+                            if (confirm('The connection had a configuration error. Would you like to reconnect?')) {
+                                disconnectWebSocket();
+                                setTimeout(connectWebSocket, 1000);
+                            }
+                        }, 2000);
+                    }
+
+                    // Log detailed information for debugging
+                    console.error('API Error:', errorObj);
                     break;
 
                 case 'response.output_item.done':

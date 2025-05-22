@@ -54,13 +54,21 @@ GPT4O_DEPLOYMENT_NAME="gpt-4o-mini"
 
 ### Note on Turn Detection Types
 
-There are two main turn detection types available:
+There are several turn detection types available:
 
 1. **server_vad** (default): Basic voice activity detection that uses silence detection to determine when a user has finished speaking.
 
-2. **cascaded**: More advanced detection that supports end-of-utterance detection. Use this if you need semantic detection of when a user has completed their utterance.
+2. **azure_semantic_vad**: Advanced semantic detection for better turn detection accuracy.
 
-If you encounter this error: `End of utterance detection is only supported for cascaded pipelines`, change your `AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE` to `cascaded`.
+3. **azure_semantic_vad_en**: English-only version of semantic detection.
+
+4. **azure_semantic_vad_multilingual**: Multilingual version of semantic detection.
+
+5. **server_sd**: Simple silence detection.
+
+6. **none**: No turn detection.
+
+**Important Note**: Although the Azure OpenAI documentation suggests that certain turn detection types support end-of-utterance detection, our testing indicates that attempting to use this feature results in errors. We've disabled end-of-utterance detection in our implementation to maintain stability.
 
 ## Using the Test Client
 
@@ -143,6 +151,71 @@ If you see "WebSocket error: undefined" or "Disconnected from server" messages:
 - Verify that all required environment variables are properly set.
 - Check that the Azure OpenAI Realtime deployment is available and functioning.
 - Examine the logs for any errors during tool or model invocation.
+
+## New Testing Tools
+
+We've added several new testing tools to make it easier to diagnose and fix issues with the Realtime API:
+
+### Quick Test Script
+
+For a quick connectivity test without browser setup:
+
+```bash
+cd /workspaces/botify/apps/bot-service/test/realtime
+./quick_test.py
+```
+
+This script sends a simple audio packet and verifies that the connection works properly.
+
+### Error Monitoring Test
+
+For detailed error diagnostics:
+
+```bash
+./test_with_error_monitoring.py --debug
+```
+
+This enhanced test provides:
+
+- Detailed error information including error type, code, parameters, and event IDs
+- Server status checking
+- Configuration validation
+- Turn detection compatibility testing
+
+### Command-Line Options
+
+All test scripts support these options:
+
+```bash
+--host HOST     Hostname to connect to (default: localhost)
+--port PORT     Port to connect to (default: 8080)
+--path PATH     WebSocket path (default: /realtime)
+--debug         Enable debug logging (where supported)
+```
+
+## Improved Error Handling
+
+The latest updates include enhanced error handling in both the server and client components:
+
+1. **Server-side recovery**: The server now attempts to recover from internal errors by:
+   - Detecting configuration incompatibilities
+   - Adjusting turn detection settings automatically
+   - Providing detailed error information to the client
+
+2. **Client-side handling**: The test client now:
+   - Displays formatted error information with type, code, and parameters
+   - Suggests troubleshooting steps based on the error type
+   - Offers automatic reconnection after configuration errors
+
+## Common Error Types
+
+| Error Type | Description | Resolution |
+|------------|-------------|------------|
+| `internal_error` | Server-side issue in Azure OpenAI | Check turn detection settings and server logs |
+| `invalid_request_error` | Client request format problem | Ensure correct message format and audio encoding |
+| `configuration_error` | Server misconfiguration | Check environment variables |
+
+For detailed troubleshooting steps, see the [TROUBLESHOOTING.md](TROUBLESHOOTING.md) guide.
 
 ## Advanced Testing
 
