@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+**Approved**
 
 When designing secure infrastructure for applications, two primary mechanisms for managing secrets and authentication in Azure are **Azure Key Vault** and **Managed Identities**. This document evaluates the trade-offs between these two approaches, considering their usage in both local and cloud environments.
 
@@ -78,3 +78,4 @@ Considering that only Azure services are involved in this project then Managed I
 ### **Cloud Environment**
 
 - Prefer **Managed Identities** for Azure-native applications to simplify authentication and eliminate secret management.
+- To avoid dependency on certain services and deletion of the identity when deploying the resources we will use an User Identity with specific roles management for to grant minimal required access to all invlved resources.
