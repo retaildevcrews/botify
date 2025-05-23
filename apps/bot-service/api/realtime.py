@@ -20,34 +20,8 @@ tracer = trace.get_tracer(__name__)
 DEBOUNCE_DELAY = float(os.getenv("DEBOUNCE_DELAY", 1.5))
 THROTTLE_MIN_INTERVAL = int(os.getenv("THROTTLE_MIN_INTERVAL", 4))
 
-# Session configs
-REALTIME_SESSION_CONFIG_AZURE = {
-    "type": "session.update",
-    "session": {
-        "modalities": ["text", "audio"],
-        "instructions": None,  # Will be set in __init__
-        "voice": None,  # Will be set in __init__
-        "input_audio_format": "pcm16",
-        "output_audio_format": "pcm16",
-        "input_audio_transcription": {"model": "whisper-1"},
-        "input_audio_noise_reduction": {
-            "type": "azure_deep_noise_suppression"
-        },
-        "input_audio_echo_cancellation": {
-            "type": "server_echo_cancellation"
-        },
-        "turn_detection": {
-            "type": os.getenv("AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE", "server_vad"),
-            "threshold": float(os.getenv("AZURE_SPEECH_SERVICES_VAD_THRESHOLD", 0.2)),
-            "silence_duration_ms": int(os.getenv("AZURE_SPEECH_SERVICES_VAD_SILENCE_DURATION_MS", 500)),
-            # Remove other parameters that might not be compatible with azure_semantic_vad
-        },
-        "tools": [],  # Will be populated based on available tools
-        "tool_choice": "auto"
-    }
-}
-
-REALTIME_SESSION_CONFIG_OPENAI = {
+# Session config
+REALTIME_SESSION_CONFIG = {
     "type": "session.update",
     "session": {
         "modalities": ["text", "audio"],
@@ -67,22 +41,21 @@ REALTIME_SESSION_CONFIG_OPENAI = {
 }
 
 class BotifyRealtime:
-    def __init__(self, engine: str, api_key: str, endpoint: str, deployment: str, voice_choice: str):
-        self.engine = engine
-        self.api_key = api_key
-        self.endpoint = endpoint.rstrip('/')
-        self.deployment = deployment
-        self.voice_choice = voice_choice
+    def __init__(self):
+         # Initialize runnable factory to use the same data source as the rest of the application
+        self.runnable_factory = RunnableFactory()
+        self.app_settings = AppSettings()
+
+        self.api_key = self.app_settings.environment_config.openai_api_key.get_secret_value()
+        self.endpoint = self.app_settings.environment_config.openai_endpoint.rstrip('/')
+        self.deployment = self.app_settings.environment_config.openai_realtime_deployment_name
+        self.voice_choice = self.app_settings.environment_config.openai_realtime_voice_choice
         self.session = None
         self.ws_openai = None
         self.client_connected = True
         self.session_id = str(uuid.uuid4())
         self.current_turn_id = None
         self.pending_tasks = set()
-
-        # Initialize runnable factory to use the same data source as the rest of the application
-        self.runnable_factory = RunnableFactory()
-        self.app_settings = AppSettings()
 
         # Get the search tool from the runnable factory
         self.search_tool = self.runnable_factory.azure_ai_search_tool
@@ -101,21 +74,13 @@ class BotifyRealtime:
     async def connect_to_realtime_api(self):
         headers = {"api-key": self.api_key}
         base_url = self.endpoint.replace("https://", "wss://")
-
-        if self.engine == "azure":
-            url = f"{base_url}/voice-agent/realtime?api-version=2025-05-01-preview&deployment={self.deployment}"
-        elif self.engine == "openai":
-            url = f"{base_url}/openai/realtime?api-version=2024-10-01-preview&deployment={self.deployment}"
-        else:
-            logger.error(f"Invalid engine: {self.engine}. Must be 'openai' or 'azure'")
-            raise ValueError("Invalid engine specified")
-
+        url = f"{base_url}/openai/realtime?api-version=2024-10-01-preview&deployment={self.deployment}"
         logger.info(f"Connecting to Realtime API at: {url}")
 
         try:
             self.session = aiohttp.ClientSession()
             self.ws_openai = await self.session.ws_connect(url, headers=headers, timeout=30)
-            await self.send_session_config(self.engine)
+            await self.send_session_config()
             logger.info(f"Successfully connected to Realtime API")
         except aiohttp.ClientConnectorError as e:
             logger.error(f"Failed to connect to {url}: {str(e)}")
@@ -138,38 +103,35 @@ class BotifyRealtime:
                 await self.session.close()
             raise
 
-    async def send_session_config(self, engine: str):
+    async def send_session_config(self):
         """
         Send session configuration to the Realtime API.
         """
-        if engine == "azure":
-            config = REALTIME_SESSION_CONFIG_AZURE.copy()
+        config = REALTIME_SESSION_CONFIG.copy()
 
-            # Get the current turn detection type
-            turn_detection_type = os.getenv("AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE", "server_vad")
-            logger.info(f"Using {turn_detection_type} pipeline for turn detection")
+        # Get the current turn detection type
+        turn_detection_type = os.getenv("AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE", "server_vad")
+        logger.info(f"Using {turn_detection_type} pipeline for turn detection")
 
-            # Customize configuration based on turn detection type
-            if turn_detection_type == "azure_semantic_vad":
-                # For azure_semantic_vad, only include the parameters it supports
-                config["session"]["turn_detection"] = {
-                    "type": turn_detection_type,
-                    "threshold": float(os.getenv("AZURE_SPEECH_SERVICES_VAD_THRESHOLD", 0.2)),
-                    "silence_duration_ms": int(os.getenv("AZURE_SPEECH_SERVICES_VAD_SILENCE_DURATION_MS", 500))
+        # Customize configuration based on turn detection type
+        if turn_detection_type == "azure_semantic_vad":
+            # For azure_semantic_vad, only include the parameters it supports
+            config["session"]["turn_detection"] = {
+                "type": turn_detection_type,
+                "threshold": float(os.getenv("AZURE_SPEECH_SERVICES_VAD_THRESHOLD", 0.2)),
+                "silence_duration_ms": int(os.getenv("AZURE_SPEECH_SERVICES_VAD_SILENCE_DURATION_MS", 500))
+            }
+            # Make sure Azure-specific noise reduction is included since we're using azure_semantic_vad
+            if "input_audio_noise_reduction" not in config["session"]:
+                config["session"]["input_audio_noise_reduction"] = {
+                    "type": "azure_deep_noise_suppression"
                 }
-                # Make sure Azure-specific noise reduction is included since we're using azure_semantic_vad
-                if "input_audio_noise_reduction" not in config["session"]:
-                    config["session"]["input_audio_noise_reduction"] = {
-                        "type": "azure_deep_noise_suppression"
-                    }
-                logger.info("Using simplified configuration for azure_semantic_vad")
-            elif turn_detection_type == "server_vad":
-                # For server_vad, ensure we don't have end-of-utterance detection
-                if "end_of_utterance_detection" in config["session"]["turn_detection"]:
-                    del config["session"]["turn_detection"]["end_of_utterance_detection"]
-                logger.info("Using standard configuration for server_vad")
-        else:
-            config = REALTIME_SESSION_CONFIG_OPENAI.copy()
+            logger.info("Using simplified configuration for azure_semantic_vad")
+        elif turn_detection_type == "server_vad":
+            # For server_vad, ensure we don't have end-of-utterance detection
+            if "end_of_utterance_detection" in config["session"]["turn_detection"]:
+                del config["session"]["turn_detection"]["end_of_utterance_detection"]
+            logger.info("Using standard configuration for server_vad")
 
         # Get prompt from the prompt generator if available, otherwise use default
         try:
@@ -210,7 +172,7 @@ class BotifyRealtime:
 
         try:
             await self.ws_openai.send_json(config)
-            logger.info(f"Sent session configuration to Realtime API for engine {engine}")
+            logger.info("Sent session configuration to Azure Voice Agent Realtime API")
         except Exception as e:
             logger.error(f"Error sending session configuration: {str(e)}")
             raise

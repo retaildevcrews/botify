@@ -107,56 +107,6 @@ class AppFactory:
             """Redirect to the API documentation."""
             return RedirectResponse("/docs")
 
-        @self.app.get(
-            "/realtime-info",
-            summary="Get information about the realtime WebSocket endpoint",
-            description="Provides details on how to use the WebSocket endpoint for realtime voice interactions.",
-            responses={
-                200: {
-                    "description": "Information about the realtime WebSocket endpoint",
-                    "content": {
-                        "application/json": {
-                            "example": {
-                                "websocket_endpoint": "/realtime",
-                                "protocol": "WebSocket",
-                                "description": "Endpoint for realtime voice interactions",
-                                "message_format": {"type": "input_audio_buffer.append", "data": "base64 encoded audio data"},
-                                "required_env_vars": [
-                                    "AZURE_OPENAI_API_KEY",
-                                    "AZURE_OPENAI_ENDPOINT",
-                                    "AZURE_OPENAI_REALTIME_DEPLOYMENT",
-                                ],
-                                "available_voice_options": ["alloy", "echo", "fable", "onyx", "nova", "shimmer", "coral"],
-                            }
-                        }
-                    },
-                }
-            },
-        )
-        def get_realtime_info():
-            """Provides documentation about the realtime WebSocket endpoint."""
-            return {
-                "websocket_endpoint": "/realtime",
-                "protocol": "WebSocket",
-                "description": "Endpoint for realtime voice interactions with the Azure OpenAI Realtime API",
-                "message_format": {"type": "input_audio_buffer.append", "audio": "base64 encoded audio data"},
-                "response_format": {
-                    "transcription": "The transcribed text from the user's audio",
-                    "assistant_response": "The assistant's response based on the knowledge base",
-                    "audio_response": "Base64 encoded audio response from the assistant",
-                },
-                "required_env_vars": [
-                    "AZURE_OPENAI_API_KEY",
-                    "AZURE_OPENAI_ENDPOINT",
-                    "AZURE_OPENAI_REALTIME_DEPLOYMENT",
-                ],
-                "available_voice_options": ["alloy", "echo", "fable", "onyx", "nova", "shimmer", "coral"],
-                "current_voice": os.getenv("AZURE_OPENAI_REALTIME_VOICE_CHOICE", "coral"),
-                "speech_engine": os.getenv("SPEECH_ENGINE", "openai"),
-                "test_client_path": "/test/realtime/index.html",
-                "documentation": "See the README at /test/realtime/README.md for detailed usage instructions",
-            }
-
         if self.app_settings.add_memory:
             # Add API route for the agent
             self.runnable_factory.get_runnable().with_types(input_type=Input, output_type=Output)
@@ -251,94 +201,6 @@ class AppFactory:
         from api.realtime import BotifyRealtime
         import os
 
-        @self.app.get("/realtime-status")
-        async def realtime_status():
-            """
-            Get the status of the realtime voice API configuration.
-
-            This endpoint provides information about the configuration status
-            of the realtime voice API, including:
-            - Whether the required environment variables are set
-            - The current turn detection type configuration
-            - The WebSocket library availability
-
-            Returns:
-                dict: Status information about the realtime voice API
-            """
-            # Check required environment variables
-            required_vars = ["AZURE_OPENAI_API_KEY", "AZURE_OPENAI_ENDPOINT", "AZURE_OPENAI_REALTIME_DEPLOYMENT"]
-            missing_vars = [var for var in required_vars if not os.getenv(var)]
-
-            # Check turn detection type
-            turn_detection_type = os.getenv("AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE", "server_vad")
-
-            # Check WebSocket library availability
-            websocket_libraries = []
-            try:
-                import websockets
-
-                websocket_libraries.append("websockets")
-            except ImportError:
-                pass
-
-            try:
-                import wsproto
-
-                websocket_libraries.append("wsproto")
-            except ImportError:
-                pass
-
-            return {
-                "status": "ok" if not missing_vars and websocket_libraries else "error",
-                "environment_config": {
-                    "missing_vars": missing_vars,
-                    "all_required_vars_set": len(missing_vars) == 0,
-                    "turn_detection_type": turn_detection_type,
-                    "end_of_utterance_supported": turn_detection_type == "cascaded",
-                },
-                "websocket_support": {
-                    "libraries_available": websocket_libraries,
-                    "has_websocket_support": len(websocket_libraries) > 0,
-                },
-                "version": self.app.version,
-            }
-
-        @self.app.get("/realtime-info")
-        async def realtime_info():
-            """
-            Get information about how to use the realtime WebSocket API.
-
-            This endpoint provides documentation about the WebSocket endpoint,
-            including how to connect, the message format, and configuration options.
-
-            Returns:
-                dict: Documentation about the realtime WebSocket API
-            """
-            return {
-                "websocket_endpoint": "/realtime",
-                "description": "WebSocket endpoint for real-time voice interactions",
-                "connection": {"url": "ws://hostname:port/realtime", "protocols": ["websocket"]},
-                "client_messages": [
-                    {"type": "input_audio_buffer.append", "audio": "base64-encoded audio data"}
-                ],
-                "server_messages": [
-                    {"type": "conversation.item.input_audio_transcription.completed", "transcript": "transcribed user speech"},
-                    {"type": "response.audio_transcript.delta", "delta": "partial response text"},
-                    {"type": "response.audio_transcript.done", "timestamp": "timestamp when response is complete"},
-                ],
-                "configuration": {
-                    "turn_detection_types": {
-                        "server_vad": "Basic voice activity detection (default)",
-                        "cascaded": "Advanced detection with end-of-utterance support",
-                    },
-                    "environment_variables": {
-                        "AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE": "Turn detection type (server_vad or cascaded)",
-                        "AZURE_OPENAI_REALTIME_VOICE_CHOICE": "Voice to use for responses (e.g., 'coral')",
-                    },
-                },
-                "test_client": "/workspaces/botify/apps/bot-service/test/realtime/index.html",
-            }
-
         @self.app.websocket("/realtime")
         async def realtime_endpoint(websocket: WebSocket):
             """
@@ -362,43 +224,11 @@ class AppFactory:
                 logger.info("WebSocket connection established")
                 rtmt = None
                 try:
-                    # Validate required environment variables for real-time
-                    required_vars = [
-                        "AZURE_OPENAI_API_KEY",
-                        "AZURE_OPENAI_ENDPOINT",
-                        "AZURE_OPENAI_REALTIME_DEPLOYMENT",
-                    ]
-                    missing_vars = [var for var in required_vars if not os.getenv(var)]
-                    if missing_vars:
-                        error_msg = f"Missing environment variables for real-time: {', '.join(missing_vars)}"
-                        logger.error(error_msg)
-                        await websocket.close(code=1002, reason=error_msg[:100])  # Truncate to 100 chars
-                        return
-
-                    engine = os.getenv("SPEECH_ENGINE", "openai")
-                    if engine == "openai":
-                        api_key = os.getenv("AZURE_OPENAI_API_KEY")
-                        endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
-                    elif engine == "azure":
-                        api_key = os.getenv("AZURE_SPEECH_SERVICES_KEY")
-                        endpoint = os.getenv("AZURE_SPEECH_SERVICES_ENDPOINT")
-                    else:
-                        error_msg = "SPEECH_ENGINE env must be: openai or azure"
-                        logger.error(error_msg)
-                        await websocket.close(code=1002, reason=error_msg)
-                        return
-
-                    logger.info(f"Speech engine selected: {engine}")
-                    span.set_attribute("speech_engine", engine)
+                    # Set speech engine attribute for tracing
+                    span.set_attribute("speech_engine", "azure")
 
                     # Initialize BotifyRealtime with the existing search tool
-                    rtmt = BotifyRealtime(
-                        engine=engine,
-                        api_key=api_key,
-                        endpoint=endpoint,
-                        deployment=os.getenv("AZURE_OPENAI_REALTIME_DEPLOYMENT"),
-                        voice_choice=os.getenv("AZURE_OPENAI_REALTIME_VOICE_CHOICE", "coral"),
-                    )
+                    rtmt = BotifyRealtime()
                     await rtmt._forward_messages(websocket)
 
                 except WebSocketDisconnect:
