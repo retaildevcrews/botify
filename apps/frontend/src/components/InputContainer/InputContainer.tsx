@@ -7,7 +7,8 @@ interface InputContainerProps {
   handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   sendMessage: () => void;
   handleMicrophoneClick: () => void;
-  isListening?: boolean;
+  isListening: boolean;
+  isDisabled?: boolean;
 }
 
 const InputContainer: React.FC<InputContainerProps> = ({
@@ -16,7 +17,8 @@ const InputContainer: React.FC<InputContainerProps> = ({
   handleKeyPress,
   sendMessage,
   handleMicrophoneClick,
-  isListening = false,
+  isListening,
+  isDisabled = false,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -48,7 +50,7 @@ const InputContainer: React.FC<InputContainerProps> = ({
   };
 
   return (
-    <div className="input-container">
+    <div className={`input-container ${isDisabled ? 'disabled' : ''}`}>
       <textarea
         ref={textareaRef}
         value={input}
@@ -56,16 +58,21 @@ const InputContainer: React.FC<InputContainerProps> = ({
         onKeyDown={handleKeyPressEnhanced}
         placeholder={isListening ? "Listening..." : "Type your message..."}
         className="input-box"
-        disabled={isListening}
+        disabled={isDisabled}
       />
       <div className="action-bar">
         <button
           className={`icon-button ${isListening ? 'listening' : ''}`}
           onClick={handleMicrophoneClick}
+          disabled={isDisabled}
         >
           <span className="material-icons">{isListening ? 'mic_none' : 'mic'}</span>
         </button>
-        <button className="icon-button" onClick={sendMessage} disabled={isListening || !input.trim()}>
+        <button
+          className="icon-button"
+          onClick={sendMessage}
+          disabled={input === '' || isDisabled}
+        >
           <span className="material-icons">send</span>
         </button>
       </div>
