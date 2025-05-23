@@ -123,16 +123,17 @@
 
         <!-- Message format information -->
         <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border: 1px solid #ddd;">
-            <h4 style="margin-top: 0;">Message Format Information</h4>
-            <p>This client uses the following format for sending audio data:</p>
+            <h4 style="margin-top: 0;">Audio Format Information</h4>
+            <p>This client sends audio data in the OpenAI Realtime API format:</p>
             <pre style="background-color: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto;">
 {
   "type": "input_audio_buffer.append",
   "audio": "base64EncodedAudioData"
 }
             </pre>
-            <p><strong>Note:</strong> The previous format with audio nested inside a "data" object is no longer supported.</p>
-            <p>For more information, see the <a href="FORMAT_UPDATE.md" target="_blank">Format Update Documentation</a>.</p>
+            <p><strong>Audio Format:</strong> Mono PCM16 at 24kHz (as required by OpenAI Realtime API)</p>
+            <p><strong>Encoding:</strong> Base64-encoded raw PCM16 samples</p>
+            <p><strong>Note:</strong> The audio is processed in real-time using Web Audio API to ensure correct format.</p>
         </div>
 
         <!-- Troubleshooting Information -->
@@ -394,16 +395,16 @@
             }
         }        async function startRecording() {
             try {
-                // Request access to the microphone with specific constraints for better compatibility
+                // Request access to the microphone with OpenAI Realtime API requirements (24kHz mono)
                 const stream = await navigator.mediaDevices.getUserMedia({
                     audio: {
                         channelCount: 1,  // Mono
-                        sampleRate: 16000 // 16kHz sample rate
+                        sampleRate: 24000 // 24kHz sample rate for OpenAI
                     }
                 });
 
                 const audioContext = new AudioContext({
-                    sampleRate: 16000 // 16kHz sample rate
+                    sampleRate: 24000 // 24kHz sample rate for OpenAI
                 });
                 const source = audioContext.createMediaStreamSource(stream);
                 const processor = audioContext.createScriptProcessor(4096, 1, 1);
@@ -411,55 +412,42 @@
                 source.connect(processor);
                 processor.connect(audioContext.destination);
 
-                // Create a MediaRecorder with specific mime type
-                const options = { mimeType: 'audio/webm;codecs=pcm' };
-                try {
-                    mediaRecorder = new MediaRecorder(stream, options);
-                } catch (e) {
-                    // Fallback if the specified mime type isn't supported
-                    console.log('MediaRecorder with specified options not supported, using default');
-                    mediaRecorder = new MediaRecorder(stream);
-                }
+                // Process audio directly through AudioContext to get PCM16 data
+                processor.onaudioprocess = function(e) {
+                    if (socket && socket.readyState === WebSocket.OPEN) {
+                        const inputBuffer = e.inputBuffer.getChannelData(0);
+
+                        // Convert Float32 to Int16 (PCM16)
+                        const pcm16Buffer = new Int16Array(inputBuffer.length);
+                        for (let i = 0; i < inputBuffer.length; i++) {
+                            // Clamp values to [-1, 1] and convert to 16-bit signed integer
+                            const clampedValue = Math.max(-1, Math.min(1, inputBuffer[i]));
+                            pcm16Buffer[i] = Math.floor(clampedValue * 32767);
+                        }
+
+                        // Convert to base64
+                        const base64Data = btoa(String.fromCharCode(...new Uint8Array(pcm16Buffer.buffer)));
+
+                        const message = {
+                            type: 'input_audio_buffer.append',
+                            audio: base64Data
+                        };
+
+                        socket.send(JSON.stringify(message));
+                        console.log('Sent PCM16 audio chunk, samples:', inputBuffer.length);
+                    }
+                };
+
+                // Keep MediaRecorder as fallback but don't use it for real-time sending
+                mediaRecorder = new MediaRecorder(stream);
 
                 audioChunks = [];
 
                 mediaRecorder.addEventListener('dataavailable', event => {
                     if (event.data.size > 0) {
                         audioChunks.push(event.data);
-
-                        // Convert audio chunk to base64 and send to server
-                        const fileReader = new FileReader();
-                        fileReader.onload = function() {
-                            try {
-                                const base64Data = fileReader.result.split(',')[1];
-
-                                // IMPORTANT: This is the correct format for Azure OpenAI Realtime API
-                                // The audio field must be at the root level, not nested in a data object
-                                const message = {
-                                    type: 'input_audio_buffer.append',
-                                    audio: base64Data
-                                };
-
-                                // Debug the message before sending
-                                console.log('Preparing to send message:', JSON.stringify(message).substring(0, 100) + '...');
-                                logMessage('System', `Sending audio data (${base64Data.length} bytes)`);
-
-                                if (socket && socket.readyState === WebSocket.OPEN) {
-                                    socket.send(JSON.stringify(message));
-                                    console.log('Sent audio chunk, size:', event.data.size);
-                                } else {
-                                    console.warn('WebSocket not open, cannot send audio data');
-                                }
-                            } catch (error) {
-                                console.error('Error preparing or sending audio data:', error);
-                                logMessage('System', `Error sending audio: ${error.message}`);
-                            }
-                        };
-                        fileReader.onerror = function(error) {
-                            console.error('FileReader error:', error);
-                            logMessage('System', 'Error reading audio data');
-                        };
-                        fileReader.readAsDataURL(event.data);
+                        // Note: Real-time audio is now sent via AudioContext processor
+                        // MediaRecorder is kept for potential recording/playback features
                     }
                 });
 
@@ -482,13 +470,13 @@
                 });
 
                 // Start recording
-                mediaRecorder.start(100);  // Capture in 100ms chunks
+                mediaRecorder.start(100);  // Capture in 100ms chunks for fallback recording
                 isRecording = true;
                 startRecordingBtn.disabled = true;
                 stopRecordingBtn.disabled = false;
                 recordingIndicator.classList.remove('hidden');
 
-                logMessage('System', 'Started recording');
+                logMessage('System', 'Started recording with OpenAI-compatible PCM16 24kHz format');
             } catch (error) {
                 logMessage('System', `Error accessing microphone: ${error.message}`);
                 console.error('Error accessing microphone:', error);
