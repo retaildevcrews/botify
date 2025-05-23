@@ -5,7 +5,7 @@
   min-height: 40px;
   max-height: 40px;
   width: 95%;
-  margin: 4px;
+  margin: 8px;
   border: 2px solid var(--accent-color);
   background-color: var(--background-color);
   border-radius: 12px;
@@ -21,6 +21,8 @@
   background-color: rgba(255, 255, 255, 0.1);
   color: #999;
   transition: all 0.3s ease;
+  margin: 4px 4px;
+  height: 28px;
 }
 
 .audio-status-indicator.active {
@@ -89,6 +91,7 @@
   margin: 0 10px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   user-select: none;
+  min-width: 100px; /* Add a minimum width to make button wider */
 }
 
 .hands-free-button.active {

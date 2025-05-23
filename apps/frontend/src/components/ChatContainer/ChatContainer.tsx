@@ -30,8 +30,9 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
   isStreamComplete = false,
   isBotSpeaking = false
 }) => {
+  const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const lastMessageContent = messages.length > 0 ? messages[messages.length - 1]?.inputMessage.content : '';
+  const lastMessageContent = messages[messages.length - 1]?.inputMessage.content;
 
   // Add state for hands-free mode
   const [isHandsFreeMode, setIsHandsFreeMode] = useState(false);
