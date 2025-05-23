@@ -88,7 +88,7 @@ class BotifyRealtime:
         self.search_tool = self.runnable_factory.azure_ai_search_tool
 
         # Set up tools
-        self.tools = {"SearchTool": self.search_tool}
+        self.tools = {"Search-Tool": self.search_tool}
 
         # Set up conversation history
         self.conversation_history = []
@@ -189,7 +189,7 @@ class BotifyRealtime:
         if self.search_tool:
             tool_configs.append({
                 "type": "function",
-                "name": "SearchTool",
+                "name": "Search-Tool",
                 "description": "Useful to search for information in the knowledge base.",
                 "parameters": {
                     "type": "object",
