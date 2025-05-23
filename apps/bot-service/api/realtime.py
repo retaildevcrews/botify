@@ -8,10 +8,11 @@ import uuid
 import os
 from fastapi import WebSocket, WebSocketDisconnect
 from opentelemetry import trace
-from prompts.prompts import AGENT_PROMPT_REALTIME
 from langchain_openai import AzureChatOpenAI
 from botify_langchain.runnable_factory import RunnableFactory
+from common.schemas import ResponseSchema
 from app.settings import AppSettings
+from prompts.prompt_gen import PromptGen
 
 logger = logging.getLogger(__name__)
 tracer = trace.get_tracer(__name__)
@@ -45,6 +46,7 @@ class BotifyRealtime:
          # Initialize runnable factory to use the same data source as the rest of the application
         self.runnable_factory = RunnableFactory()
         self.app_settings = AppSettings()
+        self.promptgen = PromptGen()
 
         self.api_key = self.app_settings.environment_config.openai_api_key.get_secret_value()
         self.endpoint = self.app_settings.environment_config.openai_endpoint.rstrip('/')
@@ -61,7 +63,7 @@ class BotifyRealtime:
         self.search_tool = self.runnable_factory.azure_ai_search_tool
 
         # Set up tools
-        self.tools = {"Search-Tool": self.search_tool}
+        self.tools = {"search-tool": self.search_tool}
 
         # Set up conversation history
         self.conversation_history = []
@@ -133,17 +135,12 @@ class BotifyRealtime:
                 del config["session"]["turn_detection"]["end_of_utterance_detection"]
             logger.info("Using standard configuration for server_vad")
 
-        # Get prompt from the prompt generator if available, otherwise use default
-        try:
-            from prompts.prompts import AGENT_PROMPT_REALTIME
-            config["session"]["instructions"] = AGENT_PROMPT_REALTIME
-        except (ImportError, AttributeError):
-            # Use a basic prompt if AGENT_PROMPT_REALTIME is not available
-            config["session"]["instructions"] = (
-                "You are a helpful assistant. Answer questions based on the provided information. "
-                "When you don't know the answer, say so rather than making things up."
-            )
+        prompt_text = self.promptgen.generate_prompt(
+            self.app_settings.prompt_template_paths, schema=ResponseSchema().get_response_schema()
+        )
+        # prompt_text = """ONLY use the provided tool to answer any questions. """
 
+        config["session"]["instructions"] = prompt_text
         config["session"]["voice"] = self.voice_choice
 
         # Configure tools
@@ -151,7 +148,7 @@ class BotifyRealtime:
         if self.search_tool:
             tool_configs.append({
                 "type": "function",
-                "name": "Search-Tool",
+                "name": "_arun",
                 "description": "Useful to search for information in the knowledge base.",
                 "parameters": {
                     "type": "object",
@@ -456,6 +453,7 @@ class BotifyRealtime:
                             transcript_buffer = ""
 
                         if message.get("type") == "response.output_item.done" and "item" in message and message["item"].get("type") == "function_call":
+                            logger.info("calling custom search tool")
                             function_call = message["item"]
                             tool_name = function_call["name"]
                             arguments = json.loads(function_call["arguments"])
@@ -464,7 +462,7 @@ class BotifyRealtime:
                             if tool_name in self.tools:
                                 tool = self.tools[tool_name]
                                 try:
-                                    result = await tool.ainvoke(arguments)
+                                    result = await tool._arun(arguments)
                                     logger.info(f"Tool {tool_name} returned result of type: {type(result)}")
 
                                     tool_result = {
