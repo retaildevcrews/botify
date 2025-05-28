@@ -16,6 +16,8 @@ interface ChatContainerProps {
   isListening?: boolean;
   isStreamComplete?: boolean;
   isBotSpeaking?: boolean;
+  isHandsFreeMode?: boolean;
+  onHandsFreeToggle?: () => void;
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({
@@ -28,19 +30,13 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
   isWaitingForBotResponse,
   isListening = false,
   isStreamComplete = false,
-  isBotSpeaking = false
+  isBotSpeaking = false,
+  isHandsFreeMode = false,
+  onHandsFreeToggle = () => {}
 }) => {
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const lastMessageContent = messages[messages.length - 1]?.inputMessage.content;
-
-  // Add state for hands-free mode
-  const [isHandsFreeMode, setIsHandsFreeMode] = useState(false);
-
-  // Add handler for toggling hands-free mode
-  const handleHandsFreeToggle = () => {
-    setIsHandsFreeMode(prevMode => !prevMode);
-  };
 
   useEffect(() => {
     // Always scroll to the bottom of the messages container when messages or waiting states change
@@ -112,12 +108,12 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
         </div>
       </div>
 
-      {/* Move AudioStatusBar here, between messages and input */}
+      {/* Pass the hands-free props to AudioStatusBar */}
       <AudioStatusBar
         isUserSpeaking={isListening}
         isBotSpeaking={isBotSpeaking}
         isHandsFreeMode={isHandsFreeMode}
-        onHandsFreeToggle={handleHandsFreeToggle}
+        onHandsFreeToggle={onHandsFreeToggle}
       />
 
       <InputContainer
@@ -127,7 +123,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
         sendMessage={sendMessage}
         handleMicrophoneClick={handleMicrophoneClick}
         isListening={isListening}
-        isDisabled={isHandsFreeMode} // Add this new prop
+        isDisabled={isHandsFreeMode}
       />
     </div>
   );

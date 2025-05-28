@@ -1,16 +1,10 @@
-import { InputMessage, Message } from '../types';
+import { InputMessage, Message, StreamingBotChunk } from '../types';
 import { makeStreamingJsonRequest } from "http-streaming-request";
 
 const backendApiPrefix = import.meta.env.VITE_BACKEND_API_ENDPOINT_PREFIX;
 
 if (!backendApiPrefix) {
   console.error('VITE_BACKEND_API_ENDPOINT_PREFIX is not defined in the environment variables.');
-}
-
-// Define the streaming chunk type based on backend response
-export interface StreamingBotChunk {
-  displayResponse?: string;
-  [key: string]: unknown;
 }
 
 export const sendMessageToBot = async (

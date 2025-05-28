@@ -26,8 +26,9 @@ const AudioStatusBar: React.FC<AudioStatusBarProps> = ({
       <div
         className={`hands-free-button ${isHandsFreeMode ? 'active' : ''}`}
         onClick={onHandsFreeToggle}
+        title={isHandsFreeMode ? "Disable continuous listening mode" : "Enable continuous listening mode"}
       >
-        Hands-Free Mode
+        Hands-Free Mode {isHandsFreeMode ? '(On)' : '(Off)'}
       </div>
 
       <div className={`audio-status-indicator bot-audio ${isBotSpeaking ? 'active' : ''}`}>
