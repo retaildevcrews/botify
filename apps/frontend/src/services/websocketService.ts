@@ -14,6 +14,13 @@ let mediaStream: MediaStream | null = null;
 let audioProcessor: ScriptProcessorNode | null = null;
 let audioSource: MediaStreamAudioSourceNode | null = null;
 
+// Audio output related state variables
+let outputAudioContext: AudioContext | null = null;
+let audioQueue: string[] = [];
+let isPlayingAudio = false;
+let currentAudioSource: AudioBufferSourceNode | null = null;
+let isNewResponse = true;
+
 // WebSocket connection options interface
 export interface WebSocketOptions {
   onTranscription: (transcript: string) => void;
@@ -26,6 +33,113 @@ export interface WebSocketOptions {
 // Check if WebSocket is connected
 export function isWebSocketConnected(): boolean {
   return socket !== null && socket.readyState === WebSocket.OPEN;
+}
+
+// Initialize audio output context
+function initializeAudioOutput(): void {
+  if (!outputAudioContext) {
+    outputAudioContext = new window.AudioContext({
+      sampleRate: 24000
+    });
+  }
+}
+
+// Clear audio queue and stop current playback
+function clearAudioPlayback(): void {
+  audioQueue = [];
+  isPlayingAudio = false;
+
+  try {
+    currentAudioSource?.stop();
+    currentAudioSource = null;
+  } catch (e) {
+    // Source might already be stopped
+  }
+}
+
+// Play audio from base64 PCM16 data
+async function playAudioData(base64Audio: string): Promise<void> {
+  try {
+    if (!outputAudioContext) {
+      initializeAudioOutput();
+    }
+
+    // Resume audio context if it's suspended (required by browser policies)
+    if (outputAudioContext!.state === 'suspended') {
+      await outputAudioContext!.resume();
+    }
+
+    // Decode base64 to binary
+    const binaryString = atob(base64Audio);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+
+    // Convert PCM16 to Float32 for Web Audio API
+    const int16Array = new Int16Array(bytes.buffer);
+    const float32Array = new Float32Array(int16Array.length);
+    for (let i = 0; i < int16Array.length; i++) {
+      float32Array[i] = int16Array[i] / 32768; // Convert to [-1, 1] range
+    }
+
+    // Create audio buffer
+    const audioBuffer = outputAudioContext!.createBuffer(1, float32Array.length, 24000);
+    audioBuffer.getChannelData(0).set(float32Array);
+
+    // Create and configure audio source
+    const source = outputAudioContext!.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(outputAudioContext!.destination);
+
+    // Track the current source for potential cleanup
+    currentAudioSource = source;
+
+    // Return a promise that resolves when the audio finishes playing
+    return new Promise((resolve) => {
+      source.onended = () => {
+        if (currentAudioSource === source) {
+          currentAudioSource = null;
+        }
+        resolve();
+      };
+
+      // Play the audio
+      source.start();
+    });
+  } catch (error) {
+    console.error('Error playing audio:', error);
+    throw error;
+  }
+}
+
+// Queue-based audio playback for smooth streaming
+function queueAudioData(base64Audio: string): void {
+  audioQueue.push(base64Audio);
+  if (!isPlayingAudio) {
+    playNextAudioChunk();
+  }
+}
+
+async function playNextAudioChunk(): Promise<void> {
+  if (audioQueue.length === 0) {
+    isPlayingAudio = false;
+    return;
+  }
+
+  isPlayingAudio = true;
+  const audioData = audioQueue.shift();
+
+  try {
+    // Wait for the current audio chunk to finish before playing the next one
+    await playAudioData(audioData!);
+    // Immediately play the next chunk without delay to prevent gaps
+    playNextAudioChunk();
+  } catch (error) {
+    console.error('Error in audio queue:', error);
+    // On error, try the next chunk after a short delay
+    setTimeout(playNextAudioChunk, 100);
+  }
 }
 
 // Connect to WebSocket for hands-free mode
@@ -121,6 +235,16 @@ export async function connectWebSocket(options: WebSocketOptions): Promise<void>
 // Disconnect WebSocket
 export async function disconnectWebSocket(): Promise<void> {
   cleanupAudioResources();
+  clearAudioPlayback();
+
+  if (outputAudioContext) {
+    try {
+      await outputAudioContext.close();
+    } catch (e) {
+      console.error('Error closing audio output context:', e);
+    }
+    outputAudioContext = null;
+  }
 
   if (socket) {
     if (socket.readyState === WebSocket.OPEN) {
@@ -179,12 +303,45 @@ function processWebSocketMessage(message: any, options: WebSocketOptions): void 
       options.onBotStopSpeaking();
       break;
 
+    case 'response.audio.delta':
+      // Handle streaming audio response
+      if (message.delta) {
+        // Clear any previous audio if this is the start of a new response
+        if (isNewResponse) {
+          clearAudioPlayback();
+          isNewResponse = false;
+        }
+        queueAudioData(message.delta);
+      }
+
+      // Notify that bot is speaking
+      if (!options.messageManager.isWaitingForBotResponse) {
+        options.onBotStartSpeaking();
+        options.messageManager.setWaitingForBot();
+      }
+      break;
+
+    case 'response.audio.done':
+      // Audio response complete
+      isNewResponse = true;
+      options.messageManager.setStreamComplete(true);
+      options.onBotStopSpeaking();
+      break;
+
     case 'response.audio_bytes':
       // Bot is sending audio (meaning it is speaking)
       if (!options.messageManager.isWaitingForBotResponse) {
         options.onBotStartSpeaking();
         options.messageManager.setWaitingForBot();
       }
+
+      // Play audio if enabled
+      queueAudioData(message?.audio);
+      break;
+
+    // Stop bot audio playback if user is speaking
+    case 'input_audio_buffer.speech_started':
+      clearAudioPlayback();
       break;
 
     case 'error':
