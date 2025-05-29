@@ -77,13 +77,13 @@ class BotifyRealtime:
         headers = {"api-key": self.api_key}
         base_url = self.endpoint.replace("https://", "wss://")
         url = f"{base_url}/openai/realtime?api-version=2024-10-01-preview&deployment={self.deployment}"
-        logger.info(f"Connecting to Realtime API at: {url}")
+        logger.debug(f"Connecting to Realtime API at: {url}")
 
         try:
             self.session = aiohttp.ClientSession()
             self.ws_openai = await self.session.ws_connect(url, headers=headers, timeout=30)
             await self.send_session_config()
-            logger.info(f"Successfully connected to Realtime API")
+            logger.debug(f"Successfully connected to Realtime API")
         except aiohttp.ClientConnectorError as e:
             logger.error(f"Failed to connect to {url}: {str(e)}")
             if self.session and not self.session.closed:
@@ -113,7 +113,7 @@ class BotifyRealtime:
 
         # Get the current turn detection type
         turn_detection_type = os.getenv("AZURE_SPEECH_SERVICES_TURN_DETECTION_TYPE", "server_vad")
-        logger.info(f"Using {turn_detection_type} pipeline for turn detection")
+        logger.debug(f"Using {turn_detection_type} pipeline for turn detection")
 
         # Customize configuration based on turn detection type
         if turn_detection_type == "azure_semantic_vad":
@@ -128,12 +128,12 @@ class BotifyRealtime:
                 config["session"]["input_audio_noise_reduction"] = {
                     "type": "azure_deep_noise_suppression"
                 }
-            logger.info("Using simplified configuration for azure_semantic_vad")
+            logger.debug("Using simplified configuration for azure_semantic_vad")
         elif turn_detection_type == "server_vad":
             # For server_vad, ensure we don't have end-of-utterance detection
             if "end_of_utterance_detection" in config["session"]["turn_detection"]:
                 del config["session"]["turn_detection"]["end_of_utterance_detection"]
-            logger.info("Using standard configuration for server_vad")
+            logger.debug("Using standard configuration for server_vad")
 
         prompt_text = self.promptgen.generate_prompt(
             self.app_settings.prompt_template_paths, schema=ResponseSchema().get_response_schema()
@@ -165,11 +165,11 @@ class BotifyRealtime:
         debug_config = config.copy()
         if "session" in debug_config and "instructions" in debug_config["session"]:
             debug_config["session"]["instructions"] = "[INSTRUCTIONS TRUNCATED]"  # Don't log the full instructions
-        logger.info(f"Sending session configuration: {json.dumps(debug_config)}")
+        logger.debug(f"Sending session configuration: {json.dumps(debug_config)}")
 
         try:
             await self.ws_openai.send_json(config)
-            logger.info("Sent session configuration to Azure Voice Agent Realtime API")
+            logger.debug("Sent session configuration to Azure Voice Agent Realtime API")
         except Exception as e:
             logger.error(f"Error sending session configuration: {str(e)}")
             raise
@@ -179,7 +179,7 @@ class BotifyRealtime:
             try:
                 # Log client information
                 client_info = f"Client IP: {websocket.client.host}:{websocket.client.port}"
-                logger.info(f"Starting realtime session. {client_info}")
+                logger.debug(f"Starting realtime session. {client_info}")
 
                 # Connect to Azure OpenAI Realtime API
                 await self.connect_to_realtime_api()
@@ -258,7 +258,7 @@ class BotifyRealtime:
             finally:
                 # Clean up any pending tasks and connections
                 if self.pending_tasks:
-                    logger.info(f"Waiting for {len(self.pending_tasks)} pending tasks to complete")
+                    logger.debug(f"Waiting for {len(self.pending_tasks)} pending tasks to complete")
                     try:
                         await asyncio.wait_for(asyncio.gather(*self.pending_tasks), timeout=10)
                     except asyncio.TimeoutError:
@@ -266,43 +266,43 @@ class BotifyRealtime:
                         for task in self.pending_tasks:
                             task.cancel()
                 await self.cleanup()
-                logger.info(f"Realtime session ended. {client_info}")
+                logger.debug(f"Realtime session ended. {client_info}")
 
     async def _from_client_to_openai(self, websocket: WebSocket):
         with tracer.start_as_current_span("realtime_client_to_openai"):
             while self.client_connected:
                 try:
                     message = await websocket.receive_text()
-                    logger.info(f"Received message of length: {len(message)}")
+                    logger.debug(f"Received message of length: {len(message)}")
                     message_data = json.loads(message)
 
                     # Log the message type
                     message_type = message_data.get("type", "unknown")
-                    logger.info(f"Received message type: {message_type}")
+                    logger.debug(f"Received message type: {message_type}")
 
                     # Set a new turn ID when receiving audio data
                     if message_type == "input_audio_buffer.append":
                         self.current_turn_id = str(uuid.uuid4())
-                        logger.info(f"Created new turn ID: {self.current_turn_id}")
+                        logger.debug(f"Created new turn ID: {self.current_turn_id}")
 
                         # Check if audio exists directly in the message (new format)
                         if "audio" in message_data:
                             audio_length = len(message_data.get("audio", ""))
-                            logger.info(f"Audio data present in root, length: {audio_length}")
+                            logger.debug(f"Audio data present in root, length: {audio_length}")
                         # For backward compatibility, also check in data field (old format)
                         elif "data" in message_data:
                             data_field = message_data.get("data")
-                            logger.info(f"Data field found, type: {type(data_field)}")
+                            logger.debug(f"Data field found, type: {type(data_field)}")
 
                             # Validate the audio data format
                             if isinstance(data_field, str):
                                 # Old format with string data, move to root level
-                                logger.info("Converting string data in 'data' field to root 'audio' field")
+                                logger.debug("Converting string data in 'data' field to root 'audio' field")
                                 message_data["audio"] = data_field
                                 del message_data["data"]
                             elif isinstance(data_field, dict) and "audio" in data_field:
                                 # Old format with nested audio, move to root level
-                                logger.info("Moving audio from nested data object to root level")
+                                logger.debug("Moving audio from nested data object to root level")
                                 message_data["audio"] = data_field["audio"]
                                 del message_data["data"]
                             else:
@@ -329,12 +329,12 @@ class BotifyRealtime:
                         # Log what we're sending to OpenAI
                         if "audio" in message_data:
                             audio_length = len(message_data["audio"])
-                            logger.info(f"Sending audio data to OpenAI, length: {audio_length}")
+                            logger.debug(f"Sending audio data to OpenAI, length: {audio_length}")
                         else:
                             logger.error("No audio data found after processing")
                             continue
                     # Send the message to OpenAI
-                    logger.info("Forwarding message to OpenAI")
+                    logger.debug("Forwarding message to OpenAI")
                     await self.ws_openai.send_json(message_data)
                 except WebSocketDisconnect:
                     self.client_connected = False
@@ -352,11 +352,11 @@ class BotifyRealtime:
                 if msg.type == aiohttp.WSMsgType.TEXT:
                     try:
                         message = json.loads(msg.data)
-                        logger.info(f"Received message from OpenAI: {message['type']}")
+                        logger.debug(f"Received message from OpenAI: {message['type']}")
 
                         if message.get("type") == "conversation.item.created" and "item" in message:
                             self.current_turn_id = message["item"]["id"]
-                            logger.info(f"Updated turn_id to {self.current_turn_id} for conversation item {message['item']['id']}")
+                            logger.debug(f"Updated turn_id to {self.current_turn_id} for conversation item {message['item']['id']}")
 
                         if message.get("type") == "error":
                             error_details = message.get('error', 'Unknown error details')
@@ -413,7 +413,7 @@ class BotifyRealtime:
                                 error_param = error_details.get("param")
                                 if "End of utterance detection is only supported for cascaded pipelines" in error_message:
                                     fix_message = "The Azure OpenAI Realtime API doesn't support end-of-utterance detection with the current turn detection type. Restarting the server to disable end-of-utterance detection."
-                                    logger.info(fix_message)
+                                    logger.debug(fix_message)
                                     await websocket.send_json({
                                         "type": "error",
                                         "error": {
@@ -433,15 +433,15 @@ class BotifyRealtime:
                         if message.get("type") == "conversation.item.input_audio_transcription.completed":
                             transcribed_text = message.get("transcript", "")
                             if transcribed_text and turn_id:
-                                logger.info(f"Received user transcription for turn_id={turn_id}: {transcribed_text}")
+                                logger.debug(f"Received user transcription for turn_id={turn_id}: {transcribed_text}")
                                 self.conversation_history.append({"role": "user", "content": transcribed_text})
 
                         if message.get("type") == "response.audio_transcript.delta":
                             transcript_buffer += message["delta"]
-                            logger.info(f"Appending to transcript for turn_id={turn_id}: {message['delta']}")
+                            logger.debug(f"Appending to transcript for turn_id={turn_id}: {message['delta']}")
 
                         if message.get("type") == "response.audio_transcript.done" and transcript_buffer and turn_id:
-                            logger.info(f"Completed transcript for turn_id={turn_id}: {transcript_buffer}")
+                            logger.debug(f"Completed transcript for turn_id={turn_id}: {transcript_buffer}")
                             assistant_message = {
                                 "role": "assistant",
                                 "content": transcript_buffer,
@@ -453,7 +453,7 @@ class BotifyRealtime:
                             transcript_buffer = ""
 
                         if message.get("type") == "response.output_item.done" and "item" in message and message["item"].get("type") == "function_call":
-                            logger.info("calling custom search tool")
+                            logger.debug("calling custom search tool")
                             function_call = message["item"]
                             tool_name = function_call["name"]
                             arguments = json.loads(function_call["arguments"])
@@ -463,7 +463,7 @@ class BotifyRealtime:
                                 tool = self.tools[tool_name]
                                 try:
                                     result = await tool._arun(arguments)
-                                    logger.info(f"Tool {tool_name} returned result of type: {type(result)}")
+                                    logger.debug(f"Tool {tool_name} returned result of type: {type(result)}")
 
                                     tool_result = {
                                         "type": "tool_result.update",
@@ -479,7 +479,7 @@ class BotifyRealtime:
                                     })
 
                                     await self.ws_openai.send_json(tool_result)
-                                    logger.info(f"Sent tool result to OpenAI: {tool_result}")
+                                    logger.debug(f"Sent tool result to OpenAI: {tool_result}")
                                 except Exception as e:
                                     logger.error(f"Error invoking tool {tool_name}: {str(e)}")
                                     error_message = {
@@ -502,4 +502,4 @@ class BotifyRealtime:
             await self.ws_openai.close()
         if self.session and not self.session.closed:
             await self.session.close()
-        logger.info("WebSocket connections and session cleaned up")
+        logger.debug("WebSocket connections and session cleaned up")
