@@ -110,12 +110,15 @@
             <button id="connectBtn">Connect</button>
             <button id="disconnectBtn" disabled>Disconnect</button>
             <button id="healthCheckBtn">Check Server Status</button>
+            <button id="testAudioBtn">Test Audio Output</button>
+            <button id="clearAudioBtn">Stop All Audio</button>
         </div>
 
         <div id="audioControls">
             <button id="startRecording" disabled>Start Recording</button>
             <button id="stopRecording" disabled>Stop Recording</button>
             <div id="recordingIndicator" class="hidden">🔴 Recording...</div>
+            <div id="playbackIndicator" class="hidden">🔊 Playing audio...</div>
         </div>
 
         <h3>Messages</h3>
@@ -134,6 +137,16 @@
             <p><strong>Audio Format:</strong> Mono PCM16 at 24kHz (as required by OpenAI Realtime API)</p>
             <p><strong>Encoding:</strong> Base64-encoded raw PCM16 samples</p>
             <p><strong>Note:</strong> The audio is processed in real-time using Web Audio API to ensure correct format.</p>
+
+            <h4>Audio Output</h4>
+            <p>Audio responses from the server are automatically played through your default audio output device.</p>
+            <p><strong>Troubleshooting:</strong></p>
+            <ul>
+                <li>Use the "Test Audio Output" button to verify your speakers/headphones are working</li>
+                <li>Check browser console for audio-related errors</li>
+                <li>Ensure your browser allows audio playback (some browsers require user interaction first)</li>
+                <li>Audio playback requires a modern browser with Web Audio API support</li>
+            </ul>
         </div>
 
         <!-- Troubleshooting Information -->
@@ -160,6 +173,7 @@
         const startRecordingBtn = document.getElementById('startRecording');
         const stopRecordingBtn = document.getElementById('stopRecording');
         const recordingIndicator = document.getElementById('recordingIndicator');
+        const playbackIndicator = document.getElementById('playbackIndicator');
 
         // Server configuration elements
         const hostInput = document.getElementById('host');
@@ -208,16 +222,196 @@
         let connectionRetries = 0;
         const MAX_RETRIES = 3;
 
+        // Audio output context and buffers
+        let outputAudioContext;
+        let audioQueue = [];
+        let isPlayingAudio = false;
+        let currentAudioSource = null;
+        let isNewResponse = true;
+
         // Connect to WebSocket server
         connectBtn.addEventListener('click', connectWebSocket);
         disconnectBtn.addEventListener('click', disconnectWebSocket);
         startRecordingBtn.addEventListener('click', startRecording);
         stopRecordingBtn.addEventListener('click', stopRecording);
 
+        // Initialize audio output context
+        function initializeAudioOutput() {
+            if (!outputAudioContext) {
+                outputAudioContext = new (window.AudioContext || window.webkitAudioContext)({
+                    sampleRate: 24000
+                });
+                logMessage('System', 'Audio output context initialized');
+            }
+        }
+
+        // Clear audio queue and stop current playback
+        function clearAudioPlayback() {
+            audioQueue = [];
+            isPlayingAudio = false;
+            playbackIndicator.classList.add('hidden');
+
+            if (currentAudioSource) {
+                try {
+                    currentAudioSource.stop();
+                    currentAudioSource = null;
+                } catch (e) {
+                    // Source might already be stopped
+                }
+            }
+            console.log('Audio playback cleared');
+        }
+
+        // Play audio from base64 PCM16 data
+        async function playAudioData(base64Audio) {
+            try {
+                if (!outputAudioContext) {
+                    initializeAudioOutput();
+                }
+
+                // Resume audio context if it's suspended (required by browser policies)
+                if (outputAudioContext.state === 'suspended') {
+                    await outputAudioContext.resume();
+                }
+
+                // Decode base64 to binary
+                const binaryString = atob(base64Audio);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+
+                // Convert PCM16 to Float32 for Web Audio API
+                const int16Array = new Int16Array(bytes.buffer);
+                const float32Array = new Float32Array(int16Array.length);
+                for (let i = 0; i < int16Array.length; i++) {
+                    float32Array[i] = int16Array[i] / 32768; // Convert to [-1, 1] range
+                }
+
+                // Create audio buffer
+                const audioBuffer = outputAudioContext.createBuffer(1, float32Array.length, 24000);
+                audioBuffer.getChannelData(0).set(float32Array);
+
+                // Create and configure audio source
+                const source = outputAudioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(outputAudioContext.destination);
+
+                // Track the current source for potential cleanup
+                currentAudioSource = source;
+
+                // Return a promise that resolves when the audio finishes playing
+                return new Promise((resolve) => {
+                    source.onended = () => {
+                        console.log('Audio chunk finished playing');
+                        if (currentAudioSource === source) {
+                            currentAudioSource = null;
+                        }
+                        resolve();
+                    };
+
+                    // Play the audio
+                    source.start();
+                    console.log('Started playing audio chunk with', float32Array.length, 'samples');
+                });
+
+            } catch (error) {
+                console.error('Error playing audio:', error);
+                logMessage('System', `Audio playback error: ${error.message}`, 'error');
+                throw error;
+            }
+        }
+
+        // Queue-based audio playback for smooth streaming
+        function queueAudioData(base64Audio) {
+            audioQueue.push(base64Audio);
+            if (!isPlayingAudio) {
+                playNextAudioChunk();
+            }
+        }
+
+        async function playNextAudioChunk() {
+            if (audioQueue.length === 0) {
+                isPlayingAudio = false;
+                playbackIndicator.classList.add('hidden');
+                return;
+            }
+
+            isPlayingAudio = true;
+            playbackIndicator.classList.remove('hidden');
+
+            const audioData = audioQueue.shift();
+
+            try {
+                // Wait for the current audio chunk to finish before playing the next one
+                await playAudioData(audioData);
+                // Immediately play the next chunk without delay to prevent gaps
+                playNextAudioChunk();
+            } catch (error) {
+                console.error('Error in audio queue:', error);
+                // On error, try the next chunk after a short delay
+                setTimeout(playNextAudioChunk, 100);
+            }
+        }
+
         // Add health check functionality
         const healthCheckBtn = document.getElementById('healthCheckBtn');
         if (healthCheckBtn) {
             healthCheckBtn.addEventListener('click', checkServerStatus);
+        }
+
+        // Add test audio functionality
+        const testAudioBtn = document.getElementById('testAudioBtn');
+        if (testAudioBtn) {
+            testAudioBtn.addEventListener('click', testAudioOutput);
+        }
+
+        // Add clear audio functionality
+        const clearAudioBtn = document.getElementById('clearAudioBtn');
+        if (clearAudioBtn) {
+            clearAudioBtn.addEventListener('click', () => {
+                clearAudioPlayback();
+                logMessage('System', 'All audio playback stopped');
+            });
+        }
+
+        // Test audio output with a simple tone
+        async function testAudioOutput() {
+            try {
+                if (!outputAudioContext) {
+                    initializeAudioOutput();
+                }
+
+                // Resume audio context if suspended
+                if (outputAudioContext.state === 'suspended') {
+                    await outputAudioContext.resume();
+                }
+
+                // Generate a simple test tone (440Hz sine wave for 0.5 seconds)
+                const sampleRate = 24000;
+                const duration = 0.5;
+                const frequency = 440;
+                const samples = sampleRate * duration;
+
+                const audioBuffer = outputAudioContext.createBuffer(1, samples, sampleRate);
+                const channelData = audioBuffer.getChannelData(0);
+
+                for (let i = 0; i < samples; i++) {
+                    channelData[i] = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.3;
+                }
+
+                const source = outputAudioContext.createBufferSource();
+                source.buffer = audioBuffer;
+                source.connect(outputAudioContext.destination);
+                source.start();
+
+                logMessage('System', 'Playing test audio tone (440Hz)');
+                console.log('Test audio played - if you hear a tone, audio output is working');
+
+            } catch (error) {
+                console.error('Test audio failed:', error);
+                logMessage('System', `Test audio failed: ${error.message}`, 'error');
+            }
         }
 
         // Check server status on page load
@@ -305,6 +499,9 @@
                     disconnectBtn.disabled = false;
                     startRecordingBtn.disabled = false;
                     logMessage('System', 'Connected to server');
+
+                    // Initialize audio output context on connection
+                    initializeAudioOutput();
                 };
 
                 socket.onmessage = (event) => {
@@ -526,9 +723,40 @@
                     }
                     break;
 
+                case 'response.audio.delta':
+                    // Handle streaming audio response
+                    if (message.delta) {
+                        // Clear any previous audio if this is the start of a new response
+                        if (isNewResponse) {
+                            clearAudioPlayback();
+                            isNewResponse = false;
+                            console.log('New audio response started, cleared previous audio');
+                        }
+                        console.log('Received audio delta, queuing for playback');
+                        queueAudioData(message.delta);
+                    }
+                    break;
+
+                case 'response.audio.done':
+                    // Audio response complete
+                    console.log('Audio response complete');
+                    logMessage('System', 'Audio response finished');
+                    isNewResponse = true; // Ready for next response
+                    break;
+
                 case 'response.audio_bytes':
-                    // This is audio data - could play it or save for download
+                    // This is audio data - play it
                     console.log('Received audio response data');
+                    if (message.audio) {
+                        queueAudioData(message.audio);
+                    }
+                    break;
+
+                case 'response.output_item.added':
+                    // New output item added (could be audio or text)
+                    if (message.item && message.item.type === 'audio') {
+                        console.log('Audio output item added');
+                    }
                     break;
 
                 case 'error':
