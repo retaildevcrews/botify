@@ -28,6 +28,7 @@ export interface WebSocketOptions {
   onBotStopSpeaking: () => void;
   onError: (error: Error | string) => void;
   messageManager: MessageManager;
+  setIsListening: (isListening: boolean) => void;
 }
 
 // Check if WebSocket is connected
@@ -114,16 +115,17 @@ async function playAudioData(base64Audio: string): Promise<void> {
 }
 
 // Queue-based audio playback for smooth streaming
-function queueAudioData(base64Audio: string): void {
+function queueAudioData(base64Audio: string, onBotStopSpeaking: () => void): void {
   audioQueue.push(base64Audio);
   if (!isPlayingAudio) {
-    playNextAudioChunk();
+    playNextAudioChunk(onBotStopSpeaking);
   }
 }
 
-async function playNextAudioChunk(): Promise<void> {
+async function playNextAudioChunk(onBotStopSpeaking: () => void): Promise<void> {
   if (audioQueue.length === 0) {
     isPlayingAudio = false;
+    onBotStopSpeaking();
     return;
   }
 
@@ -134,11 +136,11 @@ async function playNextAudioChunk(): Promise<void> {
     // Wait for the current audio chunk to finish before playing the next one
     await playAudioData(audioData!);
     // Immediately play the next chunk without delay to prevent gaps
-    playNextAudioChunk();
+    playNextAudioChunk(onBotStopSpeaking);
   } catch (error) {
     console.error('Error in audio queue:', error);
     // On error, try the next chunk after a short delay
-    setTimeout(playNextAudioChunk, 100);
+    setTimeout(() => playNextAudioChunk(onBotStopSpeaking), 100);
   }
 }
 
@@ -300,7 +302,6 @@ function processWebSocketMessage(message: any, options: WebSocketOptions): void 
     case 'response.audio_transcript.done':
       // Bot has finished speaking
       options.messageManager.setStreamComplete(true);
-      options.onBotStopSpeaking();
       break;
 
     case 'response.audio.delta':
@@ -311,7 +312,7 @@ function processWebSocketMessage(message: any, options: WebSocketOptions): void 
           clearAudioPlayback();
           isNewResponse = false;
         }
-        queueAudioData(message.delta);
+        queueAudioData(message.delta, options.onBotStopSpeaking);
       }
 
       // Notify that bot is speaking
@@ -321,27 +322,33 @@ function processWebSocketMessage(message: any, options: WebSocketOptions): void 
       }
       break;
 
+    // Audio response complete
     case 'response.audio.done':
-      // Audio response complete
       isNewResponse = true;
       options.messageManager.setStreamComplete(true);
-      options.onBotStopSpeaking();
       break;
 
+    // Bot is sending audio (meaning it is speaking)
     case 'response.audio_bytes':
-      // Bot is sending audio (meaning it is speaking)
       if (!options.messageManager.isWaitingForBotResponse) {
         options.onBotStartSpeaking();
         options.messageManager.setWaitingForBot();
       }
 
       // Play audio if enabled
-      queueAudioData(message?.audio);
+      queueAudioData(message?.audio, options.onBotStopSpeaking);
       break;
 
-    // Stop bot audio playback if user is speaking
+    // User has started speaking
     case 'input_audio_buffer.speech_started':
       clearAudioPlayback();
+      options.onBotStopSpeaking();
+      options.setIsListening(true);
+      break;
+
+    // User has stopped speaking
+    case 'input_audio_buffer.speech_stopped':
+      options.setIsListening(false);
       break;
 
     case 'error':

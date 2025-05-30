@@ -41,7 +41,8 @@ const AppContent = () => {
           onBotStartSpeaking: handleBotStartSpeaking,
           onBotStopSpeaking: handleBotStopSpeaking,
           onError: handleWebSocketError,
-          messageManager
+          messageManager,
+          setIsListening,
         };
         await connectWebSocket(options);
       } catch (error) {

@@ -123,7 +123,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
         sendMessage={sendMessage}
         handleMicrophoneClick={handleMicrophoneClick}
         isListening={isListening}
-        isDisabled={isHandsFreeMode}
+        isHandsFreeMode={isHandsFreeMode}
       />
     </div>
   );
