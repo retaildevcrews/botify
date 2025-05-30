@@ -2,7 +2,6 @@
 
 import json
 import logging
-import os
 from pathlib import Path
 from typing import Any, Dict, TypedDict
 
@@ -199,7 +198,6 @@ class AppFactory:
     def setup_realtime_routes(self):
         """Add WebSocket endpoint for realtime voice interactions."""
         from api.realtime import BotifyRealtime
-        import os
 
         @self.app.websocket("/realtime")
         async def realtime_endpoint(websocket: WebSocket):
@@ -236,7 +234,9 @@ class AppFactory:
                 except Exception as e:
                     error_msg = f"WebSocket error: {str(e)}"[:100]  # Truncate to fit WebSocket limit
                     logger.error(error_msg)
-                    if not websocket.client_state == 2:  # Check if WebSocket is not already closed (2 = DISCONNECTED)
+
+                    # Check if WebSocket is not already closed (2 = DISCONNECTED)
+                    if not websocket.client_state == 2:
                         await websocket.close(code=1011, reason=error_msg)
                 finally:
                     if rtmt:
