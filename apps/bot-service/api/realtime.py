@@ -5,12 +5,11 @@ import json
 import logging
 
 import aiohttp
-from fastapi import WebSocket, WebSocketDisconnect
-from opentelemetry import trace
-
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 from common.schemas import ResponseSchema
+from fastapi import WebSocket, WebSocketDisconnect
+from opentelemetry import trace
 from prompts.prompt_gen import PromptGen
 
 logger = logging.getLogger(__name__)
