@@ -5,11 +5,12 @@ import json
 import logging
 
 import aiohttp
+from fastapi import WebSocket, WebSocketDisconnect
+from opentelemetry import trace
+
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 from common.schemas import ResponseSchema
-from fastapi import WebSocket, WebSocketDisconnect
-from opentelemetry import trace
 from prompts.prompt_gen import PromptGen
 
 logger = logging.getLogger(__name__)
@@ -55,7 +56,7 @@ class BotifyRealtime:
 
         # Basic realtime instructions
         enhanced_prompt = (
-            "Use the search-tool for any information requests. "
+            "Use the Search-Tool for any information requests. "
             "Provide conversational responses with source links as markdown. " + prompt_text
         )
 
@@ -74,7 +75,7 @@ class BotifyRealtime:
                     [
                         {
                             "type": "function",
-                            "name": "search-tool",
+                            "name": "Search-Tool",
                             "description": "Search the knowledge base for information",
                             "parameters": {
                                 "type": "object",
@@ -207,26 +208,57 @@ class BotifyRealtime:
             }
         )
 
+    def _serialize_tool_result(self, result):
+        """Serialize tool results, handling LangChain Document objects"""
+        try:
+            # Handle LangChain Document objects first (before checking if it's a list)
+            if hasattr(result, "__iter__") and not isinstance(result, (str, dict)):
+                # It's a list/iterable of objects - check if any are Documents
+                serialized_items = []
+                for item in result:
+                    if hasattr(item, "page_content") and hasattr(item, "metadata"):
+                        # It's a LangChain Document
+                        serialized_items.append({"content": item.page_content, "metadata": item.metadata})
+                    else:
+                        # Try to convert other objects to string
+                        serialized_items.append(str(item))
+                return serialized_items
+
+            # Handle single Document objects
+            if hasattr(result, "page_content") and hasattr(result, "metadata"):
+                return {"content": result.page_content, "metadata": result.metadata}
+
+            # If it's already serializable (but not containing Documents), return as-is
+            if isinstance(result, (dict, list, str, int, float, bool, type(None))):
+                return result
+
+            # Fallback to string representation
+            return {"result": str(result)}
+
+        except Exception as e:
+            logger.error("Error serializing tool result: %s", str(e))
+            return {"error": f"Serialization failed: {str(e)}", "result": str(result)}
+
     async def _handle_function_call(self, function_call):
         """Simple function call handling"""
         tool_name = function_call["name"]
         arguments = json.loads(function_call["arguments"])
         tool_call_id = function_call["call_id"]
 
-        if tool_name == "search-tool" and self.search_tool:
+        if tool_name == "Search-Tool" and self.search_tool:
             try:
                 query = arguments.get("query", "")
                 result = await self.search_tool._arun(query)
 
-                # Simple result serialization
-                result_json = json.dumps(result) if isinstance(result, (dict, list)) else str(result)
+                # Use custom serialization for tool results
+                serialized_result = self._serialize_tool_result(result)
 
                 tool_result = {
                     "type": "conversation.item.create",
                     "item": {
                         "type": "function_call_output",
                         "call_id": tool_call_id,
-                        "output": result_json,
+                        "output": json.dumps(serialized_result),
                     },
                 }
 
