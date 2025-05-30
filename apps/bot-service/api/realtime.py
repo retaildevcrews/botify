@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
 import asyncio
-import aiohttp
 import json
 import logging
-import uuid
 import os
-from fastapi import WebSocket, WebSocketDisconnect
-from opentelemetry import trace
-from langchain_core.documents import Document
+import uuid
+
+import aiohttp
+from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
 from common.schemas import ResponseSchema
-from app.settings import AppSettings
+from fastapi import WebSocket, WebSocketDisconnect
+from langchain_core.documents import Document
+from opentelemetry import trace
 from prompts.prompt_gen import PromptGen
 
 logger = logging.getLogger(__name__)
@@ -165,7 +166,9 @@ class BotifyRealtime:
 
         # Add explicit realtime-specific instructions
         enhanced_prompt = (
-            """CRITICAL TOOL USAGE: You MUST use the search-tool for any information request or question. When users ask "how to" questions, factual questions, or request any information, you MUST call the search-tool first before responding.
+            """CRITICAL TOOL USAGE: You MUST use the search-tool for any information request or question.
+            When users ask "how to" questions, factual questions, or request any information, you MUST call
+            the search-tool first before responding.
 
 REALTIME RESPONSE FORMAT OVERRIDE:
 - This is a realtime voice conversation - DO NOT use JSON format
@@ -649,7 +652,8 @@ REALTIME RESPONSE FORMAT OVERRIDE:
                                         # Add info logging for search-tool specifically
                                         if tool_name == "search-tool":
                                             logger.info(
-                                                "🔍 SEARCH-TOOL INVOKED via realtime endpoint - Query: '%s' (call_id: %s)",
+                                                """🔍 SEARCH-TOOL INVOKED via realtime
+                                                endpoint - Query: '%s' (call_id: %s)""",
                                                 query,
                                                 tool_call_id,
                                             )
@@ -659,14 +663,16 @@ REALTIME RESPONSE FORMAT OVERRIDE:
 
                                         result = await tool._arun(query)
                                         logger.debug(
-                                            f"Tool {tool_name} returned result of type: {type(result)} with length: {len(str(result))}"
+                                            f"""Tool {tool_name} returned result of type: {type(result)}
+                                            with length: {len(str(result))}"""
                                         )
 
                                         # Add info logging for successful search-tool completion
                                         if tool_name == "search-tool":
                                             result_length = len(str(result)) if result else 0
                                             logger.info(
-                                                "✅ SEARCH-TOOL COMPLETED successfully - Result length: %s chars (call_id: %s)",
+                                                """✅ SEARCH-TOOL COMPLETED successfully -
+                                                Result length: %s chars (call_id: %s)""",
                                                 result_length,
                                                 tool_call_id,
                                             )
@@ -727,14 +733,17 @@ REALTIME RESPONSE FORMAT OVERRIDE:
                                                 "response": {
                                                     "modalities": ["text", "audio"],
                                                     "instructions": (
-                                                        "Based on the search results provided by the tool, "
-                                                        "give a comprehensive and helpful answer to the user's question."
+                                                        "Based on the search results "
+                                                        "provided by the tool, "
+                                                        "give a comprehensive and helpful "
+                                                        "answer to the user's question."
                                                     ),
                                                 },
                                             }
                                             await self.ws_openai.send_json(continue_response)
                                             logger.info(
-                                                "🚀 RESPONSE CONTINUATION TRIGGERED after tool result for call_id: %s",
+                                                """RESPONSE CONTINUATION TRIGGERED after
+                                                tool result for call_id: %s""",
                                                 tool_call_id,
                                             )
 
@@ -770,7 +779,8 @@ REALTIME RESPONSE FORMAT OVERRIDE:
                                     # Add specific info logging for search-tool not found
                                     if tool_name == "search-tool":
                                         logger.info(
-                                            "⚠️ SEARCH-TOOL NOT FOUND - Tool '%s' not available in registered tools: %s (call_id: %s)",
+                                            """⚠️ SEARCH-TOOL NOT FOUND - Tool '%s' not available in
+                                            registered tools: %s (call_id: %s)""",
                                             tool_name,
                                             list(self.tools.keys()),
                                             tool_call_id,
@@ -785,7 +795,8 @@ REALTIME RESPONSE FORMAT OVERRIDE:
                                 # DO NOT forward function_call completion messages to the client
                                 # Azure OpenAI will send the actual response after processing the tool result
                                 logger.debug(
-                                    f"Skipping function_call completion message (call_id: {tool_call_id}) - waiting for AI response"
+                                    f"""Skipping function_call completion message (call_id:
+                                    {tool_call_id}) - waiting for AI response"""
                                 )
                                 continue  # Skip forwarding this message to the client
 
