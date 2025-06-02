@@ -26,6 +26,7 @@ class BotifyRealtime:
         self.endpoint = self.app_settings.environment_config.openai_endpoint.rstrip("/")
         self.deployment = self.app_settings.environment_config.openai_realtime_deployment_name
         self.voice_choice = self.app_settings.environment_config.openai_realtime_voice_choice
+        self.api_version = self.app_settings.environment_config.openai_realtime_api_version
 
         self.session = None
         self.ws_openai = None
@@ -35,7 +36,7 @@ class BotifyRealtime:
     async def connect_to_realtime_api(self):
         headers = {"api-key": self.api_key}
         base_url = self.endpoint.replace("https://", "wss://")
-        url = f"{base_url}/openai/realtime?api-version=2024-10-01-preview&deployment={self.deployment}"
+        url = f"{base_url}/openai/realtime?api-version={self.api_version}&deployment={self.deployment}"
 
         try:
             self.session = aiohttp.ClientSession()

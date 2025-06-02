@@ -93,6 +93,7 @@ class EnvironmentConfig:
     openai_deployment_name: Optional[str] = field(default=None)
     openai_embedding_deployment_name: Optional[str] = field(default=None)
     openai_classifier_deployment_name: Optional[str] = field(default=None)
+    openai_realtime_api_version: Optional[str] = field(default=None)
     openai_realtime_deployment_name: Optional[str] = field(default=None)
     openai_realtime_voice_choice: Optional[str] = field(default=None)
 
@@ -157,6 +158,9 @@ class EnvironmentConfig:
         self.openai_api_version = get_config_value("AZURE_OPENAI_API_VERSION", required=True)
         if self.openai_api_version:
             os.environ["OPENAI_API_VERSION"] = self.openai_api_version
+        self.openai_realtime_api_version = get_config_value(
+            "AZURE_OPENAI_REALTIME_API_VERSION", required=False
+        )
         self.openai_realtime_deployment_name = get_config_value(
             "AZURE_OPENAI_REALTIME_MODEL_NAME", required=False
         )
