@@ -94,6 +94,27 @@ const AppContent = () => {
     };
   }, []);
 
+  // Listen for speech service errors
+  useEffect(() => {
+    const handleSpeechError = (event: CustomEvent<string>) => {
+      setErrorMessage(event.detail);
+
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+    };
+
+    // Add event listener for speech service errors
+    document.addEventListener('speech-service-error', handleSpeechError as EventListener);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('speech-service-error', handleSpeechError as EventListener);
+      disconnectWebSocket().catch(console.error);
+    };
+  }, []);
+
   const sendMessage = () => {
     if (!input.trim()) return;
 
