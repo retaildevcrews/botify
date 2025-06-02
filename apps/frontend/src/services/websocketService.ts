@@ -11,7 +11,7 @@ let socket: WebSocket | null = null;
 let isProcessingAudio = false;
 let audioContext: AudioContext | null = null;
 let mediaStream: MediaStream | null = null;
-let audioProcessor: ScriptProcessorNode | null = null;
+let audioWorkletNode: AudioWorkletNode | null = null;
 let audioSource: MediaStreamAudioSourceNode | null = null;
 
 // Audio output related state variables
@@ -20,6 +20,56 @@ let audioQueue: string[] = [];
 let isPlayingAudio = false;
 let currentAudioSource: AudioBufferSourceNode | null = null;
 let isNewResponse = true;
+
+// Create the code for the audio processor worklet
+const audioProcessorWorklet = `
+class AudioRecorderProcessor extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.bufferSize = 4096;
+    this.buffer = new Float32Array(this.bufferSize);
+    this.bufferIndex = 0;
+  }
+
+  process(inputs, outputs, parameters) {
+    const input = inputs[0][0];
+    if (!input) return true;
+
+    // Fill buffer with current audio data
+    for (let i = 0; i < input.length; i++) {
+      if (this.bufferIndex >= this.bufferSize) {
+        // Buffer full, send it to the main thread
+        this.port.postMessage({
+          audioBuffer: this.buffer.slice(0)
+        });
+        this.bufferIndex = 0;
+      }
+      this.buffer[this.bufferIndex++] = input[i];
+    }
+    return true;
+  }
+}
+
+registerProcessor('audio-recorder-processor', AudioRecorderProcessor);
+`;
+
+// Function to initialize audio worklet
+async function initializeAudioWorklet(audioContext: AudioContext): Promise<void> {
+  try {
+    // Convert the worklet code to a blob URL
+    const blob = new Blob([audioProcessorWorklet], { type: 'application/javascript' });
+    const workletUrl = URL.createObjectURL(blob);
+
+    // Add the module to the audio context
+    await audioContext.audioWorklet.addModule(workletUrl);
+
+    // Clean up the blob URL
+    URL.revokeObjectURL(workletUrl);
+  } catch (error) {
+    console.error('Error initializing audio worklet:', error);
+    throw error;
+  }
+}
 
 // WebSocket connection options interface
 export interface WebSocketOptions {
@@ -170,16 +220,21 @@ export async function connectWebSocket(options: WebSocketOptions): Promise<void>
 
         // Setup audio processing
         audioContext = new AudioContext({ sampleRate: 24000 });
+
+        // Initialize the audio worklet
+        await initializeAudioWorklet(audioContext);
+
         audioSource = audioContext.createMediaStreamSource(mediaStream);
-        audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+        audioWorkletNode = new AudioWorkletNode(audioContext, 'audio-recorder-processor');
 
-        audioSource.connect(audioProcessor);
-        audioProcessor.connect(audioContext.destination);
+        // Connect the nodes
+        audioSource.connect(audioWorkletNode);
+        audioWorkletNode.connect(audioContext.destination);
 
-        // Process audio and send it over WebSocket
-        audioProcessor.onaudioprocess = function(e) {
-          if (socket && socket.readyState === WebSocket.OPEN) {
-            const inputBuffer = e.inputBuffer.getChannelData(0);
+        // Handle messages from the audio worklet
+        audioWorkletNode.port.onmessage = (event) => {
+          if (socket && socket.readyState === WebSocket.OPEN && event.data.audioBuffer) {
+            const inputBuffer = event.data.audioBuffer;
 
             // Convert Float32 to Int16 (PCM16)
             const pcm16Buffer = new Int16Array(inputBuffer.length);
@@ -261,9 +316,9 @@ export async function disconnectWebSocket(): Promise<void> {
 function cleanupAudioResources(): void {
   isProcessingAudio = false;
 
-  if (audioProcessor) {
-    audioProcessor.disconnect();
-    audioProcessor = null;
+  if (audioWorkletNode) {
+    audioWorkletNode.disconnect();
+    audioWorkletNode = null;
   }
 
   if (audioSource) {
