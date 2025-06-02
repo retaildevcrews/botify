@@ -226,11 +226,12 @@ export async function connectWebSocket(options: WebSocketOptions): Promise<void>
 
     socket.onerror = (error) => {
       console.error('WebSocket error:', error);
-      options.onError('WebSocket error occurred');
+      options.onError('WebSocket connection error occurred.');
     };
   } catch (error) {
     console.error('Error connecting to WebSocket:', error);
-    options.onError(error instanceof Error ? error : new Error(String(error)));
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    options.onError(`Failed to connect: ${errorMessage}`);
   }
 }
 

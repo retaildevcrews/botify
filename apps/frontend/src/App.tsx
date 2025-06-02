@@ -13,6 +13,7 @@ const AppContent = () => {
   const [isListening, setIsListening] = useState(false);
   const [isBotSpeaking, setIsBotSpeaking] = useState(false);
   const [isHandsFreeMode, setIsHandsFreeMode] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { useStreaming, useTextToSpeech, setUseTextToSpeech, sessionId } = useAppContext();
   const messageManager = useMessageManager();
 
@@ -38,8 +39,8 @@ const AppContent = () => {
       try {
         const options: WebSocketOptions = {
           onTranscription: handleTranscription,
-          onBotStartSpeaking: handleBotStartSpeaking,
-          onBotStopSpeaking: handleBotStopSpeaking,
+          onBotStartSpeaking: () => setIsBotSpeaking(true),
+          onBotStopSpeaking: () => setIsBotSpeaking(false),
           onError: handleWebSocketError,
           messageManager,
           setIsListening,
@@ -75,14 +76,16 @@ const AppContent = () => {
 
   // Handle WebSocket errors
   const handleWebSocketError = (error: Error | string) => {
-    console.error('WebSocket error:', error);
+    const errorText = typeof error === 'string' ? error : error.message;
+    setErrorMessage(errorText);
     setIsHandsFreeMode(false);
     disconnectWebSocket().catch(console.error);
-  };
 
-  // Set bot speaking state
-  const handleBotStartSpeaking = () => setIsBotSpeaking(true);
-  const handleBotStopSpeaking = () => setIsBotSpeaking(false);
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      setErrorMessage(null);
+    }, 5000);
+  };
 
   // Close WebSocket connection when component unmounts
   useEffect(() => {
@@ -204,6 +207,12 @@ const AppContent = () => {
           <SettingsDrawer />
         </div>
       </div>
+      {errorMessage && (
+        <div className="error-notification">
+          <p>{errorMessage}</p>
+          <button onClick={() => setErrorMessage(null)}>✕</button>
+        </div>
+      )}
       <ChatContainer
         messages={messages}
         input={input}
