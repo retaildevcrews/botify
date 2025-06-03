@@ -72,6 +72,17 @@ const ensureValidToken = async (): Promise<boolean> => {
   return true;
 };
 
+// Event system for speech service errors
+document.addEventListener("speech-service-error", ((e: CustomEvent<string>) => {
+  console.error("Speech service error:", e.detail);
+}) as EventListener);
+
+// Helper function to emit speech service errors
+export const emitSpeechError = (errorMessage: string): void => {
+  const event = new CustomEvent("speech-service-error", { detail: errorMessage });
+  document.dispatchEvent(event);
+};
+
 // Function to fetch and set up the speech token
 const fetchSpeechToken = async (): Promise<boolean> => {
   try {
@@ -87,6 +98,7 @@ const fetchSpeechToken = async (): Promise<boolean> => {
     return true;
   } catch (error) {
     console.error('Failed to fetch speech token:', error);
+    emitSpeechError('Failed to get speech token. Please check your connection and try again.');
     return false;
   }
 };
@@ -96,6 +108,7 @@ try {
   await fetchSpeechToken();
 } catch (error) {
   console.error('Initial token fetch failed, but app will continue:', error);
+  emitSpeechError('Speech service initialization failed. Voice features may not work properly.');
 }
 
 // Define speech recognition functions
@@ -136,6 +149,13 @@ export const stopSpeechRecognition = (): Promise<string | null> => {
 export const startSpeechRecognition = async (): Promise<string> => {
   return new Promise(async (resolve, reject) => {
     try {
+      if (!speechConfig) {
+        const errorMessage = "Speech service is not initialized";
+        emitSpeechError(errorMessage);
+        reject(errorMessage);
+        return;
+      }
+
       // Setup audio config for the microphone
       const audioConfig = speechsdk.AudioConfig.fromDefaultMicrophoneInput();
       const recognizer = new speechsdk.SpeechRecognizer(speechConfig, audioConfig);
@@ -156,6 +176,8 @@ export const startSpeechRecognition = async (): Promise<string> => {
       });
     } catch (error) {
       console.error('Error in speech recognition:', error);
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      emitSpeechError(`Speech recognition failed: ${errorMsg}`);
       reject(error);
     }
   });
@@ -164,10 +186,15 @@ export const startSpeechRecognition = async (): Promise<string> => {
 // Define text-to-speech function with token refresh capability
 export const synthesizeSpeech = async (text: string, useTextToSpeech = true): Promise<void> => {
   // Skip speech synthesis if conditions aren't met
-  if (!useTextToSpeech || !text || !speechConfig) {
-    const reason = !useTextToSpeech ? 'Speech is disabled in settings' :
-                  !text ? 'No text provided' : 'Speech configuration not available';
+  if (!useTextToSpeech || !text) {
+    const reason = !useTextToSpeech ? 'Speech is disabled in settings' : 'No text provided';
     console.log(`Speech synthesis skipped: ${reason}`);
+    return Promise.resolve();
+  }
+
+  if (!speechConfig) {
+    emitSpeechError('Speech service is not initialized. Please try again later.');
+    console.log('Speech synthesis skipped: Speech configuration not available');
     return Promise.resolve();
   }
 

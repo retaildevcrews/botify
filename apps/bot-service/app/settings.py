@@ -53,6 +53,11 @@ class AppSettings:
 
     response_schema_name = format_config_paths[selected_format_config].get("response_schema_name", "")
 
+    # Configuration for realtime API
+    enable_realtime = True  # Toggle for enabling/disabling realtime endpoint
+    realtime_debounce_delay = 1.5  # Delay in seconds before generating a response
+    realtime_throttle_interval = 4  # Minimum interval in seconds between responses
+
     # Default model configuration can be seen in the ModelConfig class
     model_config: ModelConfig = field(default_factory=ModelConfig)
     # When this is set to true, the agent will attempt to store:

@@ -1,22 +1,34 @@
 import { useState, useRef } from 'react';
 import { InputMessage, Message } from '../types';
 
+// Export the return type of useMessageManager for use in other files
+export type MessageManager = ReturnType<typeof useMessageManager>;
+
 export function useMessageManager() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isWaitingForBotResponse, setIsWaitingForBotResponse] = useState(false);
   const [isStreamComplete, setIsStreamComplete] = useState(false);
   const botMessageCreatedRef = useRef(false);
 
-  const addUserMessage = (content: string) => {
-    const inputMessage: InputMessage = {
-      role: 'user',
-      content: content
-    };
+  // Add a new overloaded version of addUserMessage that accepts both string and InputMessage
+  const addUserMessage = (contentOrMessage: string | InputMessage) => {
+    let inputMessage: InputMessage;
+
+    // Check if the input is a string or an InputMessage
+    if (typeof contentOrMessage === 'string') {
+      inputMessage = {
+        role: 'user',
+        content: contentOrMessage
+      };
+    } else {
+      inputMessage = contentOrMessage;
+    }
 
     const userMessage: Message = {
       inputMessage: inputMessage,
       timestamp: new Date().toISOString()
     };
+
     setMessages(prev => [...prev, userMessage]);
 
     // Extract all previous inputMessages to create conversation history
@@ -30,6 +42,10 @@ export function useMessageManager() {
   };
 
   const updateOrAddBotMessage = (content: string) => {
+    if (!content) {
+      return;
+    }
+
     setMessages(prev => {
       const updatedMessages = [...prev];
       const lastBotIndex = updatedMessages.findIndex(
@@ -62,7 +78,6 @@ export function useMessageManager() {
       }
     });
   };
-
 
   const resetWaitingStates = () => {
     setIsWaitingForBotResponse(false);

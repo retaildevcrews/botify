@@ -1,6 +1,7 @@
 # Don't mess with this unless you really know what you are doing
 AZURE_SEARCH_API_VERSION="2024-05-01-preview"
 AZURE_OPENAI_API_VERSION="2024-08-01-preview"
+AZURE_OPENAI_REALTIME_API_VERSION="2024-10-01-preview"
 FAST_API_SERVER="http://bot-service:8080"
 
 SPEECH_ENGINE="azure"
@@ -18,6 +19,8 @@ AZURE_OPENAI_TTS_MODEL_NAME="<model deployment name>"
 AZURE_OPENAI_ENDPOINT="https://<az-oai-resource>.openai.azure.com/"
 AZURE_OPENAI_EMBEDDING_MODEL_NAME="<embedding model deployment name>"
 AZURE_OPENAI_CLASSIFICATION_ENDPOINT="https://<az-oai-resource>.openai.azure.com/"
+AZURE_OPENAI_REALTIME_MODEL_NAME="<realtime model deployment name>"
+AZURE_OPENAI_REALTIME_VOICE_CHOICE="<realtime voice choice>"
 AZURE_OPENAI_API_KEY="<your openai key>"
 AZURE_SEARCH_ENDPOINT="https://<cog-search-name>.search.windows.net"
 AZURE_SEARCH_KEY="<Azure Search Key>" # Make sure is the MANAGEMENT KEY no the query key
