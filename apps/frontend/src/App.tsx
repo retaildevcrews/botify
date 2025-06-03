@@ -52,6 +52,7 @@ const AppContent = () => {
       }
     } else {
       await disconnectWebSocket();
+      setIsListening(false);
       setIsBotSpeaking(false);
       resetWaitingStates();
     }
