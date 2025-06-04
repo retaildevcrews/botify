@@ -27,15 +27,19 @@ For more information, refer to the [Azure OpenAI Service real-time inference qui
 
 - Retained the existing interface and introduced a "Hands Free Mode" section.
 - In Hands Free Mode, the text input field is disabled.
-- Conversations in Hands Free Mode are transcribed in the same pane as invoke and streaming conversations.
+- While the conversation is ongoing in hands-free mode, there are respective indicators that animate when the user or the bot is speaking.
+- Conversations in Hands Free Mode are transcribed in the same message pane as invoke and streaming conversations.
+- Websocket support to connect to to the backend API.
 
 ## Next Steps
 
 - Test this pattern in a more complex application with additional lang graph steps, a larger search index, and a significantly larger prompt to evaluate performance improvements.
+- Investigate WebRTC (recommended by Azure docs) as means to interact with the Realtime API. Evaluate performance and model effectiveness over current websocket usage.
+- Making the Hands Free Mode UI more interactive: a mute button for the user mic and a volume slider for the bot audio playback.
 
 ## Contributors
 
 | Name                | Contact                                  |
 |---------------------|------------------------------------------|
-| **Siva Mullapudi**  | 📧 [sivamu@microsoft.com](mailto:sivamu@microsoft.com)         |
 | **Alfredo Hernandez** | 📧 [alfredoch@microsoft.com](mailto:alfredoch@microsoft.com) |
+| **Siva Mullapudi**  | 📧 [sivamu@microsoft.com](mailto:sivamu@microsoft.com)         |
