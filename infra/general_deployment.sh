@@ -23,24 +23,23 @@ echo "--------------------------"
 echo -e "Creating environment file with the outputs of the deployment"
 echo "--------------------------"
 
-AZURE_STORAGE_ACCOUNT_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.blobStorageAccountName.value" -o tsv)
-AZURE_BLOB_STORAGE_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.blobConnectionString" -o json | jq -r '.value')
-STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "${AZURE_STORAGE_ACCOUNT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "[0].value" -o tsv)
-BLOB_SAS_TOKEN=$(az storage account generate-sas --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --account-key "$STORAGE_ACCOUNT_KEY" --permissions rwdlacup --resource-types sco --services b --expiry "$(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ')" -o tsv)
-AZURE_OPENAI_MODEL_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureOpenAIModelName.value" -o tsv)
-AZURE_OPENAI_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureOpenAIEndpoint.value" -o tsv)
-AZURE_OPENAI_ACCOUNT_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureOpenAIAccountName.value" -o tsv)
-AZURE_OPENAI_API_KEY=$(az cognitiveservices account keys list --name "${AZURE_OPENAI_ACCOUNT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1')
-AZURE_COSMOSDB_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cosmosDBAccountName.value" -o tsv)
-AZURE_COSMOSDB_CONTAINER_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cosmosDBContainerName.value" -o tsv)
-AZURE_SEARCH_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureSearchEndpoint.value" -o tsv)
-AZURE_SEARCH_KEY=$(az deployment group show --resource-group "${RESOURCE_GROUP_NAME}" --name "${DEPLOYMENT_NAME}" --query "properties.outputs.azureSearchAdminKey.value" -o tsv)
-COGNITIVE_SERVICES_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cognitiveServiceName.value" -o tsv)
-COGNITIVE_SERVICES_KEY=$(az cognitiveservices account keys list --name "${COGNITIVE_SERVICES_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1')
-CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv)
-CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv)
-APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv)
-
+AZURE_STORAGE_ACCOUNT_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.blobStorageAccountName.value" -o tsv | tr -d '\r\n')
+AZURE_BLOB_STORAGE_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.blobConnectionString.value" -o tsv | tr -d '\r\n')
+STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "${AZURE_STORAGE_ACCOUNT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "[0].value" -o tsv | tr -d '\r\n')
+BLOB_SAS_TOKEN=$(az storage account generate-sas --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --services b --account-key "$STORAGE_ACCOUNT_KEY" --resource-types sco --expiry "$(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ')" --permissions rwdl --output tsv | tr -d '\r\n')
+AZURE_OPENAI_MODEL_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureOpenAIModelName.value" -o tsv | tr -d '\r\n')
+AZURE_OPENAI_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureOpenAIEndpoint.value" -o tsv | tr -d '\r\n')
+AZURE_OPENAI_ACCOUNT_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureOpenAIAccountName.value" -o tsv | tr -d '\r\n')
+AZURE_OPENAI_API_KEY=$(az cognitiveservices account keys list --name "${AZURE_OPENAI_ACCOUNT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1' | tr -d '\r\n')
+AZURE_SEARCH_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureSearchEndpoint.value" -o tsv | tr -d '\r\n')
+AZURE_SEARCH_KEY=$(az deployment group show --resource-group "${RESOURCE_GROUP_NAME}" --name "${DEPLOYMENT_NAME}" --query "properties.outputs.azureSearchAdminKey.value" -o tsv | tr -d '\r\n')
+COGNITIVE_SERVICES_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cognitiveServiceName.value" -o tsv | tr -d '\r\n')
+COGNITIVE_SERVICES_KEY=$(az cognitiveservices account keys list --name "${COGNITIVE_SERVICES_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1' | tr -d '\r\n')
+AZURE_COSMOSDB_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cosmosDBAccountName.value" -o tsv | tr -d '\r\n')
+AZURE_COSMOSDB_CONTAINER_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cosmosDBContainerName.value" -o tsv | tr -d '\r\n')
+CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv | tr -d '\r\n')
+CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv | tr -d '\r\n')
+APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv | tr -d '\r\n')
 
 cat <<EOF > ../apps/credentials.env
 # Don't mess with this unless you really know what you are doing
@@ -56,13 +55,12 @@ BLOB_CONNECTION_STRING="${AZURE_BLOB_STORAGE_CONNECTION_STRING}"
 BLOB_SAS_TOKEN="${BLOB_SAS_TOKEN}"
 
 # Edit with your own azure services values
-AZURE_OPENAI_CLASSIFIER_MODEL_NAME="${AZURE_OPENAI_MODEL_NAME}"
 AZURE_OPENAI_MODEL_NAME="${AZURE_OPENAI_MODEL_NAME}"
-AZURE_OPENAI_WHISPER_MODEL_NAME="<model deployment name>" 
-AZURE_OPENAI_TTS_MODEL_NAME="<model deployment name>" # probably won't be needed
+AZURE_OPENAI_CLASSIFIER_MODEL_NAME="${AZURE_OPENAI_MODEL_NAME}"
+AZURE_OPENAI_WHISPER_MODEL_NAME="<model deployment name>"
 AZURE_OPENAI_ENDPOINT="${AZURE_OPENAI_ENDPOINT}"
 AZURE_OPENAI_EMBEDDING_MODEL_NAME="<embedding model deployment name>" 
-AZURE_OPENAI_CLASSIFICATION_ENDPOINT="https://<az-oai-resource>.openai.azure.com/" 
+AZURE_OPENAI_CLASSIFICATION_ENDPOINT="https://<az-oai-resource>.openai.azure.com/"
 AZURE_OPENAI_API_KEY="${AZURE_OPENAI_API_KEY}"
 AZURE_SEARCH_ENDPOINT="${AZURE_SEARCH_ENDPOINT}"
 AZURE_SEARCH_KEY="${AZURE_SEARCH_KEY}"
@@ -81,7 +79,6 @@ CONTENT_SAFETY_ENDPOINT="${CONTENT_SAFETY_ENDPOINT}"
 CONTENT_SAFETY_KEY="${CONTENT_SAFETY_KEY}"
 APPLICATIONINSIGHTS_CONNECTION_STRING="${APPLICATIONINSIGHTS_CONNECTION_STRING}"
 OPEN_TELEMETRY_COLLECTOR_ENDPOINT="<collector endpoint with port>" # Telemetry disabled if not set. Set to "http://otelcol:4318" for local telemetry with docker compose
-
 CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Options are: '<ENV_VAR|KEY_VAULT>'  Determines if pulling the configuration from the environment or from Azure KeyVault.Default is ENV
 
 # Only needed if CONFIG_SOURCE is set to KEY_VAULT
@@ -96,6 +93,9 @@ AZURE_CLIENT_SECRET='<App Registration Client Secret>'
 RESOURCE_GROUP='<resource group name where ai studio project resource is located>'
 SUBSCRIPTION_ID='<subscription name where ai studio project resource is located>'
 PROJECT_NAME='<ai studio project name>'
+
+AZURE_MANAGED_IDENTITY_CLIENT_ID="$UAMI_CLIENT_ID"
+AZURE_MANAGED_IDENTITY_RESOURCE_ID="$UAMI_RESOURCE_ID"
 EOF
 
 echo "--------------------------"

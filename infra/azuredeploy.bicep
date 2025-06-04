@@ -85,6 +85,11 @@ param logAnalyticsWorkspace string = 'la-${uniqueString(resourceGroup().id)}'
 var cognitiveServiceSKU = 'S0'
 var appPlanSkuName = 'S1'
 
+resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: 'botify-uami'
+  location: location
+}
+
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsWorkspace
   location: location
@@ -143,6 +148,13 @@ resource azureSearch 'Microsoft.Search/searchServices@2021-04-01-Preview' = {
     partitionCount: azureSearchPartitionCount
     hostingMode: azureSearchHostingMode
     semanticSearch: 'standard'
+    publicNetworkAccess: 'Enabled'
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
   }
 }
 
@@ -154,8 +166,12 @@ resource cognitiveService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   }
   kind: 'CognitiveServices'
   properties: {
-    apiProperties: {
-      statisticsEnabled: false
+    publicNetworkAccess: 'Enabled'
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
     }
   }
 }
@@ -168,8 +184,11 @@ resource openAIService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   }
   kind: 'AIServices'
   properties: {
-    apiProperties: {
-      statisticsEnabled: true
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
     }
   }
 }
@@ -199,6 +218,12 @@ resource contentsafetyaccount 'Microsoft.CognitiveServices/accounts@2024-10-01' 
   }
   properties: {
   }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
 }
 
 resource cosmosDBAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
@@ -214,12 +239,17 @@ resource cosmosDBAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
     ]
     enableFreeTier: false
     isVirtualNetworkFilterEnabled: false
-    publicNetworkAccess: 'Enabled'
     capabilities: [
       {
         name: 'EnableServerless'
       }
     ]
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
   }
 }
 
@@ -253,12 +283,20 @@ resource cosmosDBContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/c
   }
 }
 
+
+
 resource blobStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: blobStorageAccountName
   location: location
   kind: 'StorageV2'
   sku: {
     name: 'Standard_LRS'
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
   }
 }
 
@@ -272,6 +310,7 @@ resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/co
   name: containerName
 }]
 
+output userAssignedIdentityId string = userAssignedIdentity.id
 output blobStorageAccountName string = blobStorageAccountName
 output blobConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${blobStorageAccountName};AccountKey=${blobStorageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 output azureOpenAIModelName string = azopenaideployment.properties.model.name
