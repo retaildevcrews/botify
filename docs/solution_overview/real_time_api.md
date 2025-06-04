@@ -2,17 +2,19 @@
 
 ## Overview
 
-The Real Time API enables applications to interact with AI models and data sources instantly, supporting low-latency, high-throughput scenarios. Leveraging Azure and OpenAI services, this API provides secure, scalable endpoints for real-time inference, chat, and data processing. Key features include:
+The Real Time API allows applications to interact with Azure OpenAI models for low-latency, streaming inference. It is designed for scenarios where immediate responses are critical, such as conversational AI, live transcription, and interactive assistants. The API supports both text and audio inputs, enabling real-time chat and speech-to-text capabilities.
 
-- **Low Latency:** Optimized for rapid response, suitable for conversational AI, live analytics, and interactive applications.
-- **Scalability:** Built on Azure infrastructure, supporting dynamic scaling to handle varying workloads.
-- **Security:** Integrates with Azure Active Directory and supports role-based access control, ensuring secure data handling.
-- **Flexibility:** Supports multiple AI models, including OpenAI GPT and Azure Cognitive Services, with customizable endpoints.
-- **Monitoring:** Provides logging, metrics, and diagnostics through Azure Monitor for operational visibility.
+Key features include:
 
-Typical use cases include chatbots, real-time content moderation, live recommendations, and interactive virtual assistants.
+- **Streaming Responses:** Receive model outputs incrementally as they are generated, reducing wait times for users.
+- **Low Latency:** Optimized for fast, interactive experiences, suitable for voice assistants and live chat.
+- **Audio and Text Support:** Accepts audio input for speech-to-text and text input for chat or completion tasks.
+- **Scalable and Secure:** Built on Azure infrastructure, supporting enterprise-grade security and compliance.
+- **Flexible Integration:** Easily integrates with existing applications using REST APIs and SDKs.
 
-For more details, see the [Azure OpenAI Service documentation on real-time inference](https://learn.microsoft.com/en-us/azure/ai-services/openai/realtime-audio-quickstart).
+Common use cases include real-time transcription, voice-enabled chatbots, live content moderation, and interactive virtual agents.
+
+For more information, refer to the [Azure OpenAI Service real-time inference quickstart](https://learn.microsoft.com/azure/ai-services/openai/realtime-audio-quickstart).
 
 ## Opinions & Feedback
 
