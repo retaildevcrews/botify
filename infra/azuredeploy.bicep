@@ -184,6 +184,7 @@ resource openAIService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   }
   kind: 'AIServices'
   properties: {
+    publicNetworkAccess: 'Enabled'
   }
   identity: {
     type: 'UserAssigned'
@@ -337,3 +338,4 @@ output appInsightsConnectionString string = appInsights.properties.ConnectionStr
 
 output cosmosDBDatabaseName string = cosmosDBDatabaseName
 output cosmosDBAccountEndpoint string = cosmosDBAccount.properties.documentEndpoint
+
