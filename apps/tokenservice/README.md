@@ -24,9 +24,10 @@ While the token lifetime is not configurable, the client may examine the expirat
 
 The following configuration values are required and should be provided as environment variables:
 
-- API_APP_ID - The Entra ID Application ID for the protected API. Access tokens scoped to this API will be provided
+- LOCAL_MODE - Set this to `True` if you are testing the application locally
 - SPEECH_ENDPOINT - The URL for the private Azure Speech Service endpoint. Ex: "https://{custom sub-domain}.cognitiveservices.azure.com/"
 - SPEECH_RESOURCE_ID - The Azure Resource ID for the Speech Service. Ex: "/subscriptions/{sub id}/resourceGroups/{rg name}/providers/Microsoft.CognitiveServices/accounts/{speech service name}"
+- API_APP_ID - (Required if LOCAL_MODE is `False`) The Entra ID Application ID for the protected API. Access tokens scoped to this API will be provided
 
 The following optional values enable more control over the token configuration and application security settings:
 

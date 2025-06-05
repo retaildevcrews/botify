@@ -13,7 +13,12 @@
       "package": "jinja2-cli"
     },
     "ghcr.io/devcontainers-contrib/features/bin:1": {}, // for any binary release installation
-    "ghcr.io/devcontainers-contrib/features/neovim-apt-get:1": {}
+    "ghcr.io/devcontainers-contrib/features/neovim-apt-get:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "version": "lts",
+      "installYarn": true,
+      "installPnpm": true
+    }
   },
   // "hostRequirements": {
   //  "cpus": 4,
@@ -24,6 +29,7 @@
   "forwardPorts": [
     8000, // Frontend
     8080, // Bot Service
+    8081, // token service
     4318, // Otel Collector
     23333 // Promptflow Traces
   ],
@@ -37,6 +43,9 @@
     },
     "4318": {
       "label": "Otel Collector"
+    },
+    "8081": {
+      "label": "Token Service"
     }
   },
   // set container specific settings

@@ -1,0 +1,70 @@
+/* Styling for the SettingsDrawer component */
+.gear-icon {
+  position: absolute;
+  top: -1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  cursor: pointer;
+  color: var(--accent-text);
+}
+
+/* Updated styling for the SettingsDrawer component */
+.drawer {
+  position: fixed;
+  top: 0;
+  right: -300px; /* Completely hide the drawer when closed */
+  width: 300px;
+  height: 100%;
+  background-color: var(--background-color);
+  color: var(--text-color);
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+  transition: right 0.3s ease;
+  padding: 1rem;
+  padding-left: 0;
+  padding-right: 0;
+  overflow-y: auto;
+}
+
+.drawer.open {
+  right: 0;
+}
+
+.drawer h2 {
+  margin-top: 0;
+  color: var(--text-color);
+}
+
+.close-icon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-color);
+}
+
+.controls-container {
+  padding-left: 40px;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.settings-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.setting-name {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}

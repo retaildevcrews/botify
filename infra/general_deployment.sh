@@ -23,8 +23,8 @@ echo "--------------------------"
 echo -e "Creating environment file with the outputs of the deployment"
 echo "--------------------------"
 
-AZURE_BLOB_STORAGE_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.blobConnectionString" -o json | jq -r '.value')
 AZURE_STORAGE_ACCOUNT_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.blobStorageAccountName.value" -o tsv)
+AZURE_BLOB_STORAGE_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.blobConnectionString" -o json | jq -r '.value')
 STORAGE_ACCOUNT_KEY=$(az storage account keys list --account-name "${AZURE_STORAGE_ACCOUNT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "[0].value" -o tsv)
 BLOB_SAS_TOKEN=$(az storage account generate-sas --account-name "$AZURE_STORAGE_ACCOUNT_NAME" --account-key "$STORAGE_ACCOUNT_KEY" --permissions rwdlacup --resource-types sco --services b --expiry "$(date -u -d "7 days" '+%Y-%m-%dT%H:%MZ')" -o tsv)
 AZURE_OPENAI_MODEL_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureOpenAIModelName.value" -o tsv)
@@ -39,6 +39,8 @@ COGNITIVE_SERVICES_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" -
 COGNITIVE_SERVICES_KEY=$(az cognitiveservices account keys list --name "${COGNITIVE_SERVICES_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1')
 CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv)
 CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv)
+APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv)
+
 
 cat <<EOF > ../apps/credentials.env
 # Don't mess with this unless you really know what you are doing
@@ -77,10 +79,10 @@ LOG_LEVEL=INFO
 
 CONTENT_SAFETY_ENDPOINT="${CONTENT_SAFETY_ENDPOINT}"
 CONTENT_SAFETY_KEY="${CONTENT_SAFETY_KEY}"
-APPLICATIONINSIGHTS_CONNECTION_STRING="<app insights conn>"
+APPLICATIONINSIGHTS_CONNECTION_STRING="${APPLICATIONINSIGHTS_CONNECTION_STRING}"
 OPEN_TELEMETRY_COLLECTOR_ENDPOINT="<collector endpoint with port>" # Telemetry disabled if not set. Set to "http://otelcol:4318" for local telemetry with docker compose
 
-CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Determines if pulling the configuration from the environment or from Azure KeyVault.Default is ENV
+CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Options are: '<ENV_VAR|KEY_VAULT>'  Determines if pulling the configuration from the environment or from Azure KeyVault.Default is ENV
 
 # Only needed if CONFIG_SOURCE is set to KEY_VAULT
 AZURE_KEY_VAULT_URL='<Azure Keyvault URL>'

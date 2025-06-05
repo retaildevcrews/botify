@@ -6,6 +6,14 @@ services:
       - langchain-net
     volumes:
       - "/home/vscode/.azure:/app/.azure/" # Dev container
+  token-service:
+    build: ./tokenservice
+    container_name: token-service
+    env_file: credentials.env
+    networks:
+      - langchain-net
+    ports:
+      - 8081:8081
   # OpenTelemetry Collector
   otelcol:
     build: ./collector
@@ -27,6 +35,7 @@ services:
     depends_on:
       - otelcol
       - azclicredsproxy
+      - token-service
     build: ./bot-service
     develop:
       watch:
@@ -57,9 +66,10 @@ services:
         - action: rebuild
           path: ./frontend/Dockerfile
     container_name: frontend
-    env_file: credentials.env
     environment:
-      - FAST_API_SERVER=http://bot-service:8080
+      - VITE_BACKEND_API_ENDPOINT_PREFIX=http://localhost:8080
+      - VITE_TOKEN_SERVICE_PREFIX=http://localhost:8081
+      - VITE_SPEECH_VOICE_NAME=en-US-AriaNeural
     networks:
       - langchain-net
     ports:

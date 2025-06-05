@@ -151,7 +151,7 @@ sequenceDiagram
 
 The following APIs are exposed by the service:
 
-### /agent/invoke
+### /invoke
 
 Request body:
 

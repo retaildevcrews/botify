@@ -13,9 +13,11 @@ from api.models import Payload
 from api.utils import invoke_wrapper as invoke_runnable
 from app.settings import AppSettings
 from botify_langchain.runnable_factory import RunnableFactory
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.websockets import WebSocketDisconnect
 from opentelemetry import trace
 
 # Configure logging
@@ -53,6 +55,7 @@ class AppFactory:
         )
         self.setup_middleware()
         self.setup_routes()
+        self.setup_realtime_routes()  # Add WebSocket endpoints
         logging.getLogger().setLevel(self.app_settings.environment_config.log_level)
 
     def get_source_ip(self, request: Request) -> str:
@@ -86,6 +89,11 @@ class AppFactory:
             allow_headers=["*"],
             expose_headers=["*"],
         )
+
+        # Mount the test directory as static files
+        test_dir = Path(__file__).parent.parent / "test"
+        if test_dir.exists():
+            self.app.mount("/test", StaticFiles(directory=str(test_dir)), name="test")
 
     def setup_routes(self):
         @self.app.get("/version")
@@ -147,7 +155,7 @@ class AppFactory:
                 return result
 
         @self.app.post(
-            "/agent/stream_events",
+            "/stream_events",
             response_model=Output,
             summary="Invoke the runnable using add_routes",
             description="This endpoint invokes the runnable with provided input and config via add_routes.",
@@ -181,11 +189,59 @@ class AppFactory:
 
                     if chunk:
                         content = chunk.content
-                        if event_type == "on_chat_model_stream" and content and node and node == "call_model":
+                        if event_type == "on_chat_model_stream" and content and node and node == "agent":
                             logger.debug(f"Event that chunk came from: {event}")
                             yield content
 
             return StreamingResponse(event_stream(), media_type="text/event-stream")
+
+    def setup_realtime_routes(self):
+        """Add WebSocket endpoint for realtime voice interactions."""
+        from api.realtime import BotifyRealtime
+
+        @self.app.websocket("/realtime")
+        async def realtime_endpoint(websocket: WebSocket):
+            """
+            WebSocket endpoint for real-time voice interactions with the Azure OpenAI Realtime API.
+
+            This endpoint allows for bidirectional audio streaming with Azure OpenAI's Realtime API.
+            The client can send audio data to the server, which will be transcribed and processed,
+            and receive responses both as text and synthesized audio.
+
+            Args:
+                websocket (WebSocket): Client WebSocket connection.
+
+            Protocol:
+                - Client connects via WebSocket to /realtime
+                - Client sends audio data in base64 format with message type 'input_audio_buffer.append'
+                - Server transcribes audio and processes it using the knowledge base
+                - Server streams responses back to the client
+            """
+            with tracer.start_as_current_span("realtime_endpoint") as span:
+                await websocket.accept()
+                logger.info("WebSocket connection established")
+                rtmt = None
+                try:
+                    # Set speech engine attribute for tracing
+                    span.set_attribute("speech_engine", "azure")
+
+                    # Initialize BotifyRealtime with the existing search tool
+                    rtmt = BotifyRealtime()
+                    await rtmt._forward_messages(websocket)
+
+                except WebSocketDisconnect:
+                    logger.info("WebSocket disconnected by client")
+                except Exception as e:
+                    error_msg = f"WebSocket error: {str(e)}"[:100]  # Truncate to fit WebSocket limit
+                    logger.error(error_msg)
+
+                    # Check if WebSocket is not already closed (2 = DISCONNECTED)
+                    if not websocket.client_state == 2:
+                        await websocket.close(code=1011, reason=error_msg)
+                finally:
+                    if rtmt:
+                        await rtmt.cleanup()
+                        logger.info("Cleaned up BotifyRealtime resources")
 
 
 # Instantiate the settings and factory

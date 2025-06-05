@@ -167,3 +167,5 @@ eval_output/
 *.tmp
 .pytest_cache
 results*
+
+node_modules

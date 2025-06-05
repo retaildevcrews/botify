@@ -3,20 +3,18 @@ import threading
 import time
 
 import _additional_version_info
+import requests
 import toml
-from api import (
-    allowed_origins,
-    api_scope,
-    credential,
-    log_level,
-    speech_endpoint,
-    speech_resource_id,
-    speech_service_scope,
-    url_prefix,
-)
+from app import allowed_origins, local_mode, log_level, speech_service_scope, url_prefix
 from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
+
+if local_mode:
+    from app import speech_key, speech_region
+else:
+    from app import api_scope, speech_endpoint, speech_resource_id
+    from azure.identity import DefaultAzureCredential
 
 # Set root logger level before other imports
 logging.getLogger().setLevel(log_level)
@@ -66,13 +64,33 @@ def get_version():
 speech_token = None  # Speech token
 
 
+def get_sas_token():
+    url = f"https://{speech_region}.api.cognitive.microsoft.com/sts/v1.0/issueToken"
+    headers = {
+        "Content-type": "application/x-www-form-urlencoded",
+        "Content-length": "0",
+        "Ocp-Apim-Subscription-Key": speech_key,
+    }
+
+    response = requests.post(url, headers=headers)
+    response.raise_for_status()
+
+    logging.info(f"Response status code: {response.status_code}")
+
+    return response.text
+
+
 # Refresh the speech token every 9 minutes
 def refreshSpeechToken() -> None:
     global speech_token
     while True:
         try:
-            token = credential.get_token(speech_service_scope)
-            speech_token = f"aad#{speech_resource_id}#{token.token}"
+            if local_mode:
+                speech_token = get_sas_token()
+            else:
+                credential = DefaultAzureCredential()
+                token = credential.get_token(speech_service_scope)
+                speech_token = f"aad#{speech_resource_id}#{token.token}"
         except Exception:
             logger.error("Failed to refresh speech token")
         finally:
@@ -90,13 +108,15 @@ async def redirect_root_to_docs():
 def get_speech_token(response: Response):
     if speech_token is None:
         raise HTTPException(status_code=500, detail="Failed to get speech token")
-    response.headers["SpeechEndpoint"] = speech_endpoint
+    if "speech_endpoint" in globals() and speech_endpoint:
+        response.headers["SpeechEndpoint"] = speech_endpoint
     return {"speech_token": speech_token}
 
 
 @app.post("/api")
 def get_api_token():
     try:
+        credential = DefaultAzureCredential()
         token = credential.get_token(api_scope)
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to get API token")
