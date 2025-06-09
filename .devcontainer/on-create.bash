@@ -5,6 +5,7 @@ echo_status "on-create start"
 pip install --no-cache-dir ipython ipykernel
 pip install "black[jupyter]"
 pip install isort
+pip install jinja2-cli
 
 # only run apt upgrade on pre-build
 sudo apt-get update
