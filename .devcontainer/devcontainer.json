@@ -5,15 +5,12 @@
   "features": {
     "ghcr.io/devcontainers/features/azure-cli:1": {},
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
-    "ghcr.io/devcontainers-contrib/features/poetry:latest": {},
-    "ghcr.io/devcontainers-contrib/features/zsh-plugins:0": {
+    "ghcr.io/devcontainers-extra/features/poetry:latest": {},
+    "ghcr.io/devcontainers-extra/features/zsh-plugins:0": {
       "plugins": "python poetry gitfast git-extras command-not-found colorize colored-man-pages"
     },
-    "ghcr.io/devcontainers-contrib/features/pipx-package:1": {
-      "package": "jinja2-cli"
-    },
-    "ghcr.io/devcontainers-contrib/features/bin:1": {}, // for any binary release installation
-    "ghcr.io/devcontainers-contrib/features/neovim-apt-get:1": {},
+    "ghcr.io/devcontainers-extra/features/bin:1": {}, // for any binary release installation
+    "ghcr.io/devcontainers-extra/features/neovim-apt-get:1": {},
     "ghcr.io/devcontainers/features/node:1": {
       "version": "lts",
       "installYarn": true,
