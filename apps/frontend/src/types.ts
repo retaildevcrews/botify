@@ -18,3 +18,9 @@ export interface StreamingResponse {
 export interface Input {
   messages: InputMessage[];
 }
+
+// Define the streaming chunk type based on backend response
+export interface StreamingBotChunk {
+  displayResponse?: string;
+  [key: string]: unknown;
+}

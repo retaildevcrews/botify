@@ -7,7 +7,8 @@ interface InputContainerProps {
   handleKeyPress: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   sendMessage: () => void;
   handleMicrophoneClick: () => void;
-  isListening?: boolean;
+  isListening: boolean;
+  isHandsFreeMode?: boolean;
 }
 
 const InputContainer: React.FC<InputContainerProps> = ({
@@ -16,9 +17,13 @@ const InputContainer: React.FC<InputContainerProps> = ({
   handleKeyPress,
   sendMessage,
   handleMicrophoneClick,
-  isListening = false,
+  isListening,
+  isHandsFreeMode = false,
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Determine if we're actually listening through microphone input (NOT hands-free mode)
+  const isListeningFromMic = isListening && !isHandsFreeMode;
 
   // Enhanced key press handler that can directly clear the textarea
   const handleKeyPressEnhanced = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -48,24 +53,29 @@ const InputContainer: React.FC<InputContainerProps> = ({
   };
 
   return (
-    <div className="input-container">
+    <div className={`input-container ${isHandsFreeMode ? 'disabled' : ''}`}>
       <textarea
         ref={textareaRef}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         onKeyDown={handleKeyPressEnhanced}
-        placeholder={isListening ? "Listening..." : "Type your message..."}
+        placeholder={isListeningFromMic ? "Listening..." : "Type your message..."}
         className="input-box"
-        disabled={isListening}
+        disabled={isHandsFreeMode}
       />
       <div className="action-bar">
         <button
-          className={`icon-button ${isListening ? 'listening' : ''}`}
+          className={`icon-button ${isListeningFromMic ? 'listening' : ''}`}
           onClick={handleMicrophoneClick}
+          disabled={isHandsFreeMode}
         >
-          <span className="material-icons">{isListening ? 'mic_none' : 'mic'}</span>
+          <span className="material-icons">{isListeningFromMic ? 'mic_none' : 'mic'}</span>
         </button>
-        <button className="icon-button" onClick={sendMessage} disabled={isListening || !input.trim()}>
+        <button
+          className="icon-button"
+          onClick={sendMessage}
+          disabled={input === '' || isHandsFreeMode}
+        >
           <span className="material-icons">send</span>
         </button>
       </div>

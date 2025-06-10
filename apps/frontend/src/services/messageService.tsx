@@ -1,17 +1,12 @@
 import { sendMessageToBot } from './botservice';
 import { playSpeechResponse, handleStreamingChunk, handleStreamingComplete } from '../utils/messageUtils';
 import { InputMessage, StreamingResponse } from '../types';
+import { MessageManager } from '../hooks/useMessageManager';
 
 export const processUserInput = async (
   userInput: string,
   useStreaming: boolean,
-  {
-    addUserMessage,
-    updateOrAddBotMessage,
-    resetWaitingStates,
-    setWaitingForBot,
-    setStreamComplete
-  }: any,
+  messageManager: MessageManager,
   useTextToSpeech: boolean = false,
   sessionId: string,
   setIsListening: (isListening: boolean) => void
@@ -19,10 +14,10 @@ export const processUserInput = async (
   if (!userInput.trim()) return;
 
   // Add user message
-  const allMessages: InputMessage[] = addUserMessage(userInput);
+  const allMessages: InputMessage[] = messageManager.addUserMessage(userInput);
 
   // Set states
-  setWaitingForBot();
+  messageManager.setWaitingForBot();
 
   try {
     const userId = "user-id-placeholder";
@@ -33,10 +28,10 @@ export const processUserInput = async (
       const response = await sendMessageToBot(allMessages, useStreaming, sessionId, userId);
       if (response) {
         // Add the bot message with content (this was missing)
-        updateOrAddBotMessage(response.inputMessage.content || '');
+        messageManager.updateOrAddBotMessage(response.inputMessage.content || '');
 
         // After speech synthesis is complete, reset the waiting states
-        resetWaitingStates();
+        messageManager.resetWaitingStates();
 
         // First play the speech response without setting the listening state
         // This way the microphone doesn't show as listening while the AI is speaking
@@ -50,12 +45,7 @@ export const processUserInput = async (
             await processUserInput(
               autoDetectedSpeech,
               useStreaming,
-              {
-                addUserMessage,
-                updateOrAddBotMessage,
-                resetWaitingStates,
-                setWaitingForBot,
-              },
+              messageManager,
               useTextToSpeech,
               sessionId,
               setIsListening
@@ -64,23 +54,18 @@ export const processUserInput = async (
           }
         } else {
           // If speech is disabled, no need to wait for auto-listening
-          resetWaitingStates();
+          messageManager.resetWaitingStates();
         }
 
         // If we got auto-detected speech after the AI response, process it as a new user input
         if (autoDetectedSpeech && autoDetectedSpeech.trim()) {
-          resetWaitingStates();
+          messageManager.resetWaitingStates();
 
           // Process the auto-detected speech as a new user message
           await processUserInput(
             autoDetectedSpeech,
             useStreaming,
-            {
-              addUserMessage,
-              updateOrAddBotMessage,
-              resetWaitingStates,
-              setWaitingForBot,
-            },
+            messageManager,
             useTextToSpeech,
             sessionId,
             setIsListening
@@ -88,9 +73,9 @@ export const processUserInput = async (
           return; // Exit to avoid duplicate resetWaitingStates call
         }
       }
-      resetWaitingStates();
+      messageManager.resetWaitingStates();
     } else {
-      setStreamComplete(false);
+      messageManager.setStreamComplete(false);
 
       // Streaming mode
       await sendMessageToBot(
@@ -102,12 +87,12 @@ export const processUserInput = async (
         (chunk: string) => {
           handleStreamingChunk(
             chunk,
-            updateOrAddBotMessage
+            messageManager.updateOrAddBotMessage
           );
         },
         // JSON handler for final response
         async (json: StreamingResponse | null) => {
-          setStreamComplete(true);
+          messageManager.setStreamComplete(true);
 
           // Create a function to process speech detected after streaming
           const processUserSpeech = async (transcript: string) => {
@@ -116,13 +101,7 @@ export const processUserInput = async (
               await processUserInput(
                 transcript,
                 useStreaming,
-                {
-                  addUserMessage,
-                  updateOrAddBotMessage,
-                  resetWaitingStates,
-                  setWaitingForBot,
-                  setStreamComplete
-                },
+                messageManager,
                 useTextToSpeech,
                 sessionId,
                 setIsListening
@@ -138,12 +117,12 @@ export const processUserInput = async (
             processUserSpeech
           );
 
-          resetWaitingStates();
+          messageManager.resetWaitingStates();
         }
       );
     }
   } catch (error) {
     console.error('Error processing message:', error);
-    resetWaitingStates();
+    messageManager.resetWaitingStates();
   }
 };

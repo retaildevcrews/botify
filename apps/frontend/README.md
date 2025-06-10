@@ -15,7 +15,7 @@
 ### 1. Install dependencies
 
 ```bash
-yarn install
+npm install
 
 ```
 
@@ -33,7 +33,7 @@ VITE_TOKEN_SERVICE_PREFIX=http://localhost:8081
 ### 3. Run the development server
 
 ```bash
-yarn run dev
+npm run dev
 ```
 
 This will start the Vite development server. By default, the app will be available at [http://localhost:8000](http://localhost:8000).

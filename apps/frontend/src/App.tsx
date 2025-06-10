@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { flushSync } from 'react-dom';
 import './App.css';
 import ChatContainer from './components/ChatContainer/ChatContainer';
@@ -6,10 +6,14 @@ import SettingsDrawer from './components/SettingsDrawer/SettingsDrawer';
 import { processUserInput } from './services/messageService';
 import { useMessageManager } from './hooks/useMessageManager';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { connectWebSocket, disconnectWebSocket, WebSocketOptions } from './services/websocketService';
 
 const AppContent = () => {
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [isBotSpeaking, setIsBotSpeaking] = useState(false);
+  const [isHandsFreeMode, setIsHandsFreeMode] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { useStreaming, useTextToSpeech, setUseTextToSpeech, sessionId } = useAppContext();
   const messageManager = useMessageManager();
 
@@ -23,6 +27,94 @@ const AppContent = () => {
     isStreamComplete,
     setStreamComplete
   } = messageManager;
+
+
+  // Handle hands-free mode toggle
+  const handleHandsFreeToggle = async () => {
+    const newMode = !isHandsFreeMode;
+    setIsHandsFreeMode(newMode);
+
+    // Connect WebSocket when hands-free mode is turned on
+    if (newMode) {
+      try {
+        const options: WebSocketOptions = {
+          onTranscription: handleTranscription,
+          onBotStartSpeaking: () => setIsBotSpeaking(true),
+          onBotStopSpeaking: () => setIsBotSpeaking(false),
+          onError: handleWebSocketError,
+          messageManager,
+          setIsListening,
+        };
+        await connectWebSocket(options);
+      } catch (error) {
+        console.error('Failed to initialize hands-free mode:', error);
+        setIsHandsFreeMode(false);
+      }
+    } else {
+      await disconnectWebSocket();
+      setIsListening(false);
+      setIsBotSpeaking(false);
+      resetWaitingStates();
+    }
+  };
+
+  // Handle speech transcription from WebSocket
+  const handleTranscription = (transcript: string) => {
+    if (!transcript || !transcript.trim()) {
+      return;
+    }
+
+    // Add user message with the transcription text
+    const userMessage = {
+      role: 'user',
+      content: transcript.trim()
+    };
+
+    messageManager.addUserMessage(userMessage);
+    messageManager.setWaitingForBot();
+    messageManager.setStreamComplete(false);
+  };
+
+  // Handle WebSocket errors
+  const handleWebSocketError = (error: Error | string) => {
+    const errorText = typeof error === 'string' ? error : error.message;
+    setErrorMessage(errorText);
+    setIsHandsFreeMode(false);
+    disconnectWebSocket().catch(console.error);
+
+    // Clear error message after 5 seconds
+    setTimeout(() => {
+      setErrorMessage(null);
+    }, 5000);
+  };
+
+  // Close WebSocket connection when component unmounts
+  useEffect(() => {
+    return () => {
+      disconnectWebSocket().catch(console.error);
+    };
+  }, []);
+
+  // Listen for speech service errors
+  useEffect(() => {
+    const handleSpeechError = (event: CustomEvent<string>) => {
+      setErrorMessage(event.detail);
+
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+    };
+
+    // Add event listener for speech service errors
+    document.addEventListener('speech-service-error', handleSpeechError as EventListener);
+
+    // Clean up
+    return () => {
+      document.removeEventListener('speech-service-error', handleSpeechError as EventListener);
+      disconnectWebSocket().catch(console.error);
+    };
+  }, []);
 
   const sendMessage = () => {
     if (!input.trim()) return;
@@ -137,6 +229,12 @@ const AppContent = () => {
           <SettingsDrawer />
         </div>
       </div>
+      {errorMessage && (
+        <div className="error-notification">
+          <p>{errorMessage}</p>
+          <button onClick={() => setErrorMessage(null)}>✕</button>
+        </div>
+      )}
       <ChatContainer
         messages={messages}
         input={input}
@@ -147,6 +245,9 @@ const AppContent = () => {
         isWaitingForBotResponse={isWaitingForBotResponse}
         isListening={isListening}
         isStreamComplete={isStreamComplete}
+        isBotSpeaking={isBotSpeaking}
+        isHandsFreeMode={isHandsFreeMode}
+        onHandsFreeToggle={handleHandsFreeToggle}
       />
     </div>
   );

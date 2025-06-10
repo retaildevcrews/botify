@@ -1,6 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './ChatContainer.css';
 import InputContainer from '../InputContainer/InputContainer';
+import AudioStatusBar from '../AudioStatusBar/AudioStatusBar';
 import { Message } from '../../App';
 import ReactMarkdown from 'react-markdown';
 
@@ -13,6 +14,10 @@ interface ChatContainerProps {
   handleMicrophoneClick: () => void;
   isWaitingForBotResponse: boolean;
   isListening?: boolean;
+  isStreamComplete?: boolean;
+  isBotSpeaking?: boolean;
+  isHandsFreeMode?: boolean;
+  onHandsFreeToggle?: () => void;
 }
 
 const ChatContainer: React.FC<ChatContainerProps> = ({
@@ -24,7 +29,10 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
   handleMicrophoneClick,
   isWaitingForBotResponse,
   isListening = false,
-  isStreamComplete = false
+  isStreamComplete = false,
+  isBotSpeaking = false,
+  isHandsFreeMode = false,
+  onHandsFreeToggle = () => {}
 }) => {
   const lastMessageRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -99,6 +107,15 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
           <div ref={messagesEndRef} />
         </div>
       </div>
+
+      {/* Pass the hands-free props to AudioStatusBar */}
+      <AudioStatusBar
+        isUserSpeaking={isListening}
+        isBotSpeaking={isBotSpeaking}
+        isHandsFreeMode={isHandsFreeMode}
+        onHandsFreeToggle={onHandsFreeToggle}
+      />
+
       <InputContainer
         input={input}
         setInput={setInput}
@@ -106,6 +123,7 @@ const ChatContainer: React.FC<ChatContainerProps> = ({
         sendMessage={sendMessage}
         handleMicrophoneClick={handleMicrophoneClick}
         isListening={isListening}
+        isHandsFreeMode={isHandsFreeMode}
       />
     </div>
   );
