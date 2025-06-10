@@ -83,6 +83,7 @@ CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Options are: '<ENV_VAR|KEY_VAULT>'  Determ
 
 # Only needed if CONFIG_SOURCE is set to KEY_VAULT
 AZURE_KEY_VAULT_URL='<Azure Keyvault URL>'
+LOCAL_MODE="true"
 
 # Only set these when not using Managed Identity for KeyVault access
 AZURE_TENANT_ID='<Tenant ID>'
@@ -101,3 +102,5 @@ EOF
 echo "--------------------------"
 echo -e "Environment file created with the outputs of the deployment"
 echo "--------------------------"
+
+

@@ -79,8 +79,19 @@ param azureSearchHostingMode string = 'default'
 ])
 param modeldeploymentname string = 'gpt-4o'
 
+@description('Expected ACR sku')
+@allowed([
+  'Basic'
+  'Classic'
+  'Premium'
+  'Standard'
+])
+param acrSku string = 'Standard'
+
 param appPlanName string = 'asp-${uniqueString(resourceGroup().id)}'
 param logAnalyticsWorkspace string = 'la-${uniqueString(resourceGroup().id)}'
+param acrName string = 'acr${uniqueString(resourceGroup().id)}'
+param containerAppEnvName string = 'container-app-env-${uniqueString(resourceGroup().id)}'
 
 var cognitiveServiceSKU = 'S0'
 var appPlanSkuName = 'S1'
@@ -310,6 +321,44 @@ resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/co
   parent: blobServices
   name: containerName
 }]
+
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = {
+  name: acrName
+  location: location
+  sku: {
+    name: acrSku
+  }
+}
+
+resource assignAcrPullToAca 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(resourceGroup().id, acrName, userAssignedIdentity.id, 'AssignAcrPullToAks')
+  scope: containerRegistry
+  properties: {
+    description: 'Assign AcrPull role to AKS'
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    roleDefinitionId: acrPullRoleDefinition.id
+  }
+}
+
+resource acrPullRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
+  scope: subscription()
+  name: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
+}
+
+resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = {
+  name: containerAppEnvName
+  location: location
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalytics.properties.customerId
+        sharedKey: logAnalytics.listKeys().primarySharedKey
+      }
+    }
+  }
+}
 
 output userAssignedIdentityId string = userAssignedIdentity.id
 output blobStorageAccountName string = blobStorageAccountName
