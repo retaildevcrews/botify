@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "red-teaming-agent"
+version = "0.1.0"
+description = "Azure AI Foundry Red Teaming Example"
+authors = []
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python =  ">=3.12,<3.13"
+azure-ai-evaluation = {extras = ["redteam"], version = "^1.8.0"}
+azure-identity = "^1.15.0"
+python-dotenv = "^1.0.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

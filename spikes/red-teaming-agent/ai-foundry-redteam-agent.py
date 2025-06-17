@@ -1,13 +1,11 @@
 import os
 import asyncio
 import json
-import httpx
 import requests  # For synchronous HTTP requests in callback
 import logging # Added for detailed SDK logging
 
 # Azure imports
-from azure.identity import DefaultAzureCredential
-from azure.core.credentials import AzureKeyCredential
+from azure.identity import DefaultAzureCredential, AzureCliCredential
 from azure.ai.evaluation.red_team import RedTeam, RiskCategory, AttackStrategy
 
 from dotenv import load_dotenv
@@ -17,13 +15,6 @@ load_dotenv()
 
 # Configure detailed logging for Azure SDK
 logging.basicConfig(level=logging.DEBUG)
-# You can be more specific if needed, e.g.:
-# logger = logging.getLogger('azure.core.pipeline.policies')
-# logger.setLevel(logging.DEBUG)
-# stream_handler = logging.StreamHandler()
-# logger.addHandler(stream_handler)
-# logging.getLogger('azure.identity').setLevel(logging.DEBUG)
-
 
 async def main():
     """
@@ -34,72 +25,25 @@ async def main():
 
     # Get Azure Foundry credentials from environment variables
     azure_foundry_endpoint = os.getenv("AZURE_FOUNDRY_ENDPOINT")
-    azure_foundry_key = os.getenv("AZURE_FOUNDRY_KEY")
-
-    print(f"DEBUG: AZURE_FOUNDRY_ENDPOINT: {azure_foundry_endpoint}")
-    print(f"DEBUG: AZURE_FOUNDRY_KEY: {'********' if azure_foundry_key else None}") # Mask the key for security
-
-    # Define Azure AI Project details.
-    # This dictionary is required by the RedTeam client.
-    azure_ai_project_config = {
-        "subscription_id": os.environ.get("AZURE_SUBSCRIPTION_ID"),
-        "resource_group_name": os.environ.get("AZURE_RESOURCE_GROUP"),
-        "project_name": os.environ.get("AZURE_ML_WORKSPACE_NAME"), # Changed to use AZURE_ML_WORKSPACE_NAME
-    }
-
-    # Determine which credential to use
-    # Temporarily force DefaultAzureCredential for testing AAD auth
-    print("Forcing DefaultAzureCredential for Azure AI connection for debugging purposes.")
-    print("Ensure AZURE_SUBSCRIPTION_ID, AZURE_RESOURCE_GROUP, and AZURE_PROJECT_NAME are set, and you've run 'az login'.")
     credential = DefaultAzureCredential()
-    azure_ai_project = azure_ai_project_config
-    # if azure_foundry_endpoint and azure_foundry_key:
-    #     print("Using AzureKeyCredential for Azure AI connection")
-    #     credential = AzureKeyCredential(azure_foundry_key)
-    #     # When using AzureKeyCredential, azure_ai_project should be the endpoint string.
-    #     azure_ai_project = azure_foundry_endpoint
-    # else:
-    #     print("Using DefaultAzureCredential for Azure AI connection")
-    #     credential = DefaultAzureCredential()
-    #     # Set up the Azure AI Project details
-    #     azure_ai_project = azure_ai_project_config
 
     # Create a random user and session IDs for the target API
     user_id = f"redteam_user_123"
     session_id = f"redteam_session_456"
 
     # Get target endpoint details
-    botify_endpoint = os.getenv("TARGET_ENDPOINT")
-    botify_api_key = os.getenv("TARGET_API_KEY")
-
-    # Configure the HTTP request for the target API (coffee bot)
-    http_request = f"""
-        POST {botify_endpoint} HTTP/1.1
-        Content-Type: application/json
-        Ocp-Apim-Subscription-Key: {botify_api_key}
-
-        {{
-            "input": {{
-                "question": "{{PROMPT}}"
-            }},
-            "config": {{
-                "configurable": {{
-                    "session_id": "{session_id}",
-                    "user_id": "{user_id}"
-                }}
-            }}
-        }}
-    """
+    target_endpoint = os.getenv("TARGET_ENDPOINT")
+    target_api_key = os.getenv("TARGET_API_KEY")
 
     # Define callback function to handle HTTP requests to the target API
     def target_callback(query: str) -> str:
         """Send HTTP request to the target API and return the response"""
         try:
             # Get target endpoint details
-            botify_endpoint = os.getenv("TARGET_ENDPOINT", "http://localhost:8080/invoke")
-            botify_api_key = os.getenv("TARGET_API_KEY", "placeholder")
+            target_endpoint = os.getenv("TARGET_ENDPOINT", "http://localhost:8080/invoke")
+            target_api_key = os.getenv("TARGET_API_KEY", "placeholder")
 
-            print(f"DEBUG: PyRIT Callback - Sending request to: {botify_endpoint}")
+            print(f"DEBUG: PyRIT Callback - Sending request to: {target_endpoint}")
             print(f"DEBUG: PyRIT Callback - Query: {query[:100]}...")  # Print first 100 chars of query
 
             # Prepare the request payload with both question and messages
@@ -121,13 +65,13 @@ async def main():
             }
 
             # Add authorization if we have an API key
-            if botify_api_key and botify_api_key != "placeholder":
+            if target_api_key and target_api_key != "placeholder":
                 # Try both authorization methods
-                headers["Authorization"] = f"Bearer {botify_api_key}"
-                headers["Ocp-Apim-Subscription-Key"] = botify_api_key
+                headers["Authorization"] = f"Bearer {target_api_key}"
+                headers["Ocp-Apim-Subscription-Key"] = target_api_key
 
             # Make synchronous HTTP request using requests library
-            response = requests.post(botify_endpoint, json=payload, headers=headers, timeout=120.0)
+            response = requests.post(target_endpoint, json=payload, headers=headers, timeout=120.0)
             print(f"DEBUG: PyRIT Callback - Response status: {response.status_code}")
 
             if response.status_code != 200:
@@ -194,14 +138,11 @@ async def main():
 
     # Test the callback function before running the scan
     print("Testing callback function...")
-    test_query = "Hello, can you recommend a coffee drink?"
+    test_query = "Hello, how to clean windows?"
     try:
         test_response = target_callback(test_query)
-        print(f"DEBUG: Callback test successful")
         print(f"DEBUG: Test query: {test_query}")
         print(f"DEBUG: Test response: {test_response[:200]}...")
-        print(f"DEBUG: Response type: {type(test_response)}")
-        print(f"DEBUG: Response is string: {isinstance(test_response, str)}")
     except Exception as e:
         print(f"ERROR: Callback test failed: {e}")
         return
@@ -225,13 +166,13 @@ async def main():
     try:
         red_team_result = await red_team_agent.scan(
             target=target_callback,  # our callback function
-            scan_name="Coffee Shop Bot Red Team Scan",  # optional name for the scan
+            scan_name="Bot Red Team Scan",  # optional name for the scan
             attack_strategies=[  # optional attack strategies
                 AttackStrategy.Base64,  # Encode in Base64
                 AttackStrategy.Tense,   # Change tense of text
                 AttackStrategy.Compose([AttackStrategy.Base64, AttackStrategy.ROT13]),  # Composition of strategies
             ],
-            output_path="coffee-bot-redteam-scan.json",  # save results to a JSON file
+            output_path="bot-redteam-scan.json",  # save results to a JSON file
         )
         print("DEBUG: red_team_agent.scan() completed successfully")
         print(f"DEBUG: red_team_result type: {type(red_team_result)}")
@@ -239,15 +180,15 @@ async def main():
             print(f"DEBUG: scorecard available: {red_team_result.scorecard is not None}")
         if hasattr(red_team_result, 'attack_details'):
             print(f"DEBUG: attack_details length: {len(red_team_result.attack_details) if red_team_result.attack_details else 0}")
-        print("Scan completed. Results saved to 'coffee-bot-redteam-scan.json'")
+        print("Scan completed. Results saved to 'bot-redteam-scan.json'")
     except Exception as e:
         print(f"Scan completed but encountered an error during result logging: {e}")
-        print("Results should still be saved to 'coffee-bot-redteam-scan.json'")
+        print("Results should still be saved to 'bot-redteam-scan.json'")
 
         # Try to load results from the JSON file if it exists
-        if os.path.exists("coffee-bot-redteam-scan.json"):
+        if os.path.exists("bot-redteam-scan.json"):
             print("Loading results from local JSON file...")
-            with open("coffee-bot-redteam-scan.json", "r") as f:
+            with open("bot-redteam-scan.json", "r") as f:
                 json_data = json.load(f)
                 print("Results loaded successfully from JSON file.")
                 # Create a simple object to hold the results for display
@@ -275,9 +216,6 @@ async def main():
         print(f"Overall Attack Success Rate: {red_team_result.overall_asr}")
     else:
         print("Attribute 'overall_asr' not found on red_team_result.")
-        # If you suspect it might be a dictionary or have a get method:
-        # if callable(getattr(red_team_result, "get", None)):
-        #     print(f"Attempting to get 'overall_asr' as a key: {red_team_result.get('overall_asr')}")
 
     # Print a summary of results by risk category
     print("\\nResults by Risk Category:")
@@ -287,7 +225,7 @@ async def main():
     else:
         print("Attribute 'risk_category_asr' not found or is None.")
         if hasattr(red_team_result, 'get') and red_team_result.get('risk_category_asr') is not None:
-             print(f"Attempting to get 'risk_category_asr' as a key: {red_team_result.get('risk_category_asr')}")
+            print(f"Attempting to get 'risk_category_asr' as a key: {red_team_result.get('risk_category_asr')}")
 
 
     # Print a summary of results by attack complexity
