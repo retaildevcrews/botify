@@ -47,4 +47,3 @@ You need to:
 2. Set the correct environment variables in your .env file
 3. Log in to Azure using `az login` if you're using DefaultAzureCredential
 4. Check if your region is supported (currently only East US2, Sweden Central, France Central, Switzerland West)
-

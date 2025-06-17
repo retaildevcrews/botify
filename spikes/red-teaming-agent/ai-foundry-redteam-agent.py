@@ -11,7 +11,7 @@ from azure.ai.evaluation.red_team import RedTeam, RiskCategory, AttackStrategy
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-load_dotenv()
+load_dotenv("credentials.env")
 
 # Configure detailed logging for Azure SDK
 logging.basicConfig(level=logging.DEBUG)
@@ -24,7 +24,7 @@ async def main():
     print("Running Azure AI Red Teaming Agent example...")
 
     # Get Azure Foundry credentials from environment variables
-    azure_foundry_endpoint = os.getenv("AZURE_FOUNDRY_ENDPOINT")
+    azure_foundry_endpoint = os.getenv("AZURE_AI_FOUNDRY_ENDPOINT")
     credential = DefaultAzureCredential()
 
     # Create a random user and session IDs for the target API
@@ -149,7 +149,7 @@ async def main():
 
     # Instantiate the AI Red Teaming Agent
     red_team_agent = RedTeam(
-        azure_ai_project=azure_ai_project,  # required
+        azure_ai_project=azure_foundry_endpoint,  # required
         credential=credential,  # use the credential determined above
         risk_categories=[  # optional, defaults to all four risk categories
             RiskCategory.Violence,
