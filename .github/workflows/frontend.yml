@@ -6,7 +6,7 @@ on:
 
 env:
   SERVICE_NAME: frontend
-  RESOURE_GROUP: rg-botify
+  RESOURCE_GROUP: rg-botify
   IMAGE_BASE_NAME:  acr25ehy3lawfnks.azurecr.io/frontend:latest
 
 jobs:
