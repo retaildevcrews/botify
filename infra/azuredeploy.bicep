@@ -154,9 +154,7 @@ resource cognitiveService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   }
   kind: 'CognitiveServices'
   properties: {
-    apiProperties: {
-      statisticsEnabled: false
-    }
+    publicNetworkAccess: 'Enabled'
   }
 }
 
@@ -168,9 +166,7 @@ resource openAIService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   }
   kind: 'AIServices'
   properties: {
-    apiProperties: {
-      statisticsEnabled: true
-    }
+    publicNetworkAccess: 'Enabled'
   }
 }
 
