@@ -167,5 +167,8 @@ eval_output/
 *.tmp
 .pytest_cache
 results*
+*redteam-scan.json
+.scan_Bot_Red_Team_Scan_*/
+*.scan_Bot_Red_Team_Scan_*
 
 node_modules

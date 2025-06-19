@@ -1,74 +1,84 @@
-# pyrit-demo
+# Red Teaming with Azure AI Foundry
 
-Red teaming and Prompt attack demos with PyRIT
+This document outlines how to run a local Red Teaming scan against the Botify agent using the Azure AI Foundry Python SDK.
 
-## Setup env
+For more information on running Red Teaming scans locally, visit the [Azure docs](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/run-scans-ai-red-teaming-agent).
 
-First time setup:
+## Infrastructure Setup
+
+To run a redTeaming scan, you can do so locally or in the cloud. However, when this document was written, running redTeaming scans in the cloud (Azure AI Foundry instance) only supported Azure OpenAI model deployments in your Azure AI Foundry project as a target, and not custom endpoints.
+
+In this guide, we'll run the red team scan locally against a botify endpoint and upload the results to Azure AI Foundry. You can also access the test results locally, via the script's output artifacts such as the `.scan_Bot_Red_Team_Scan_*` directory and `bot-redteam-scan.json` file.
+
+If you would like to host these scan results on Azure AI Foundry, you'll need these following resources:
+
+1. Azure AI Foundry
+2. Project within Azure AI Foundry
+3. Blob Storage Account
+4. Connection between Azure AI Foundry and Blob Storage Account (**Note**: Use Entra ID only, Account Key Auth does NOT work!)
+
+### Login and create resources
+
+``` bash
+# get your Tenant ID from Azure Portal
+az login --tenant <YOUR-TENANT-ID>
+
+az account set -s <SUBSCRIPTION-NAME>
+
+```
+
+Create a Resource Group where all the assets will be deployed.
 
 ```bash
-# Create a new virtual env
-python3 -m venv .venv
-# Activate virtual env
-source .venv/bin/activate
-# Install packages
-pip install pyrit dotenv pyyaml "azure-ai-evaluation[redteam]" azure-identity
+export RESOURCE_GROUP="rg-botify"
+
+# List of Azure AI Foundry regions can be found at:
+# https://learn.microsoft.com/en-us/azure/ai-foundry/reference/region-support
+export RESOURCE_GROUP_LOCATION="eastus2"
+
+# Optional: Run the following if you haven't setup botify before
+# az group create --name $RESOURCE_GROUP --location $RESOURCE_GROUP_LOCATION
+
 ```
 
-Use terminal or VSCode launcher (F5) to run one of the python files:
+Run the Bicep script
 
-- [ai-foundry-redteam-agent.py](./ai-foundry-redteam-agent.py) - Azure AI Foundry Red Teaming Agent example (requires Azure AI Foundry project)
+```bash
+# only use a-z and 0-9 - do not include punctuation or uppercase characters
+# must be between 5 and 16 characters long
+# must start with a-z (only lowercase)
+export AI_FOUNDRY_NAME="your-foundry-name"
 
-## Troubleshooting
+cd spikes/red-teaming-agent # assumes you are at the root of the project
 
-If you encounter this error with the AI Foundry Red Team examples:
+az deployment group create \
+  --resource-group $RESOURCE_GROUP \
+  --template-file redteam-setup.bicep \
+  --parameters aiFoundryName=$AI_FOUNDRY_NAME location=$RESOURCE_GROUP_LOCATION
 
-```sh
-Exception: Failed to connect to your Azure AI project. Please check if the project scope is configured correctly, and make sure you have the necessary access permissions. Status code: 400.
 ```
 
-You need to:
+## Running Red Teaming Scan
 
-1. Make sure you have created an Azure AI Foundry project
-2. Set the correct environment variables in your .env file
-3. Log in to Azure using `az login` if you're using DefaultAzureCredential
-4. Check if your region is supported (currently only East US2, Sweden Central, France Central, Switzerland West)
+Run the Red Teaming Scan against Botify. This guide assumes that Botify is currently running as a docker container locally after following the [quick run steps](../../docs/developer_experience/quick_run_local.md).
 
-For a simpler example without Azure AI Foundry requirements, use the `simplified-redteam.py` script which uses PyRIT directly.
+```bash
 
-## Environment Variables
+cd spikes/red-teaming-agent # assumes you are at the root of the project
 
-For the standard PyRIT examples:
+# Copy over enviornment variables
+cat <<EOF > "./credentials.env"
+AZURE_AI_FOUNDRY_ENDPOINT="https://$AI_FOUNDRY_NAME.services.ai.azure.com/api/projects/$AI_FOUNDRY_NAME-proj"
+TARGET_ENDPOINT="http://localhost:8080/invoke"
+TARGET_API_KEY=
+EOF
 
-```sh
-TARGET_ENDPOINT=your_target_endpoint
-TARGET_API_KEY=your_target_api_key
-OPENAI_CHAT_ENDPOINT=your_openai_endpoint
-OPENAI_CHAT_KEY=your_openai_api_key
-OPENAI_CHAT_API_VERSION=2025-01-01-preview
-```
+# Install dependencies
+poetry install
 
-For the AI Foundry Red Team Agent example:
+# Run red team scan
+poetry run python ai-foundry-redteam-agent.py
 
-Option 1: Using Azure Foundry endpoint and key (preferred if you have them):
+# View local scan results in the latest`.scan_Bot_Red_Team_Scan_*` directory and `bot-redteam-scan.json` file.
 
-```sh
-AZURE_FOUNDRY_ENDPOINT=https://your-foundry-instance.azurewebsites.net/api/projects/your-project
-AZURE_FOUNDRY_KEY=your_foundry_api_key
-
-TARGET_ENDPOINT=your_target_endpoint
-TARGET_API_KEY=your_target_api_key
-```
-
-Option 2: Using Azure subscription details with DefaultAzureCredential:
-
-```sh
-AZURE_SUBSCRIPTION_ID=your_subscription_id
-AZURE_RESOURCE_GROUP=your_resource_group
-AZURE_PROJECT_NAME=your_project_name
-# Or alternatively, use the project URL format:
-# AZURE_AI_PROJECT=https://your-account.services.ai.azure.com/api/projects/your-project
-
-TARGET_ENDPOINT=your_target_endpoint
-TARGET_API_KEY=your_target_api_key
 ```
