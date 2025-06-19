@@ -1,7 +1,0 @@
-# Azure AI Foundry Configuration
-AZURE_AI_FOUNDRY_ENDPOINT=
-
-# Target endpoint Configuration
-TARGET_ENDPOINT=
-TARGET_API_KEY=
-

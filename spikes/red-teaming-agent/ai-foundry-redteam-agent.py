@@ -5,7 +5,7 @@ import requests  # For synchronous HTTP requests in callback
 import logging # Added for detailed SDK logging
 
 # Azure imports
-from azure.identity import DefaultAzureCredential, AzureCliCredential
+from azure.identity import DefaultAzureCredential
 from azure.ai.evaluation.red_team import RedTeam, RiskCategory, AttackStrategy
 
 from dotenv import load_dotenv
@@ -208,36 +208,37 @@ async def main():
             print("No JSON file found. Scan may not have completed successfully.")
             return None
 
-    print("\\nInspecting red_team_result attributes:")
-    print(dir(red_team_result))
-    print(f"Type of red_team_result: {type(red_team_result)}\\n")
+    print("Completed Red Team Agent scan successfully.")
 
-    if hasattr(red_team_result, 'overall_asr'):
-        print(f"Overall Attack Success Rate: {red_team_result.overall_asr}")
-    else:
-        print("Attribute 'overall_asr' not found on red_team_result.")
+    # print("\\nInspecting red_team_result attributes:")
+    # print(dir(red_team_result))
+    # print(f"Type of red_team_result: {type(red_team_result)}\\n")
 
-    # Print a summary of results by risk category
-    print("\\nResults by Risk Category:")
-    if hasattr(red_team_result, 'risk_category_asr') and red_team_result.risk_category_asr is not None:
-        for category, asr in red_team_result.risk_category_asr.items():
-            print(f"- {category}: {asr}")
-    else:
-        print("Attribute 'risk_category_asr' not found or is None.")
-        if hasattr(red_team_result, 'get') and red_team_result.get('risk_category_asr') is not None:
-            print(f"Attempting to get 'risk_category_asr' as a key: {red_team_result.get('risk_category_asr')}")
+    # if hasattr(red_team_result, 'overall_asr'):
+    #     print(f"Overall Attack Success Rate: {red_team_result.overall_asr}")
+    # else:
+    #     print("Attribute 'overall_asr' not found on red_team_result.")
+
+    # # Print a summary of results by risk category
+    # print("\\nResults by Risk Category:")
+    # if hasattr(red_team_result, 'risk_category_asr') and red_team_result.risk_category_asr is not None:
+    #     for category, asr in red_team_result.risk_category_asr.items():
+    #         print(f"- {category}: {asr}")
+    # else:
+    #     print("Attribute 'risk_category_asr' not found or is None.")
+    #     if hasattr(red_team_result, 'get') and red_team_result.get('risk_category_asr') is not None:
+    #         print(f"Attempting to get 'risk_category_asr' as a key: {red_team_result.get('risk_category_asr')}")
 
 
-    # Print a summary of results by attack complexity
-    print("\\nResults by Attack Complexity:")
-    if hasattr(red_team_result, 'attack_complexity_asr') and red_team_result.attack_complexity_asr is not None:
-        for complexity, asr in red_team_result.attack_complexity_asr.items():
-            print(f"- {complexity}: {asr}")
-    else:
-        print("Attribute 'attack_complexity_asr' not found or is None.")
-        if hasattr(red_team_result, 'get') and red_team_result.get('attack_complexity_asr') is not None:
-            print(f"Attempting to get 'attack_complexity_asr' as a key: {red_team_result.get('attack_complexity_asr')}")
-
+    # # Print a summary of results by attack complexity
+    # print("\\nResults by Attack Complexity:")
+    # if hasattr(red_team_result, 'attack_complexity_asr') and red_team_result.attack_complexity_asr is not None:
+    #     for complexity, asr in red_team_result.attack_complexity_asr.items():
+    #         print(f"- {complexity}: {asr}")
+    # else:
+    #     print("Attribute 'attack_complexity_asr' not found or is None.")
+    #     if hasattr(red_team_result, 'get') and red_team_result.get('attack_complexity_asr') is not None:
+    #         print(f"Attempting to get 'attack_complexity_asr' as a key: {red_team_result.get('attack_complexity_asr')}")
 
     return red_team_result
 
