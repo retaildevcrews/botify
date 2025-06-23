@@ -388,6 +388,23 @@ tests = ["cloudpickle ; platform_python_implementation == \"CPython\"", "hypothe
 tests-mypy = ["mypy (>=1.11.1) ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\"", "pytest-mypy-plugins ; platform_python_implementation == \"CPython\" and python_version >= \"3.10\""]
 
 [[package]]
+name = "azure-ai-agents"
+version = "1.0.1"
+description = "Microsoft Corporation Azure AI Agents Client Library for Python"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "azure_ai_agents-1.0.1-py3-none-any.whl", hash = "sha256:f3f4e68e18ffafbe4b30e91fa8931e427fdca42b90be6c32928d4f763ad0e3e7"},
+    {file = "azure_ai_agents-1.0.1.tar.gz", hash = "sha256:71da960f2441531a9ae1a163fff1279b08c6f9ce04748a2cf52a3b220166ae8d"},
+]
+
+[package.dependencies]
+azure-core = ">=1.30.0"
+isodate = ">=0.6.1"
+typing-extensions = ">=4.6.0"
+
+[[package]]
 name = "azure-ai-contentsafety"
 version = "1.0.0"
 description = "Microsoft Azure AI Content Safety Client Library for Python"
@@ -434,6 +451,28 @@ pyrit = {version = "0.8.1", optional = true, markers = "extra == \"redteam\""}
 
 [package.extras]
 redteam = ["pyrit (==0.8.1)"]
+
+[[package]]
+name = "azure-ai-projects"
+version = "1.0.0b11"
+description = "Microsoft Azure AI Projects Client Library for Python"
+optional = false
+python-versions = ">=3.9"
+groups = ["main"]
+files = [
+    {file = "azure_ai_projects-1.0.0b11-py3-none-any.whl", hash = "sha256:3572f2989627e896ecfebe2fa7326d5b940f920cc581e98809b244af7a38cbf0"},
+    {file = "azure_ai_projects-1.0.0b11.tar.gz", hash = "sha256:68a115c48cde7d5f9c29aee61c7fbf0b6de69aecbd1dc749b847a1e1348216b5"},
+]
+
+[package.dependencies]
+azure-ai-agents = ">=1.0.0b1"
+azure-core = ">=1.30.0"
+azure-storage-blob = ">=12.15.0"
+isodate = ">=0.6.1"
+typing-extensions = ">=4.12.2"
+
+[package.extras]
+prompts = ["prompty"]
 
 [[package]]
 name = "azure-cognitiveservices-speech"
@@ -6127,4 +6166,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.12,<3.13"
-content-hash = "05e9ed4098d77063a0e5bbe9d5c4d140b6096fbb529688a8ef34fbf0c1474e1a"
+content-hash = "23e2054d53992c5054c391b6f893de31dfd945aca39d5bc8a97d14794731cdd1"
