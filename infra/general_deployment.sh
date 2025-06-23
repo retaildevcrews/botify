@@ -102,5 +102,3 @@ EOF
 echo "--------------------------"
 echo -e "Environment file created with the outputs of the deployment"
 echo "--------------------------"
-
-
