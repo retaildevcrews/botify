@@ -82,3 +82,64 @@ poetry run python ai-foundry-redteam-agent.py
 # View local scan results in the latest`.scan_Bot_Red_Team_Scan_*` directory and `bot-redteam-scan.json` file.
 
 ```
+
+## Custom Attack Strategies
+
+### Why Use Custom Attack Strategies?
+
+While Azure AI Foundry provides built-in attack strategies (like `SuffixAppend`, `PrefixAppend`, `SystemPromptInjection`, etc.), these have limitations:
+
+1. **Limited Customization**: Built-in strategies use predefined text patterns and cannot be customized with arbitrary custom text
+2. **Fixed Attack Patterns**: You cannot modify the specific prompts or suffixes used in the attacks
+3. **No Domain-Specific Tests**: Built-in strategies may not cover specific vulnerabilities relevant to your application
+
+Custom attack strategies allow you to:
+
+- Test specific vulnerabilities unique to your AI application
+- Use domain-specific prompt injection techniques
+- Implement advanced attack patterns not covered by built-in strategies
+- Test for system prompt extraction with custom suffixes
+- Validate specific security controls and guardrails
+
+### Running Custom Attack Tests
+
+This repository includes a standalone custom suffix attack script that demonstrates how to implement and run custom attack strategies independently of the main Azure AI Foundry scan.
+
+```bash
+cd spikes/red-teaming-agent
+
+# Install dependencies (if not already done)
+poetry install
+
+# Run custom suffix attack tests
+poetry run python custom-suffix-attack.py
+
+# View results in custom-suffix-attack-results.json and console output
+```
+
+The custom script will:
+
+1. Test various custom suffix attacks against your Botify endpoint
+2. Analyze responses for potential system prompt leakage
+3. Generate a detailed JSON report with risk assessments
+4. Provide console output with attack success/failure summaries
+5. Offer recommendations for improving security
+
+### Custom Attack Strategy Limitations
+
+**Important**: Custom attack strategies cannot be uploaded to Azure AI Foundry for the following reasons:
+
+1. **Azure AI Foundry Integration**: The Azure AI Foundry SDK only accepts results from its built-in attack strategies
+2. **Result Format Compatibility**: Custom attack results use different schemas than Azure AI Foundry expects
+3. **Validation Requirements**: Azure AI Foundry validates that results come from recognized attack strategy types
+
+### Recommended Workflow
+
+For comprehensive red teaming:
+
+1. **Run the main scan** (`ai-foundry-redteam-agent.py`) to test built-in attack strategies and upload results to Azure AI Foundry
+2. **Run custom attack tests** (`custom-suffix-attack.py`) to test application-specific vulnerabilities
+3. **Combine insights** from both approaches to get complete security coverage
+4. **Document findings** from custom tests separately since they cannot be uploaded to Azure AI Foundry
+
+This hybrid approach ensures you get both the standardized testing capabilities of Azure AI Foundry and the flexibility to test custom attack scenarios specific to your application.
