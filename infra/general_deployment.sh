@@ -40,6 +40,8 @@ AZURE_COSMOSDB_CONTAINER_NAME=$(az deployment group show --name "${DEPLOYMENT_NA
 CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv | tr -d '\r\n')
 CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv | tr -d '\r\n')
 APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv | tr -d '\r\n')
+CONTAINER_APPS_ENV_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.containerAppEnvName.value" -o tsv | tr -d '\r\n')
+CONTAINER_REGISTRY_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.containerRegistryName.value" -o tsv | tr -d '\r\n')
 
 cat <<EOF > ../apps/credentials.env
 # Don't mess with this unless you really know what you are doing
@@ -101,4 +103,14 @@ EOF
 
 echo "--------------------------"
 echo -e "Environment file created with the outputs of the deployment"
+echo "--------------------------"
+
+echo "--------------------------"
+echo -e "Now you can deploy the services using the infra/services_deployment.sh script with the following parameters:"
+echo -e "bash infra/services_deployment.sh <RESOURCE_GROUP_NAME> <CONTAINER_APPS_ENV_NAME> <AZURE_CONTAINER_REGISTRY_NAME>"
+echo -e "You can use this values:"
+echo -e "RESOURCE_GROUP_NAME: ${RESOURCE_GROUP_NAME}"
+echo -e "CONTAINER_APPS_ENV_NAME: ${CONTAINER_APPS_ENV_NAME}"
+echo -e "AZURE_CONTAINER_REGISTRY_NAME: ${CONTAINER_REGISTRY_NAME}"
+echo -e "Example: bash infra/services_deployment.sh ${RESOURCE_GROUP_NAME} ${CONTAINER_APPS_ENV_NAME} ${CONTAINER_REGISTRY_NAME}"
 echo "--------------------------"

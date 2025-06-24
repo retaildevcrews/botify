@@ -1,17 +1,39 @@
 #!/bin/bash
 
-RESOURCE_GROUP_NAME="rg-botify"
-CONTAINER_APPS_ENV_NAME="container-app-env-c4gsjupt4nyue"
-AZURE_CONTAINER_REGISTRY_NAME="caec8ebe2830acr"
+# Check for required arguments
+if [ "$#" -ne 3 ]; then
+    echo "Usage: $0 <RESOURCE_GROUP_NAME> <CONTAINER_APPS_ENV_NAME> <AZURE_CONTAINER_REGISTRY_NAME>"
+    echo
+    echo "Arguments:"
+    echo "  <RESOURCE_GROUP_NAME>           Azure resource group for deployment (e.g., rg-botify)"
+    echo "  <CONTAINER_APPS_ENV_NAME>       Azure Container Apps environment name (e.g., container-app-env-xxxx)"
+    echo "  <AZURE_CONTAINER_REGISTRY_NAME> Azure Container Registry name (without .azurecr.io) (e.g., myregistry)"
+    echo
+    echo "This script builds, pushes, and deploys the following services as Azure Container Apps:"
+    echo "  - frontend (public, port 8000)"
+    echo "  - bot-service"
+    echo "  - collector"
+    echo "  - tokenservice"
+    echo
+    echo "Example:"
+    echo "  $0 rg-botify container-app-env-xxxx myregistry"
+    exit 1
+fi
+
+RESOURCE_GROUP_NAME="$1" 
+CONTAINER_APPS_ENV_NAME="$2"
+AZURE_CONTAINER_REGISTRY_NAME="$3"
+
+#RESOURCE_GROUP_NAME="rg-botify"
+#CONTAINER_APPS_ENV_NAME="container-app-env-c4gsjupt4nyue"
+#AZURE_CONTAINER_REGISTRY_NAME="caec8ebe2830acr"
 
 cd ..
 
 cd apps
 
-servicesList=("bot-service" "collector" "frontend" "tokenservice")
-
+# Login to Azure Container Registry
 az acr login --name $AZURE_CONTAINER_REGISTRY_NAME --username $AZURE_CONTAINER_REGISTRY_NAME --password iV61OFMJU/IjaSYBzj20nNqTyiyNV1RHfZ21twRy2S+ACRBJ7UYG
-
 az acr show --name $AZURE_CONTAINER_REGISTRY_NAME --query loginServer --output tsv
 
 # Frontend service

@@ -329,7 +329,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-pr
     name: acrSku
   }
 }
-
+/*
 resource assignAcrPullToAca 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
   name: guid(resourceGroup().id, acrName, userAssignedIdentity.id, 'AssignAcrPullToAks')
   scope: containerRegistry
@@ -344,7 +344,7 @@ resource assignAcrPullToAca 'Microsoft.Authorization/roleAssignments@2020-04-01-
 resource acrPullRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
   scope: subscription()
   name: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
-}
+}*/
 
 resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = {
   name: containerAppEnvName
@@ -387,4 +387,5 @@ output appInsightsConnectionString string = appInsights.properties.ConnectionStr
 
 output cosmosDBDatabaseName string = cosmosDBDatabaseName
 output cosmosDBAccountEndpoint string = cosmosDBAccount.properties.documentEndpoint
-
+output containerAppEnvName string = containerAppEnv.name
+output containerRegistryName string = containerRegistry.name
