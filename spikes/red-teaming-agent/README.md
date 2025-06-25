@@ -16,7 +16,7 @@ Here's a list of observations (during the time of writing) that we find notable 
 
 - AI Red Teaming provides access to an unfiltered adversarial model (though this is abstracted away where PyRIT lets you specify an LLM endpoint + system prompt to create your own adversarial model)
 - Scans are relatively easy to setup in AI Red Teaming
-- AI Red Teaming is not very customizable. You can pass in some suffix or seed prompt options but there are a lot of bells and whistles available in PyRIT.
+- AI Red Teaming is not very customizable (preset default attack surface for converters + default datasets). You can pass in some suffix or seed prompt options but there is a lot more configurability in PyRIT.
 - No Multi-turn support for text-based LLM interactions in AI Red Teaming.
 - Dependency on several Azure resources to run an AI Red Teaming scan, even if running locally.
 
