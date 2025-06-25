@@ -128,18 +128,9 @@ cd spikes/red-teaming-agent
 poetry install
 
 # Run custom suffix attack tests
-poetry run python custom-suffix-attack.py
+poetry run python custom-attack-strategy-test.py
 
-# View results in custom-suffix-attack-results.json and console output
 ```
-
-The custom script will:
-
-1. Test various custom suffix attacks against your Botify endpoint
-2. Analyze responses for potential system prompt leakage
-3. Generate a detailed JSON report with risk assessments
-4. Provide console output with attack success/failure summaries
-5. Offer recommendations for improving security
 
 ### Custom Attack Strategy Limitations
 
@@ -154,8 +145,7 @@ The custom script will:
 For comprehensive red teaming:
 
 1. **Run the main scan** (`ai-foundry-redteam-agent.py`) to test built-in attack strategies and upload results to Azure AI Foundry
-2. **Run custom attack tests** (`custom-suffix-attack.py`) to test application-specific vulnerabilities
+2. **Run custom attack tests** (`custom-attack-strategy-test.py`) to test application-specific vulnerabilities
 3. **Combine insights** from both approaches to get complete security coverage
-4. **Document findings** from custom tests separately since they cannot be uploaded to Azure AI Foundry
 
 This hybrid approach ensures you get both the standardized testing capabilities of Azure AI Foundry and the flexibility to test custom attack scenarios specific to your application.

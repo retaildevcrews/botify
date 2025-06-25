@@ -12,6 +12,7 @@ azure-ai-evaluation = {extras = ["redteam"], version = "^1.8.0"}
 azure-identity = "^1.15.0"
 python-dotenv = "^1.0.0"
 azure-ai-projects = "^1.0.0b11"
+requests = "^2.32.4"
 
 [build-system]
 requires = ["poetry-core"]
