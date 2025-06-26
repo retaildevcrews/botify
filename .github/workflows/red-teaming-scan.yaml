@@ -44,9 +44,9 @@ jobs:
         source $(poetry env info --path --directory spikes/red-teaming-agent)/bin/activate
         python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
 
-    - name: Run Red Teaming Scan
+    - name: list directories
       run: |
-        ls -l spikes/red-teaming-agent/
+        ls -l ./
 
     - name: Output scan results
       run: |
