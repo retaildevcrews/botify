@@ -47,8 +47,8 @@ jobs:
     - name: list directories
       run: |
         ls -al ./
-        ls -l ./scan_*/
+        ls -l ./.scan_*/
 
     - name: Output scan results
       run: |
-        jq '.scorecard.risk_category_summary[0] | {overall_asr, overall_total, overall_attack_successes}' spikes/red-teaming-agent/.scan_*/final_results.json
+        jq '.scorecard.risk_category_summary[0] | {overall_asr, overall_total, overall_attack_successes}' ./.scan_*/final_results.json
