@@ -5,6 +5,9 @@ on:
     branches:
       - red-teaming-agent-cicd
 
+env:
+  RED_TEAM_DIRECTORY: spikes/red-teaming-agent
+
 permissions:
   id-token: write
   contents: read
@@ -34,20 +37,15 @@ jobs:
         version: '1.6'
 
     - name: Install Red Team dependencies
-      run: poetry install --directory=spikes/red-teaming-agent
+      run: poetry install --directory=${{ env.RED_TEAM_DIRECTORY }}
 
     - name: Run Red Teaming Scan
       env:
         AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
         TARGET_ENDPOINT: ${{ secrets.REDTEAM_TARGET_ENDPOINT }}
       run: |
-        source $(poetry env info --path --directory spikes/red-teaming-agent)/bin/activate
-        python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
-
-    - name: list directories
-      run: |
-        ls -al ./
-        ls -l ./.scan_*/
+        source $(poetry env info --path --directory ${{ env.RED_TEAM_DIRECTORY }})/bin/activate
+        python ${{ env.RED_TEAM_DIRECTORY }}/ai-foundry-redteam-agent.py
 
     - name: Output scan results
       run: |
