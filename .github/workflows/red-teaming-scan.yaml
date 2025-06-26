@@ -46,7 +46,8 @@ jobs:
 
     - name: list directories
       run: |
-        ls -l ./
+        ls -al ./
+        ls -l ./scan_*/
 
     - name: Output scan results
       run: |
