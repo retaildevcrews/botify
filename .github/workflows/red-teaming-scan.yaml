@@ -53,4 +53,4 @@ jobs:
 
     - name: Determine scan result success
       run: |
-        jq -e '.scorecard.risk_category_summary[0] | (.overall_attack_successes < 0) or (.overall_asr < 0.0)' ./.scan_*/final_results.json && exit 1 || exit 0
+        jq -e '.scorecard.risk_category_summary[0].overall_asr > 0.0)' ./.scan_*/final_results.json
