@@ -44,6 +44,10 @@ jobs:
         source $(poetry env info --path --directory spikes/red-teaming-agent)/bin/activate
         python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
 
+    - name: Run Red Teaming Scan
+      run: |
+        ls -l spikes/red-teaming-agent/
+
     - name: Output scan results
       run: |
         jq '.scorecard.risk_category_summary[0] | {overall_asr, overall_total, overall_attack_successes}' spikes/red-teaming-agent/.scan_*/final_results.json
