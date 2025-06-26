@@ -1,14 +1,27 @@
 name: Run AI Red Teaming Scan
 
 on:
-  schedule:
-    - cron: '0 2 * * 0'  # Run every Sunday at 2 AM UTC
+  push:
+    branches:
+      - red-teaming-agent-cicd
 
 jobs:
   lint:
     runs-on: ubuntu-latest
-
     steps:
+    - name: Azure login
+      uses: azure/login@v2
+      with:
+        client-id: ${{ secrets.AZURE_CLIENT_ID }}
+        tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+        subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+    - name: Azure CLI script
+      uses: azure/cli@v2
+      with:
+        azcliversion: latest
+        inlineScript: |
+          az account show
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -18,11 +31,20 @@ jobs:
     - name: Install poetry
       uses: abatilo/actions-poetry@v4
 
+    - name: Install jq
+      uses: dcarbone/install-jq-action@v3
+      with:
+        version: '1.6'
+
     - name: Install Red Team dependencies
       run: poetry install --directory=spikes/red-teaming-agent
 
     - name: Run Red Teaming Scan
       env:
         AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
-        TARGET_ENDPOINT: ${{ secrets.TARGET_ENDPOINT }}
+        TARGET_ENDPOINT: ${{ secrets.REDTEAM_TARGET_ENDPOINT }}
       run: poetry run python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
+
+    - name: Output scan results
+      run: |
+        jq '.scorecard.risk_category_summary[0] | {overall_asr, overall_total, overall_attack_successes}' spikes/red-teaming-agent/bot-redteam-scan.json
