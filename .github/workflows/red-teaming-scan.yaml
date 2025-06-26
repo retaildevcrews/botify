@@ -19,12 +19,6 @@ jobs:
         tenant-id: ${{ secrets.AZURE_TENANT_ID }}
         subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-    - name: Azure CLI script
-      uses: azure/cli@v2
-      with:
-        azcliversion: latest
-        inlineScript: |
-          az account show
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -39,14 +33,13 @@ jobs:
       with:
         version: '1.6'
 
-    - name: Install Red Team dependencies
-      run: poetry install --directory=spikes/red-teaming-agent
-
-    - name: Run Red Teaming Scan
+    - name: Install dependencies and run scan
       env:
         AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
         TARGET_ENDPOINT: ${{ secrets.REDTEAM_TARGET_ENDPOINT }}
-      run: poetry run python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
+      run: |
+        poetry install --directory=spikes/red-teaming-agent
+        poetry run python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
 
     - name: Output scan results
       run: |
