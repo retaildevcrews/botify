@@ -33,13 +33,16 @@ jobs:
       with:
         version: '1.6'
 
-    - name: Install dependencies and run scan
+    - name: Install Red Team dependencies
+      run: poetry install --directory=spikes/red-teaming-agent
+
+    - name: Run Red Teaming Scan
       env:
         AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
         TARGET_ENDPOINT: ${{ secrets.REDTEAM_TARGET_ENDPOINT }}
       run: |
-        poetry install --directory=spikes/red-teaming-agent
-        poetry run python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
+        source $(poetry env info --path --directory spikes/red-teaming-agent)/bin/activate
+        python spikes/red-teaming-agent/ai-foundry-redteam-agent.py
 
     - name: Output scan results
       run: |
