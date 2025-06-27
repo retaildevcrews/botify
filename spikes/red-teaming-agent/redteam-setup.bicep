@@ -1,5 +1,6 @@
 param aiFoundryName string
 param location string
+param createCICDIdentity bool = false
 
 resource aiFoundry 'Microsoft.CognitiveServices/accounts@2025-04-01-preview' = {
   name: aiFoundryName
@@ -74,5 +75,45 @@ resource connection 'Microsoft.CognitiveServices/accounts/connections@2025-04-01
       ApiType: 'Azure'
       ResourceId: storageAccount.id
     }
+  }
+}
+
+// Create CICD Identity if required
+resource cicdIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2025-01-31-preview' = if (createCICDIdentity) {
+  location: location
+  name: '${aiFoundryName}-cicd-mi'
+}
+
+// Role assignment for CICD Identity to have Azure AI Admin access
+resource cicdAzureAIAdminRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (createCICDIdentity) {
+  name: guid(aiFoundry.id, cicdIdentity.id, 'b78c5d69-af96-48a3-bf8d-a8b4d589de94')
+  scope: aiFoundry
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'b78c5d69-af96-48a3-bf8d-a8b4d589de94') // Azure AI Admin
+    principalId: cicdIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+// Role assignment for CICD Identity to have Cognitive Services User access
+resource cicdCognitiveServicesUserRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = if (createCICDIdentity) {
+  name: guid(aiFoundry.id, cicdIdentity.id, 'a97b65f3-24c7-4388-baec-2e87135dc908')
+  scope: aiFoundry
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'a97b65f3-24c7-4388-baec-2e87135dc908') // Cognitive Services User
+    principalId: cicdIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource cicdIdentityCreds 'Microsoft.ManagedIdentity/userAssignedIdentities/federatedIdentityCredentials@2025-01-31-preview' = if (createCICDIdentity) {
+  parent: cicdIdentity
+  name: 'gh-action-credentials'
+  properties: {
+    audiences: [
+      'api://AzureADTokenExchange'
+    ]
+    issuer: 'https://token.actions.githubusercontent.com'
+    subject: 'repo:retaildevcrews/botify:ref:refs/heads/red-teaming-agent-cicd'
   }
 }
