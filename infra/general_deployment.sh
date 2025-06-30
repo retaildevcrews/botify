@@ -42,6 +42,7 @@ CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --reso
 APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv | tr -d '\r\n')
 CONTAINER_APPS_ENV_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.containerAppEnvName.value" -o tsv | tr -d '\r\n')
 CONTAINER_REGISTRY_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.containerRegistryName.value" -o tsv | tr -d '\r\n')
+AZURE_CONTAINER_REGISTRY_KEY=$(az acr credential show --name "${CONTAINER_REGISTRY_NAME}" --query "passwords[0].value" -o tsv | tr -d '\r\n')
 
 cat <<EOF > ../apps/credentials.env
 # Don't mess with this unless you really know what you are doing
@@ -112,5 +113,6 @@ echo -e "You can use this values:"
 echo -e "RESOURCE_GROUP_NAME: ${RESOURCE_GROUP_NAME}"
 echo -e "CONTAINER_APPS_ENV_NAME: ${CONTAINER_APPS_ENV_NAME}"
 echo -e "AZURE_CONTAINER_REGISTRY_NAME: ${CONTAINER_REGISTRY_NAME}"
-echo -e "Example: bash infra/services_deployment.sh ${RESOURCE_GROUP_NAME} ${CONTAINER_APPS_ENV_NAME} ${CONTAINER_REGISTRY_NAME}"
+ECHO -E "AZURE_CONTAINER_REGISTRY_KEY: ${AZURE_CONTAINER_REGISTRY_KEY}"
+echo -e "Example: bash infra/services_deployment.sh ${RESOURCE_GROUP_NAME} ${CONTAINER_APPS_ENV_NAME} ${CONTAINER_REGISTRY_NAME} ${AZURE_CONTAINER_REGISTRY_KEY}"
 echo "--------------------------"

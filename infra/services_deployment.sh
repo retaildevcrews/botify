@@ -23,17 +23,14 @@ fi
 RESOURCE_GROUP_NAME="$1" 
 CONTAINER_APPS_ENV_NAME="$2"
 AZURE_CONTAINER_REGISTRY_NAME="$3"
-
-#RESOURCE_GROUP_NAME="rg-botify"
-#CONTAINER_APPS_ENV_NAME="container-app-env-c4gsjupt4nyue"
-#AZURE_CONTAINER_REGISTRY_NAME="caec8ebe2830acr"
+AZURE_CONTAINER_REGISTRY_KEY="$4"
 
 cd ..
 
 cd apps
 
 # Login to Azure Container Registry
-az acr login --name $AZURE_CONTAINER_REGISTRY_NAME --username $AZURE_CONTAINER_REGISTRY_NAME --password iV61OFMJU/IjaSYBzj20nNqTyiyNV1RHfZ21twRy2S+ACRBJ7UYG
+az acr login --name $AZURE_CONTAINER_REGISTRY_NAME --username $AZURE_CONTAINER_REGISTRY_NAME --password $AZURE_CONTAINER_REGISTRY_KEY
 az acr show --name $AZURE_CONTAINER_REGISTRY_NAME --query loginServer --output tsv
 
 # Frontend service

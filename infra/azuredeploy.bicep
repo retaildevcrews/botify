@@ -295,8 +295,6 @@ resource cosmosDBContainer 'Microsoft.DocumentDB/databaseAccounts/sqlDatabases/c
   }
 }
 
-
-
 resource blobStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   name: blobStorageAccountName
   location: location
@@ -329,22 +327,6 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-pr
     name: acrSku
   }
 }
-/*
-resource assignAcrPullToAca 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
-  name: guid(resourceGroup().id, acrName, userAssignedIdentity.id, 'AssignAcrPullToAks')
-  scope: containerRegistry
-  properties: {
-    description: 'Assign AcrPull role to AKS'
-    principalId: userAssignedIdentity.properties.principalId
-    principalType: 'ServicePrincipal'
-    roleDefinitionId: acrPullRoleDefinition.id
-  }
-}
-
-resource acrPullRoleDefinition 'Microsoft.Authorization/roleDefinitions@2018-01-01-preview' existing = {
-  scope: subscription()
-  name: '7f951dda-4ed3-4680-a7ca-43fe172d538d'
-}*/
 
 resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = {
   name: containerAppEnvName
