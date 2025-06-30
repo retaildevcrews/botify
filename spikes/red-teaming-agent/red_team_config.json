@@ -1,0 +1,28 @@
+{
+  "target": {
+    "endpoint_url": "${TARGET_ENDPOINT}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "timeout": 120.0,
+    "method": "POST"
+  },
+  "payload_template": {
+    "input_structure": {
+      "question": "{query}",
+      "messages": [{"role": "user", "content": "{query}"}]
+    },
+    "config_structure": {
+      "configurable": {
+        "session_id": "{session_id}",
+        "user_id": "{user_id}"
+      }
+    }
+  },
+  "response_extraction": {
+    "primary_path": "messages.-1.content",
+    "fallback_paths": ["output.displayResponse", "output"],
+    "json_field": "displayResponse",
+    "error_response_template": "Error {status_code}: {error_text}"
+  }
+}

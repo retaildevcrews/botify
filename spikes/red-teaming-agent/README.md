@@ -1,8 +1,167 @@
-# AI Red Teaming with Azure AI Foundry
+# Azure Red Teaming Agent Configuration
 
-This document outlines how to run a AI Red Teaming scan against the Botify agent using the Azure AI Foundry Python SDK.
+This directory contains an Azure AI Red Teaming Agent implementation with configurable payload formatting and response extraction.
 
-For more information on running Red Teaming scans locally, visit the [Azure docs](https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/run-scans-ai-red-teaming-agent).
+## Features
+
+- **Configuration-driven**: Payload and response handling are defined in JSON configuration files
+- **Environment variable support**: Configuration supports environment variable substitution
+- **Type safety**: Uses Pydantic models for configuration validation
+- **Flexible response extraction**: Supports multiple fallback paths for response extraction
+- **Reusable**: Easy to create different configurations for different target APIs
+
+## Files
+
+- `ai-foundry-redteam-agent.py` - Main red teaming agent script
+- `red_team_config.py` - Configuration models and utility functions
+- `red_team_config.json` - Configuration file for payload and response handling
+- `sample_credentials.env` - Sample environment variables file
+
+## Quick Start
+
+1. **Copy the sample credentials file:**
+
+   ```bash
+   cp sample_credentials.env credentials.env
+   ```
+
+2. **Edit credentials.env with your actual values:**
+
+   ```bash
+   AZURE_AI_FOUNDRY_ENDPOINT=https://your-foundry-endpoint.cognitiveservices.azure.com/
+   TARGET_ENDPOINT=http://localhost:8080/invoke
+   TARGET_API_KEY=your-api-key-here
+   ```
+
+3. **Run the red teaming agent:**
+
+   ```bash
+   python ai-foundry-redteam-agent.py
+   ```
+
+## Configuration
+
+The new configuration system abstracts payload formatting and response extraction into external JSON files, eliminating hardcoded logic in Python.
+
+### JSON Configuration File (`red_team_config.json`)
+
+The configuration file has three main sections:
+
+#### Target Configuration
+
+```json
+{
+  "target": {
+    "endpoint_url": "${TARGET_ENDPOINT}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "timeout": 120.0,
+    "method": "POST"
+  }
+}
+```
+
+#### Payload Template
+
+```json
+{
+  "payload_template": {
+    "input_structure": {
+      "question": "{query}",
+      "messages": [{"role": "user", "content": "{query}"}]
+    },
+    "config_structure": {
+      "configurable": {
+        "session_id": "{session_id}",
+        "user_id": "{user_id}"
+      }
+    }
+  }
+}
+```
+
+#### Response Extraction
+
+```json
+{
+  "response_extraction": {
+    "primary_path": "messages.-1.content",
+    "fallback_paths": ["output.displayResponse", "output"],
+    "json_field": "displayResponse",
+    "error_response_template": "Error {status_code}: {error_text}"
+  }
+}
+```
+
+### Environment Variable Substitution
+
+The configuration supports environment variable substitution using the `${VAR_NAME}` syntax:
+
+- `${TARGET_ENDPOINT}` - Will be replaced with the value of the TARGET_ENDPOINT environment variable
+- `${TARGET_API_KEY}` - Will be replaced with the value of the TARGET_API_KEY environment variable
+
+### Customizing for Different APIs
+
+To adapt this for a different target API:
+
+1. **Create a new configuration file** (e.g., `my_api_config.json`)
+2. **Modify the payload structure** to match your API's expected format
+3. **Update the response extraction paths** to match your API's response format
+4. **Update the target callback creation** to use your new config file:
+
+   ```python
+   target_callback = create_target_callback("my_api_config.json")
+   ```
+
+### Response Path Syntax
+
+The response extraction uses dot notation to navigate nested JSON structures:
+
+- `"messages.-1.content"` - Gets the content field from the last message in the messages array
+- `"output.displayResponse"` - Gets the displayResponse field from the output object
+- `"data.result.text"` - Gets nested fields using dot notation
+
+Negative indices are supported for arrays (`-1` for last element, `-2` for second-to-last, etc.).
+
+## Example: Adapting to a Different API
+
+If your target API expects a different payload format, create a new configuration:
+
+```json
+{
+  "target": {
+    "endpoint_url": "${TARGET_ENDPOINT}",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-API-Key": "${API_KEY}"
+    },
+    "timeout": 60.0
+  },
+  "payload_template": {
+    "input_structure": {
+      "prompt": "{query}",
+      "max_tokens": 1000
+    },
+    "config_structure": {
+      "user": "{user_id}",
+      "session": "{session_id}"
+    }
+  },
+  "response_extraction": {
+    "primary_path": "choices.0.message.content",
+    "fallback_paths": ["text", "response"],
+    "json_field": null,
+    "error_response_template": "API Error {status_code}: {error_text}"
+  }
+}
+```
+
+This flexibility allows you to test different APIs without modifying the Python code.
+
+---
+
+## Original Azure AI Foundry Red Teaming Documentation
 
 ## Overview
 

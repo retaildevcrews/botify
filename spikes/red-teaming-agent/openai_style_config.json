@@ -1,0 +1,28 @@
+{
+  "target": {
+    "endpoint_url": "${TARGET_ENDPOINT}",
+    "headers": {
+      "Content-Type": "application/json",
+      "X-API-Key": "${TARGET_API_KEY}"
+    },
+    "timeout": 60.0,
+    "method": "POST"
+  },
+  "payload_template": {
+    "input_structure": {
+      "prompt": "{query}",
+      "max_tokens": 1000,
+      "temperature": 0.7
+    },
+    "config_structure": {
+      "user": "{user_id}",
+      "session": "{session_id}"
+    }
+  },
+  "response_extraction": {
+    "primary_path": "choices.0.message.content",
+    "fallback_paths": ["text", "response", "data.result"],
+    "json_field": null,
+    "error_response_template": "API Error {status_code}: {error_text}"
+  }
+}
