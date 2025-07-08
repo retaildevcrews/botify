@@ -36,11 +36,9 @@ jobs:
         version: '1.6'
 
     - name: Install Red Team dependencies
-      run: pip install --upgrade pip && \
-           pip install "azure-ai-evaluation[redteam]" \
-              azure-identity \
-              azure-ai-projects \
-              python-dotenv
+      run: |
+        pip install --upgrade pip
+        pip install "azure-ai-evaluation[redteam]" azure-identity azure-ai-projects python-dotenv
 
     - name: Run Red Teaming Scan
       env:
