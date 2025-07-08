@@ -44,9 +44,7 @@ jobs:
       env:
         AZURE_AI_FOUNDRY_ENDPOINT: ${{ secrets.AZURE_AI_FOUNDRY_ENDPOINT }}
         TARGET_ENDPOINT: ${{ secrets.REDTEAM_TARGET_ENDPOINT }}
-      run: |
-        source $(poetry env info --path --directory ${{ env.RED_TEAM_DIRECTORY }})/bin/activate
-        python ${{ env.RED_TEAM_DIRECTORY }}/ai-foundry-redteam-agent.py
+      run: python ${{ env.RED_TEAM_DIRECTORY }}/ai-foundry-redteam-agent.py
 
     - name: Output scan results
       run: |
