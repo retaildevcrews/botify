@@ -1,9 +1,8 @@
-name: Run AI Red Teaming Scan
+name: AI Red Teaming Scan
 
 on:
-  push:
-    branches:
-      - red-teaming-agent-cicd
+  schedule:
+    - cron: '0 2 * * 0'  # Run every Sunday at 2 AM UTC
 
 env:
   RED_TEAM_DIRECTORY: spikes/red-teaming-agent
@@ -27,8 +26,9 @@ jobs:
 
     - name: Set up Python
       uses: actions/setup-python@v4
-      with:
-        python-version: '3.12'
+
+    - name: Install poetry
+      uses: abatilo/actions-poetry@v4
 
     - name: Install jq
       uses: dcarbone/install-jq-action@v3
@@ -36,11 +36,7 @@ jobs:
         version: '1.6'
 
     - name: Install Red Team dependencies
-      run: pip install --upgrade pip && \
-           pip install "azure-ai-evaluation[redteam]" \
-              azure-identity \
-              azure-ai-projects \
-              python-dotenv
+      run: poetry install --directory=${{ env.RED_TEAM_DIRECTORY }}
 
     - name: Run Red Teaming Scan
       env:

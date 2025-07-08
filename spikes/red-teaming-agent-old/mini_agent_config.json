@@ -1,0 +1,21 @@
+{
+  "target": {
+    "endpoint_url": "${TARGET_ENDPOINT}",
+    "headers": {
+      "Content-Type": "application/json"
+    },
+    "timeout": 120.0,
+    "method": "POST"
+  },
+  "payload_template": {
+    "input_structure": {
+      "messages": [{"role": "user", "content": "{query}"}]
+    }
+  },
+  "response_extraction": {
+    "primary_path": "choices.0.message.content",
+    "fallback_paths": ["text", "response", "data.result"],
+    "json_field": null,
+    "error_response_template": "API Error {status_code}: {error_text}"
+  }
+}
