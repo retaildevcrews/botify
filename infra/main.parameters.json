@@ -5,9 +5,6 @@
         "location": {
             "value": "eastus2"
         },
-        "azureSearchName": {
-            "value": "botify-search-service"
-        },
         "azureSearchSKU": {
             "value": "standard"
         },
@@ -19,21 +16,6 @@
         },
         "azureSearchHostingMode": {
             "value": "default"
-        },
-        "cognitiveServiceName": {
-            "value": "botify-cognitive-service"
-        },
-        "cosmosDBAccountName": {
-            "value": "botify-cosmosdb"
-        },
-        "cosmosDBDatabaseName" : {
-            "value": "botifydb"
-        },
-        "cosmosDBContainerName" : {
-            "value": "botifycontainer"
-        },
-        "blobStorageAccountName": {
-            "value": "botifystorage"
         }
     }
 }

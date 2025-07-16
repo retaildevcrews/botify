@@ -79,11 +79,27 @@ param azureSearchHostingMode string = 'default'
 ])
 param modeldeploymentname string = 'gpt-4o'
 
+@description('Expected ACR sku')
+@allowed([
+  'Basic'
+  'Classic'
+  'Premium'
+  'Standard'
+])
+param acrSku string = 'Standard'
+
 param appPlanName string = 'asp-${uniqueString(resourceGroup().id)}'
 param logAnalyticsWorkspace string = 'la-${uniqueString(resourceGroup().id)}'
+param acrName string = 'acr${uniqueString(resourceGroup().id)}'
+param containerAppEnvName string = 'container-app-env-${uniqueString(resourceGroup().id)}'
 
 var cognitiveServiceSKU = 'S0'
 var appPlanSkuName = 'S1'
+
+resource userAssignedIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: 'botify-uami'
+  location: location
+}
 
 resource logAnalytics 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
   name: logAnalyticsWorkspace
@@ -143,6 +159,13 @@ resource azureSearch 'Microsoft.Search/searchServices@2021-04-01-Preview' = {
     partitionCount: azureSearchPartitionCount
     hostingMode: azureSearchHostingMode
     semanticSearch: 'standard'
+    publicNetworkAccess: 'Enabled'
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
   }
 }
 
@@ -156,6 +179,12 @@ resource cognitiveService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   properties: {
     publicNetworkAccess: 'Enabled'
   }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
 }
 
 resource openAIService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
@@ -167,6 +196,12 @@ resource openAIService 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   kind: 'AIServices'
   properties: {
     publicNetworkAccess: 'Enabled'
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
   }
 }
 
@@ -195,6 +230,12 @@ resource contentsafetyaccount 'Microsoft.CognitiveServices/accounts@2024-10-01' 
   }
   properties: {
   }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
 }
 
 resource cosmosDBAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
@@ -210,12 +251,17 @@ resource cosmosDBAccount 'Microsoft.DocumentDB/databaseAccounts@2023-04-15' = {
     ]
     enableFreeTier: false
     isVirtualNetworkFilterEnabled: false
-    publicNetworkAccess: 'Enabled'
     capabilities: [
       {
         name: 'EnableServerless'
       }
     ]
+  }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
   }
 }
 
@@ -256,6 +302,12 @@ resource blobStorageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   sku: {
     name: 'Standard_LRS'
   }
+  identity: {
+    type: 'UserAssigned'
+    userAssignedIdentities: {
+      '${userAssignedIdentity.id}': {}
+    }
+  }
 }
 
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
@@ -268,6 +320,29 @@ resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/co
   name: containerName
 }]
 
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = {
+  name: acrName
+  location: location
+  sku: {
+    name: acrSku
+  }
+}
+
+resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = {
+  name: containerAppEnvName
+  location: location
+  properties: {
+    appLogsConfiguration: {
+      destination: 'log-analytics'
+      logAnalyticsConfiguration: {
+        customerId: logAnalytics.properties.customerId
+        sharedKey: logAnalytics.listKeys().primarySharedKey
+      }
+    }
+  }
+}
+
+output userAssignedIdentityId string = userAssignedIdentity.id
 output blobStorageAccountName string = blobStorageAccountName
 output blobConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${blobStorageAccountName};AccountKey=${blobStorageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
 output azureOpenAIModelName string = azopenaideployment.properties.model.name
@@ -294,3 +369,5 @@ output appInsightsConnectionString string = appInsights.properties.ConnectionStr
 
 output cosmosDBDatabaseName string = cosmosDBDatabaseName
 output cosmosDBAccountEndpoint string = cosmosDBAccount.properties.documentEndpoint
+output containerAppEnvName string = containerAppEnv.name
+output containerRegistryName string = containerRegistry.name

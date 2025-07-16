@@ -40,6 +40,9 @@ AZURE_COSMOSDB_CONTAINER_NAME=$(az deployment group show --name "${DEPLOYMENT_NA
 CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv | tr -d '\r\n')
 CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv | tr -d '\r\n')
 APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv | tr -d '\r\n')
+CONTAINER_APPS_ENV_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.containerAppEnvName.value" -o tsv | tr -d '\r\n')
+CONTAINER_REGISTRY_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.containerRegistryName.value" -o tsv | tr -d '\r\n')
+AZURE_CONTAINER_REGISTRY_KEY=$(az acr credential show --name "${CONTAINER_REGISTRY_NAME}" --query "passwords[0].value" -o tsv | tr -d '\r\n')
 
 cat <<EOF > ../apps/credentials.env
 # Don't mess with this unless you really know what you are doing
@@ -83,6 +86,7 @@ CONFIG_SOURCE='<ENV_VAR|KEY_VAULT>' # Options are: '<ENV_VAR|KEY_VAULT>'  Determ
 
 # Only needed if CONFIG_SOURCE is set to KEY_VAULT
 AZURE_KEY_VAULT_URL='<Azure Keyvault URL>'
+LOCAL_MODE="true"
 
 # Only set these when not using Managed Identity for KeyVault access
 AZURE_TENANT_ID='<Tenant ID>'
@@ -93,8 +97,22 @@ AZURE_CLIENT_SECRET='<App Registration Client Secret>'
 RESOURCE_GROUP='<resource group name where ai studio project resource is located>'
 SUBSCRIPTION_ID='<subscription name where ai studio project resource is located>'
 PROJECT_NAME='<ai studio project name>'
+
+AZURE_MANAGED_IDENTITY_CLIENT_ID="$UAMI_CLIENT_ID"
+AZURE_MANAGED_IDENTITY_RESOURCE_ID="$UAMI_RESOURCE_ID"
 EOF
 
 echo "--------------------------"
 echo -e "Environment file created with the outputs of the deployment"
+echo "--------------------------"
+
+echo "--------------------------"
+echo -e "Now you can deploy the services using the infra/services_deployment.sh script with the following parameters:"
+echo -e "bash infra/services_deployment.sh <RESOURCE_GROUP_NAME> <CONTAINER_APPS_ENV_NAME> <AZURE_CONTAINER_REGISTRY_NAME>"
+echo -e "You can use this values:"
+echo -e "RESOURCE_GROUP_NAME: ${RESOURCE_GROUP_NAME}"
+echo -e "CONTAINER_APPS_ENV_NAME: ${CONTAINER_APPS_ENV_NAME}"
+echo -e "AZURE_CONTAINER_REGISTRY_NAME: ${CONTAINER_REGISTRY_NAME}"
+ECHO -E "AZURE_CONTAINER_REGISTRY_KEY: ${AZURE_CONTAINER_REGISTRY_KEY}"
+echo -e "Example: bash infra/services_deployment.sh ${RESOURCE_GROUP_NAME} ${CONTAINER_APPS_ENV_NAME} ${CONTAINER_REGISTRY_NAME} ${AZURE_CONTAINER_REGISTRY_KEY}"
 echo "--------------------------"
