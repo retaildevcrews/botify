@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # Check for required arguments
-if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <RESOURCE_GROUP_NAME> <CONTAINER_APPS_ENV_NAME> <AZURE_CONTAINER_REGISTRY_NAME>"
+if [ "$#" -ne 4 ]; then
+    echo "Usage: $0 <RESOURCE_GROUP_NAME> <CONTAINER_APPS_ENV_NAME> <AZURE_CONTAINER_REGISTRY_NAME> <AZURE_CONTAINER_REGISTRY_KEY>"
     echo
     echo "Arguments:"
     echo "  <RESOURCE_GROUP_NAME>           Azure resource group for deployment (e.g., rg-botify)"
     echo "  <CONTAINER_APPS_ENV_NAME>       Azure Container Apps environment name (e.g., container-app-env-xxxx)"
     echo "  <AZURE_CONTAINER_REGISTRY_NAME> Azure Container Registry name (without .azurecr.io) (e.g., myregistry)"
+    echo "  <AZURE_CONTAINER_REGISTRY_KEY> Azure Container Registry password"
     echo
     echo "This script builds, pushes, and deploys the following services as Azure Container Apps:"
     echo "  - frontend (public, port 8000)"
