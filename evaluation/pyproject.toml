@@ -29,6 +29,7 @@ xlsxwriter="^3.2.0"
 azureml-core="1.60.0"
 azureml-mlflow="1.60.0"
 devtools="^0.12.2"
+aiohttp="^3.12.14"
 
 [tool.poetry.group.dev.dependencies]
 jinja2="^3.1.5"

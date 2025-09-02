@@ -13,6 +13,7 @@ azure-identity = "^1.17.1"
 pycryptodome = "^3.20.0"
 python-jose = {extras = ["pycryptodome"], version = "^3.3.0"}
 toml = "^0.10.2"
+urllib3 = "^2.5.0"
 
 
 [build-system]
