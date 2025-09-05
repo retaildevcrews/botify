@@ -7,15 +7,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install dependencies based on API-specific pyproject
-COPY apps/api/pyproject.toml /app/
+COPY testapps/api/pyproject.toml /app/
 RUN pip install --no-cache-dir poetry && \
     poetry config virtualenvs.create false && \
     poetry install --no-interaction --no-ansi --no-root
 
 # Copy only necessary application files (exclude tests and top-level data)
-COPY apps/api/src /app/apps/api/src
-COPY apps/api/menu /app/apps/api/menu
-COPY apps/api/prompt_templates /app/apps/api/prompt_templates
+COPY testapps/api/src /app/apps/api/src
+COPY testapps/api/menu /app/apps/api/menu
+COPY testapps/api/prompt_templates /app/apps/api/prompt_templates
 
 EXPOSE 8000
 
