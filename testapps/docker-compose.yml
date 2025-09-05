@@ -17,3 +17,12 @@ services:
       "--port", "8000",
       "--log-level", "info"
     ]
+
+  webapp:
+    image: node:20-bullseye
+    working_dir: /app/apps/webapp
+    ports:
+      - "5173:5173"
+    volumes:
+      - ..:/app
+    command: bash -lc "corepack enable && corepack prepare yarn@1.22.22 --activate && yarn install && yarn dev --host"

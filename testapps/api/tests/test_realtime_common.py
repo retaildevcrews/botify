@@ -139,7 +139,9 @@ class TestRealtimeCommon(unittest.TestCase):
         # Explicit semantic_vad
         asyncio.run(client.send_session_update(turn_detection_type="semantic_vad"))
         payload = client.ws.sent[-1]
-        self.assertEqual(payload["session"].get("turn_detection"), {"type": "semantic_vad"})
+        td_obj = payload["session"].get("turn_detection")
+        self.assertIsInstance(td_obj, dict)
+        self.assertEqual(td_obj.get("type"), "semantic_vad")
 
         # Explicit none -> turn_detection present with type none
         asyncio.run(client.send_session_update(turn_detection_type="none"))

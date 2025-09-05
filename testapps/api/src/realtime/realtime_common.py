@@ -7,7 +7,7 @@ import base64
 import json
 import logging
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional, Tuple
 from urllib.parse import urlparse
 import wave
@@ -80,6 +80,43 @@ class RealtimeConfig:
     # Optional schema
     schema_path: Optional[str] = os.getenv("REALTIME_SCHEMA_PATH")
 
+    # Upstream -> client event filtering
+    # Comma-separated list of allowed event type patterns (supports '*' glob).
+    # Special token "<binary>" controls whether raw binary frames are forwarded.
+    # Default: only forward text stream events (delta + done).
+    allowed_event_patterns: list[str] = field(
+        default_factory=lambda: [
+            s.strip()
+            for s in os.getenv(
+                "REALTIME_ALLOWED_EVENT_TYPES",
+                "response.text.done,response.text.delta",
+            ).split(",")
+            if s.strip()
+        ]
+    )
+
+    # Extraction configuration (feature disabled by default)
+    # These flags control optional transformation of upstream events into extracted JSON payloads.
+    # If extract_json_from_text_types is empty, no extraction is attempted.
+    extract_json_from_text_types: list[str] = field(
+        default_factory=lambda: [
+            s.strip() for s in os.getenv("REALTIME_EXTRACT_JSON_FROM_TEXT_TYPES", "").split(",") if s.strip()
+        ]
+    )
+    # Global fallback field name to read text from (if no per-event mapping applies)
+    extract_json_text_field: str = os.getenv("REALTIME_EXTRACT_JSON_TEXT_FIELD", "text")
+    # Strategy to extract JSON from text: fenced_or_bare | strict_fence | first_object
+    extract_json_strategy: str = os.getenv("REALTIME_EXTRACT_JSON_STRATEGY", "fenced_or_bare")
+    # Output mode for successful extraction: replace | wrap
+    extract_output_mode: str = os.getenv("REALTIME_EXTRACT_OUTPUT_MODE", "replace")
+    # Behavior when extraction fails: drop | forward | error
+    extract_on_fail: str = os.getenv("REALTIME_EXTRACT_ON_FAIL", "drop")
+    # Per-event fields mapping (pattern -> ordered list of candidate fields). Parsed from env string.
+    # Format example: "response.text.done:text;response.text.delta:delta"
+    extract_fields_map: dict[str, list[str]] = field(
+        default_factory=lambda: _parse_fields_map_env(os.getenv("REALTIME_EXTRACT_FIELDS_MAP", ""))
+    )
+
     # Turn detection (VAD) configuration
     # Supported values include: "server_vad", "semantic_vad", "none" (or unset)
     # Default is None (unset) which means no turn_detection section is sent.
@@ -149,6 +186,33 @@ def _ensure_env() -> RealtimeConfig:
         (cfg.turn_detection_type or "<unset>")
     )
     return cfg
+
+
+def _parse_fields_map_env(raw: str) -> dict[str, list[str]]:
+    """Parse REALTIME_EXTRACT_FIELDS_MAP env into a dict of pattern -> [fields...].
+
+    Expected format:
+        "pattern1:fieldA,fieldB;pattern2:fieldX"
+    Whitespace around tokens is ignored. Invalid entries are skipped.
+    """
+    mapping: dict[str, list[str]] = {}
+    raw = (raw or "").strip()
+    if not raw:
+        return mapping
+    try:
+        rules = [r.strip() for r in raw.split(";") if r.strip()]
+        for rule in rules:
+            if ":" not in rule:
+                continue
+            pat, fields_str = rule.split(":", 1)
+            pat = pat.strip()
+            fields = [f.strip() for f in fields_str.split(",") if f.strip()]
+            if pat and fields:
+                mapping[pat] = fields
+    except Exception:
+        # Be resilient to malformed input; return whatever was parsed
+        pass
+    return mapping
 
 
 def _read_text(path: str) -> str:

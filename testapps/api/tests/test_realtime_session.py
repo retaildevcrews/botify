@@ -78,6 +78,8 @@ class TestRealtimeSession(unittest.TestCase):
     def test_forward_upstream_message(self):
         ws = DummyWebSocket()
         cfg = self.make_cfg()
+        # Allow all upstream messages for this test
+        cfg.allowed_event_patterns = ["*"]
         sess = RealtimeSession(ws, cfg)
 
         import asyncio
@@ -86,6 +88,50 @@ class TestRealtimeSession(unittest.TestCase):
 
         self.assertEqual(ws.sent_bytes, [b"abc"])
         self.assertEqual(ws.sent_text, ["{\"ok\":true}"])
+
+    def test_forward_upstream_message_filtering_defaults(self):
+        # By default only response.text.delta and response.text.done are allowed
+        ws = DummyWebSocket()
+        cfg = self.make_cfg()  # default patterns
+        # Force the expected default patterns explicitly to avoid ambient env interference
+        cfg.allowed_event_patterns = ["response.text.delta", "response.text.done"]
+        # Ensure extraction is disabled for this baseline test
+        cfg.extract_json_from_text_types = []
+        sess = RealtimeSession(ws, cfg)
+
+        import asyncio
+        # Not allowed: non-JSON binary, and unrelated JSON types
+        asyncio.run(sess._forward_upstream_message(b"binary"))
+        asyncio.run(sess._forward_upstream_message(json.dumps({"type": "response.content_part.done"})))
+        asyncio.run(sess._forward_upstream_message(json.dumps({"type": "input_audio_buffer.append"})))
+
+        # Allowed: response.text.delta and response.text.done
+        asyncio.run(sess._forward_upstream_message(json.dumps({"type": "response.text.delta", "delta": "hi"})))
+        asyncio.run(sess._forward_upstream_message(json.dumps({"type": "response.text.done"})))
+
+        self.assertEqual(ws.sent_bytes, [])
+        # Expect exactly the two allowed messages to be forwarded
+        forwarded_types = [json.loads(t).get("type") for t in ws.sent_text]
+        # Expect the two streamed events forwarded untouched
+        self.assertIn("response.text.delta", forwarded_types)
+        self.assertIn("response.text.done", forwarded_types)
+        self.assertEqual(len(forwarded_types), 2)
+
+    def test_forward_upstream_message_allow_only_done(self):
+        ws = DummyWebSocket()
+        cfg = self.make_cfg()
+        cfg.allowed_event_patterns = ["response.text.done"]
+        cfg.extract_json_from_text_types = []
+        sess = RealtimeSession(ws, cfg)
+
+        import asyncio
+        # Send both delta and done
+        asyncio.run(sess._forward_upstream_message(json.dumps({"type": "response.text.delta", "delta": "hi"})))
+        asyncio.run(sess._forward_upstream_message(json.dumps({"type": "response.text.done"})))
+
+        forwarded_types = [json.loads(t).get("type") for t in ws.sent_text]
+        # Only done should pass
+        self.assertEqual(forwarded_types, ["response.text.done"])
 
     def test_session_update_builds_turn_detection_and_audio_format(self):
         ws = DummyWebSocket()
@@ -129,6 +175,122 @@ class TestRealtimeSession(unittest.TestCase):
         self.assertTrue(should_close)
         should_not_close = asyncio.run(sess._autoclose_on_completion("{\"type\":\"other\"}"))
         self.assertFalse(should_not_close)
+
+    def test_extract_json_from_text_done_fenced_replace(self):
+        # Configure extraction for response.text.done with fenced json
+        ws = DummyWebSocket()
+        cfg = self.make_cfg()
+        cfg.extract_json_from_text_types = ["response.text.done"]
+        cfg.extract_fields_map = {"response.text.done": ["text"]}
+        cfg.extract_json_strategy = "fenced_or_bare"
+        cfg.extract_output_mode = "replace"
+
+        sess = RealtimeSession(ws, cfg)
+
+        payload = {
+            "type": "response.text.done",
+            "text": "```json\n{\n  \"ok\": true, \"n\": 1\n}\n```"
+        }
+
+        import asyncio
+        asyncio.run(sess._forward_upstream_message(json.dumps(payload)))
+
+        # Expect only the extracted JSON object
+        self.assertEqual(len(ws.sent_text), 1)
+        obj = json.loads(ws.sent_text[0])
+        self.assertEqual(obj.get("type"), "response.text.done")
+        self.assertEqual(obj.get("content"), {"ok": True, "n": 1})
+
+    def test_extract_json_from_text_done_bare_replace(self):
+        # Bare JSON in text field should be extracted
+        ws = DummyWebSocket()
+        cfg = self.make_cfg()
+        cfg.extract_json_from_text_types = ["response.text.done"]
+        cfg.extract_fields_map = {"response.text.done": ["text"]}
+        cfg.extract_json_strategy = "fenced_or_bare"
+        cfg.extract_output_mode = "replace"
+
+        sess = RealtimeSession(ws, cfg)
+
+        payload = {
+            "type": "response.text.done",
+            "text": "{\n  \"items\": [1,2,3]\n} trailing commentary"
+        }
+
+        import asyncio
+        asyncio.run(sess._forward_upstream_message(json.dumps(payload)))
+
+        self.assertEqual(len(ws.sent_text), 1)
+        obj = json.loads(ws.sent_text[0])
+        self.assertEqual(obj.get("type"), "response.text.done")
+        self.assertEqual(obj.get("content"), {"items": [1, 2, 3]})
+
+    def test_extract_json_from_delta_field(self):
+        # Map response.text.delta to the 'delta' field
+        ws = DummyWebSocket()
+        cfg = self.make_cfg()
+        cfg.extract_json_from_text_types = ["response.text.delta"]
+        cfg.extract_fields_map = {"response.text.delta": ["delta"]}
+        cfg.extract_json_strategy = "first_object"
+        cfg.extract_on_fail = "drop"
+
+        sess = RealtimeSession(ws, cfg)
+
+        payload = {
+            "type": "response.text.delta",
+            "delta": "prefix {\"a\": 1} suffix"
+        }
+
+        import asyncio
+        asyncio.run(sess._forward_upstream_message(json.dumps(payload)))
+
+        self.assertEqual(len(ws.sent_text), 1)
+        obj = json.loads(ws.sent_text[0])
+        self.assertEqual(obj.get("type"), "response.text.delta")
+        self.assertEqual(obj.get("content"), {"a": 1})
+
+    def test_extract_on_fail_forward(self):
+        # When extraction fails and policy=forward, original event is forwarded
+        ws = DummyWebSocket()
+        cfg = self.make_cfg()
+        cfg.extract_json_from_text_types = ["response.text.done"]
+        cfg.extract_fields_map = {"response.text.done": ["text"]}
+        cfg.extract_json_strategy = "strict_fence"  # require fence
+        cfg.extract_on_fail = "forward"
+
+        sess = RealtimeSession(ws, cfg)
+
+        payload = {"type": "response.text.done", "text": "no json here"}
+
+        import asyncio
+        asyncio.run(sess._forward_upstream_message(json.dumps(payload)))
+
+        self.assertEqual(len(ws.sent_text), 1)
+        roundtrip = json.loads(ws.sent_text[0])
+        self.assertEqual(roundtrip["type"], "response.text.done")
+
+    def test_extract_wrap_mode(self):
+        # Wrap mode emits an envelope with payload
+        ws = DummyWebSocket()
+        cfg = self.make_cfg()
+        cfg.extract_json_from_text_types = ["response.text.done"]
+        cfg.extract_fields_map = {"response.text.done": ["text"]}
+        cfg.extract_output_mode = "wrap"
+
+        sess = RealtimeSession(ws, cfg)
+
+        payload = {
+            "type": "response.text.done",
+            "text": "```json\n{\n  \"x\": 42\n}\n```"
+        }
+
+        import asyncio
+        asyncio.run(sess._forward_upstream_message(json.dumps(payload)))
+
+        self.assertEqual(len(ws.sent_text), 1)
+        env = json.loads(ws.sent_text[0])
+        self.assertEqual(env.get("type"), "response.text.done")
+        self.assertEqual(env.get("content"), {"x": 42})
 
 
 if __name__ == "__main__":

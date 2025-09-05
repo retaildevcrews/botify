@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root {
+  height: 100%;
+}
+
+/* Message styles similar to HTML client */
+.message-user { @apply text-gray-900 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30 p-2 rounded; }
+.message-assistant { @apply text-gray-900 dark:text-gray-100 bg-white dark:bg-zinc-900 p-2 rounded; }
+.message-assistant.current { @apply border border-dashed border-accent; }
+.message-info { @apply text-sm text-gray-600 dark:text-gray-300; }
+.message-error { @apply text-sm text-red-600; }
+.message-warning { @apply text-sm text-yellow-600; }
