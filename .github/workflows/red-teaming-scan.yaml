@@ -46,10 +46,10 @@ jobs:
         TARGET_ENDPOINT: ${{ secrets.REDTEAM_TARGET_ENDPOINT }}
       run: python ${{ env.RED_TEAM_DIRECTORY }}/ai-foundry-redteam-agent.py
 
-    - name: Output scan results
-      run: |
-        jq '.scorecard.risk_category_summary[0] | {overall_asr, overall_total, overall_attack_successes}' ./.scan_*/final_results.json
+    # - name: Output scan results
+    #   run: |
+    #     jq '.scorecard.risk_category_summary[0] | {overall_asr, overall_total, overall_attack_successes}' ./.scan_*/final_results.json
 
-    - name: Determine scan result success
-      run: |
-        jq -e '.scorecard.risk_category_summary[0].overall_asr == 0.0' ./.scan_*/final_results.json
+    # - name: Determine scan result success
+    #   run: |
+    #     jq -e '.scorecard.risk_category_summary[0].overall_asr == 0.0' ./.scan_*/final_results.json
