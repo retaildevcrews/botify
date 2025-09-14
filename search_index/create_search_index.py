@@ -5,6 +5,9 @@ import requests
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient
 from utils import get_headers_and_params, print_response_status
+from dotenv import load_dotenv
+
+load_dotenv("../apps/credentials.env")
 
 index_name = os.environ["AZURE_SEARCH_INDEX_NAME"]
 skillset_name = index_name + "skillset"
@@ -24,7 +27,7 @@ def validate_environment_vars():
         "AZURE_OPENAI_API_VERSION",
         "AZURE_OPENAI_ENDPOINT",
         "AZURE_OPENAI_API_KEY",
-        "EMBEDDING_DEPLOYMENT_NAME",
+        "AZURE_OPENAI_EMBEDDING_MODEL_NAME",
         "COG_SERVICES_NAME",
         "COG_SERVICES_KEY",
         "AZURE_BLOB_STORAGE_CONNECTION_STRING",
@@ -69,8 +72,8 @@ def create_index():
                     "azureOpenAIParameters": {
                         "resourceUri": os.environ["AZURE_OPENAI_ENDPOINT"],
                         "apiKey": os.environ["AZURE_OPENAI_API_KEY"],
-                        "deploymentId": os.environ["EMBEDDING_DEPLOYMENT_NAME"],
-                        "modelName": os.environ["EMBEDDING_DEPLOYMENT_NAME"],
+                        "deploymentId": os.environ["AZURE_OPENAI_EMBEDDING_MODEL_NAME"],
+                        "modelName": os.environ["AZURE_OPENAI_EMBEDDING_MODEL_NAME"],
                     },
                 }
             ],
@@ -221,8 +224,8 @@ def create_skillset():
                 "context": "/document/chunks/*",
                 "resourceUri": os.environ["AZURE_OPENAI_ENDPOINT"],
                 "apiKey": os.environ["AZURE_OPENAI_API_KEY"],
-                "deploymentId": os.environ["EMBEDDING_DEPLOYMENT_NAME"],
-                "modelName": os.environ["EMBEDDING_DEPLOYMENT_NAME"],
+                "deploymentId": os.environ["AZURE_OPENAI_EMBEDDING_MODEL_NAME"],
+                "modelName": os.environ["AZURE_OPENAI_EMBEDDING_MODEL_NAME"],
                 "inputs": [{"name": "text", "source": "/document/chunks/*"}],
                 "outputs": [{"name": "embedding", "targetName": "vector"}],
             },
