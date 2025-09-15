@@ -1,6 +1,9 @@
 @description('Optional, defaults to resource group location. The location of the resources.')
 param location string = resourceGroup().location
 
+@description('Optional. Deploy container app endpoint and registry. Defaults to false.')
+param deployEndpoint bool = false
+
 @description('Optional. The name of our application. It has to be unique. Type a name followed by your resource group name. (<name>-<resourceGroupName>)')
 param cognitiveServiceName string = 'cognitive-service-${uniqueString(resourceGroup().id)}'
 
@@ -18,6 +21,15 @@ param modelversion string = 'turbo-2024-04-09'
 
 @description('Capacity for specific model used')
 param capacity int = 8
+
+@description('The embedding model being deployed')
+param embeddingmodel string = 'text-embedding-ada-002'
+
+@description('Version of the embedding model being deployed')
+param embeddingmodelversion string = '2'
+
+@description('Capacity for specific embedding model used')
+param embeddingcapacity int = 10
 
 @description('Optional. Cosmos DB account name, max length 44 characters, lowercase')
 param cosmosDBAccountName string = 'cosmosdb-account-${uniqueString(resourceGroup().id)}'
@@ -78,6 +90,12 @@ param azureSearchHostingMode string = 'default'
   'o1-mini'
 ])
 param modeldeploymentname string = 'gpt-4o'
+
+@description('Name of the Azure Open AI embedding deployment')
+@allowed([
+  'text-embedding-ada-002'
+])
+param embeddingmodeldeploymentname string = 'text-embedding-ada-002'
 
 @description('Expected ACR sku')
 @allowed([
@@ -221,6 +239,23 @@ resource azopenaideployment 'Microsoft.CognitiveServices/accounts/deployments@20
   }
 }
 
+resource azopenaiembeddingdeployment 'Microsoft.CognitiveServices/accounts/deployments@2024-10-01' = {
+  parent: openAIService
+  dependsOn: [azopenaideployment]
+  name: embeddingmodeldeploymentname
+  properties: {
+      model: {
+          format: 'OpenAI'
+          name: embeddingmodel
+          version: embeddingmodelversion
+      }
+  }
+  sku: {
+    name: 'Standard'
+    capacity: embeddingcapacity
+  }
+}
+
 resource contentsafetyaccount 'Microsoft.CognitiveServices/accounts@2024-10-01' = {
   name: contentsafetyName
   location: location
@@ -320,7 +355,18 @@ resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/co
   name: containerName
 }]
 
-resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = {
+// RBAC: Grant managed identity permission to storage blob reader
+resource storageBlobDataReader 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(blobStorageAccount.id, userAssignedIdentity.id, '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
+  scope: blobStorageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = if (deployEndpoint) {
   name: acrName
   location: location
   sku: {
@@ -328,7 +374,7 @@ resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-pr
   }
 }
 
-resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = {
+resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = if (deployEndpoint) {
   name: containerAppEnvName
   location: location
   properties: {
@@ -345,12 +391,14 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = {
 output userAssignedIdentityId string = userAssignedIdentity.id
 output blobStorageAccountName string = blobStorageAccountName
 output blobConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${blobStorageAccountName};AccountKey=${blobStorageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
-output azureOpenAIModelName string = azopenaideployment.properties.model.name
-output azureOpenAIEndpoint string = openAIService.properties.endpoint
 
 output azureOpenAIAccountName string = openaiServiceAccountName
+output azureOpenAIModelName string = azopenaideployment.properties.model.name
+output azureOpenAIEndpoint string = 'https://${openaiServiceAccountName}.openai.azure.com/'
+output azureOpenAIEmbeddingModelName string = azopenaiembeddingdeployment.properties.model.name
 
 output azureSearchAdminKey string = azureSearch.listAdminKeys().primaryKey
+output azureSearchBlobDataSourceString string = 'ResourceId=${blobStorageAccount.id}/;'
 
 output cognitiveServiceName string = cognitiveServiceName
 output cognitiveServiceKey string = cognitiveService.listKeys().key1
@@ -369,5 +417,5 @@ output appInsightsConnectionString string = appInsights.properties.ConnectionStr
 
 output cosmosDBDatabaseName string = cosmosDBDatabaseName
 output cosmosDBAccountEndpoint string = cosmosDBAccount.properties.documentEndpoint
-output containerAppEnvName string = containerAppEnv.name
-output containerRegistryName string = containerRegistry.name
+output containerAppEnvName string = deployEndpoint ? containerAppEnv.name : ''
+output containerRegistryName string = deployEndpoint ? containerRegistry.name : ''

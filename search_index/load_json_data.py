@@ -3,8 +3,11 @@ import os
 
 import pandas as pd
 import requests
+from dotenv import load_dotenv
 from langchain_openai import AzureOpenAIEmbeddings
 from utils import get_headers_and_params
+
+load_dotenv("../apps/credentials.env")
 
 
 def validate_environment_vars():
@@ -15,7 +18,7 @@ def validate_environment_vars():
         "AZURE_OPENAI_ENDPOINT",
         "AZURE_OPENAI_API_KEY",
         "AZURE_OPENAI_API_VERSION",
-        "EMBEDDING_DEPLOYMENT_NAME",
+        "AZURE_OPENAI_EMBEDDING_MODEL_NAME",
         "AZURE_SEARCH_INDEX_NAME",
         "AZURE_SEARCH_API_VERSION",
     ]
@@ -36,7 +39,7 @@ def load_json_data():
 
     data = pd.read_json(data_file, lines=True)
 
-    embedder = AzureOpenAIEmbeddings(deployment=os.environ["EMBEDDING_DEPLOYMENT_NAME"], chunk_size=1)
+    embedder = AzureOpenAIEmbeddings(deployment=os.environ["AZURE_OPENAI_EMBEDDING_MODEL_NAME"], chunk_size=1)
     headers, params = get_headers_and_params()
     index_name = os.environ["AZURE_SEARCH_INDEX_NAME"]
 
