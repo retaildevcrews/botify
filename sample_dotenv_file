@@ -7,9 +7,9 @@ FAST_API_SERVER="http://bot-service:8080"
 SPEECH_ENGINE="azure"
 
 # Demo Data (edit with your own if you want to use your own data)
-AZURE_BLOB_STORAGE_CONNECTION_STRING="<connection string"
-BLOB_CONNECTION_STRING="<connection string"
-BLOB_SAS_TOKEN="<token"
+AZURE_BLOB_STORAGE_CONNECTION_STRING="<connection string>"
+AZURE_SEARCH_BLOB_DATA_SOURCE_STRING="<search data source MI string>"
+BLOB_SAS_TOKEN="<token>"
 
 # Edit with your own azure services values
 AZURE_OPENAI_CLASSIFIER_MODEL_NAME="<classifier model name>"

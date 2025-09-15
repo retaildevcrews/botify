@@ -30,7 +30,8 @@ def validate_environment_vars():
         "AZURE_OPENAI_EMBEDDING_MODEL_NAME",
         "COG_SERVICES_NAME",
         "COG_SERVICES_KEY",
-        "AZURE_BLOB_STORAGE_CONNECTION_STRING",
+        "AZURE_SEARCH_BLOB_DATA_SOURCE_STRING",
+        "AZURE_MANAGED_IDENTITY_RESOURCE_ID"
     ]
 
     for var in required_vars:
@@ -273,22 +274,15 @@ def create_skillset():
 
 def create_blob_container_datasource():
 
-    connect_str = os.environ["AZURE_BLOB_STORAGE_CONNECTION_STRING"]
-    blob_service_client = BlobServiceClient.from_connection_string(connect_str)
-
-    try:
-        blob_service_client.create_container(name=blob_container_name)
-    except ResourceExistsError:
-        print(
-            f"""A container with name [{datasource_name}] already exists. Continuing with
-                the existing container."""
-        )
-
     datasource_payload = {
         "name": datasource_name,
         "description": "Demo files to demonstrate cognitive search capabilities.",
         "type": "azureblob",
-        "credentials": {"connectionString": os.environ["AZURE_BLOB_STORAGE_CONNECTION_STRING"]},
+        "credentials": {"connectionString": os.environ["AZURE_SEARCH_BLOB_DATA_SOURCE_STRING"]},
+        "identity": {
+            "@odata.type": "#Microsoft.Azure.Search.DataUserAssignedIdentity",
+            "userAssignedIdentity": os.environ['AZURE_MANAGED_IDENTITY_RESOURCE_ID']
+        },
         "dataDeletionDetectionPolicy": {
             "@odata.type": "#Microsoft.Azure.Search.SoftDeleteColumnDeletionDetectionPolicy",
             "softDeleteColumnName": "IsDeleted",

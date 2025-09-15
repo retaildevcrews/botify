@@ -355,6 +355,17 @@ resource blobStorageContainer 'Microsoft.Storage/storageAccounts/blobServices/co
   name: containerName
 }]
 
+// RBAC: Grant managed identity permission to storage blob reader
+resource storageBlobDataReader 'Microsoft.Authorization/roleAssignments@2020-04-01-preview' = {
+  name: guid(blobStorageAccount.id, userAssignedIdentity.id, '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
+  scope: blobStorageAccount
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')
+    principalId: userAssignedIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
 resource containerRegistry 'Microsoft.ContainerRegistry/registries@2022-02-01-preview' = if (deployEndpoint) {
   name: acrName
   location: location
@@ -380,13 +391,14 @@ resource containerAppEnv 'Microsoft.App/managedEnvironments@2022-03-01' = if (de
 output userAssignedIdentityId string = userAssignedIdentity.id
 output blobStorageAccountName string = blobStorageAccountName
 output blobConnectionString string = 'DefaultEndpointsProtocol=https;AccountName=${blobStorageAccountName};AccountKey=${blobStorageAccount.listKeys().keys[0].value};EndpointSuffix=core.windows.net'
-output azureOpenAIModelName string = azopenaideployment.properties.model.name
-output azureOpenAIEndpoint string = openAIService.properties.endpoint
-output azureOpenAIEmbeddingModelName string = azopenaiembeddingdeployment.properties.model.name
 
 output azureOpenAIAccountName string = openaiServiceAccountName
+output azureOpenAIModelName string = azopenaideployment.properties.model.name
+output azureOpenAIEndpoint string = 'https://${openaiServiceAccountName}.openai.azure.com/'
+output azureOpenAIEmbeddingModelName string = azopenaiembeddingdeployment.properties.model.name
 
 output azureSearchAdminKey string = azureSearch.listAdminKeys().primaryKey
+output azureSearchBlobDataSourceString string = 'ResourceId=${blobStorageAccount.id}/;'
 
 output cognitiveServiceName string = cognitiveServiceName
 output cognitiveServiceKey string = cognitiveService.listKeys().key1

@@ -33,10 +33,15 @@ The `general_deployment.sh` script is responsible for provisioning all the core 
 
 This script ensures that all foundational cloud resources are created and configured before deploying application services. The script will prompt whether you would like to deploy botify on a Azure Container App environment. It is **highly recommended** that you **do NOT** proceed with the container app deployment and run the Botify solution **locally**.
 
-In order to run this script, you need to have the Azure CLI installed and be logged in to your Azure account and run the following command:
+In order to run this script, you need to have the Azure CLI installed. When authenticating with the Azure portal using the [Azure CLI]('https://learn.microsoft.com/en-us/cli/azure/authenticate-azure-cli'), it is important to use the correct Tenant ID for the desired tenant and to set the correct subscription context.
 
 ```bash
-cd infra
+# Optional: Log in to Azure in CLI if haven't done so already
+# az login [--tenant tenant-id]
+# az account set -s [desired subscription ID]
+
+cd infra # from repo root
+
 bash general_deployment.sh
 ```
 

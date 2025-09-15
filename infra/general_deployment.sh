@@ -62,6 +62,7 @@ AZURE_OPENAI_ACCOUNT_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}"
 AZURE_OPENAI_API_KEY=$(az cognitiveservices account keys list --name "${AZURE_OPENAI_ACCOUNT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1' | tr -d '\r\n')
 AZURE_SEARCH_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureSearchEndpoint.value" -o tsv | tr -d '\r\n')
 AZURE_SEARCH_KEY=$(az deployment group show --resource-group "${RESOURCE_GROUP_NAME}" --name "${DEPLOYMENT_NAME}" --query "properties.outputs.azureSearchAdminKey.value" -o tsv | tr -d '\r\n')
+AZURE_SEARCH_BLOB_DATA_SOURCE_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.azureSearchBlobDataSourceString.value" -o tsv | tr -d '\r\n')
 COGNITIVE_SERVICES_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cognitiveServiceName.value" -o tsv | tr -d '\r\n')
 COGNITIVE_SERVICES_KEY=$(az cognitiveservices account keys list --name "${COGNITIVE_SERVICES_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" -o json | jq -r '.key1' | tr -d '\r\n')
 AZURE_COSMOSDB_NAME=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.cosmosDBAccountName.value" -o tsv | tr -d '\r\n')
@@ -70,6 +71,7 @@ AZURE_COSMOSDB_CONNECTION_STRING=$(az cosmosdb keys list -n $AZURE_COSMOSDB_NAME
 CONTENT_SAFETY_ENDPOINT=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyEndpoint.value" -o tsv | tr -d '\r\n')
 CONTENT_SAFETY_KEY=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.contentSafetyKey.value" -o tsv | tr -d '\r\n')
 APPLICATIONINSIGHTS_CONNECTION_STRING=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.appInsightsConnectionString.value" -o tsv | tr -d '\r\n')
+UAMI_RESOURCE_ID=$(az deployment group show --name "${DEPLOYMENT_NAME}" --resource-group "${RESOURCE_GROUP_NAME}" --query "properties.outputs.userAssignedIdentityResourceId.value" -o tsv | tr -d '\r\n')
 
 # Only get container app related outputs if user chose to deploy them
 if [[ $DEPLOY_CONTAINER_APP =~ ^[Yy]$ ]]; then
@@ -88,7 +90,7 @@ SPEECH_ENGINE="azure"
 
 # Demo Data (edit with your own if you want to use your own data)
 AZURE_BLOB_STORAGE_CONNECTION_STRING="${AZURE_BLOB_STORAGE_CONNECTION_STRING}"
-BLOB_CONNECTION_STRING="${AZURE_BLOB_STORAGE_CONNECTION_STRING}"
+AZURE_SEARCH_BLOB_DATA_SOURCE_STRING="${AZURE_SEARCH_BLOB_DATA_SOURCE_STRING}"
 BLOB_SAS_TOKEN="${BLOB_SAS_TOKEN}"
 
 # Edit with your own azure services values
@@ -101,7 +103,7 @@ AZURE_OPENAI_CLASSIFICATION_ENDPOINT="https://<az-oai-resource>.openai.azure.com
 AZURE_OPENAI_API_KEY="${AZURE_OPENAI_API_KEY}"
 AZURE_SEARCH_ENDPOINT="${AZURE_SEARCH_ENDPOINT}"
 AZURE_SEARCH_KEY="${AZURE_SEARCH_KEY}"
-AZURE_SEARCH_INDEX_NAME="<Azure search index name>"
+AZURE_SEARCH_INDEX_NAME="botify"
 COG_SERVICES_NAME="${COGNITIVE_SERVICES_NAME}"
 COG_SERVICES_KEY="${COGNITIVE_SERVICES_KEY}"
 AZURE_COSMOSDB_ENDPOINT="https://${AZURE_COSMOSDB_NAME}.documents.azure.com:443/"
