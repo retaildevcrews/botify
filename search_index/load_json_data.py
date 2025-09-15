@@ -3,11 +3,12 @@ import os
 
 import pandas as pd
 import requests
+from dotenv import load_dotenv
 from langchain_openai import AzureOpenAIEmbeddings
 from utils import get_headers_and_params
-from dotenv import load_dotenv
 
 load_dotenv("../apps/credentials.env")
+
 
 def validate_environment_vars():
     required_vars = [

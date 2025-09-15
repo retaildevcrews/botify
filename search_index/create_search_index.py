@@ -4,8 +4,8 @@ import os
 import requests
 from azure.core.exceptions import ResourceExistsError
 from azure.storage.blob import BlobServiceClient
-from utils import get_headers_and_params, print_response_status
 from dotenv import load_dotenv
+from utils import get_headers_and_params, print_response_status
 
 load_dotenv("../apps/credentials.env")
 
