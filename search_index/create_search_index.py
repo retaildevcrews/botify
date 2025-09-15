@@ -31,7 +31,7 @@ def validate_environment_vars():
         "COG_SERVICES_NAME",
         "COG_SERVICES_KEY",
         "AZURE_SEARCH_BLOB_DATA_SOURCE_STRING",
-        "AZURE_MANAGED_IDENTITY_RESOURCE_ID"
+        "AZURE_MANAGED_IDENTITY_RESOURCE_ID",
     ]
 
     for var in required_vars:
@@ -281,7 +281,7 @@ def create_blob_container_datasource():
         "credentials": {"connectionString": os.environ["AZURE_SEARCH_BLOB_DATA_SOURCE_STRING"]},
         "identity": {
             "@odata.type": "#Microsoft.Azure.Search.DataUserAssignedIdentity",
-            "userAssignedIdentity": os.environ['AZURE_MANAGED_IDENTITY_RESOURCE_ID']
+            "userAssignedIdentity": os.environ["AZURE_MANAGED_IDENTITY_RESOURCE_ID"],
         },
         "dataDeletionDetectionPolicy": {
             "@odata.type": "#Microsoft.Azure.Search.SoftDeleteColumnDeletionDetectionPolicy",
